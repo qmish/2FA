@@ -1,0 +1,16 @@
+bin/
+dist/
+tmp/
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
+*.local
+*.env
