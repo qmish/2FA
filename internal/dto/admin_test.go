@@ -15,6 +15,7 @@ func TestAdminUserListItemJSON(t *testing.T) {
         Email:    "a@example.com",
         Phone:    "+79990000000",
         Status:   models.UserActive,
+        Role:     models.RoleAdmin,
     }
 
     data, err := json.Marshal(item)
@@ -29,6 +30,7 @@ func TestAdminUserListItemJSON(t *testing.T) {
         "\"email\":\"a@example.com\"",
         "\"phone\":\"+79990000000\"",
         "\"status\":\"active\"",
+        "\"role\":\"admin\"",
     }
     for _, frag := range wantFragments {
         if !strings.Contains(got, frag) {

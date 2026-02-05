@@ -7,11 +7,13 @@ import (
     "testing"
 
     adminsvc "github.com/qmish/2FA/internal/admin/service"
+    "github.com/qmish/2FA/internal/api/middlewares"
     "github.com/qmish/2FA/internal/dto"
     "github.com/qmish/2FA/internal/models"
 )
 
 func TestAdminListUsers(t *testing.T) {
+    authz := fakeAuthorizer{}
     svc := &adminsvc.MockAdminService{
         ListUsersFunc: func(ctx context.Context, req dto.AdminUserListRequest) (dto.AdminUserListResponse, error) {
             if req.Page.Limit != 10 || req.Filter.Status != models.UserActive {
@@ -39,8 +41,9 @@ func TestAdminListUsers(t *testing.T) {
         },
     }
 
-    handler := NewAdminHandler(svc)
+    handler := NewAdminHandler(svc, authz)
     req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/users?limit=10&status=active", nil)
+    req = req.WithContext(middlewares.WithAdminClaims(req.Context(), &middlewares.AdminClaims{UserID: "u1", Role: "admin"}))
     rec := httptest.NewRecorder()
 
     handler.ListUsers(rec, req)
@@ -48,4 +51,10 @@ func TestAdminListUsers(t *testing.T) {
     if rec.Code != http.StatusOK {
         t.Fatalf("status=%d", rec.Code)
     }
+}
+
+type fakeAuthorizer struct{}
+
+func (fakeAuthorizer) HasPermission(ctx context.Context, userID string, role models.UserRole, perm models.Permission) bool {
+    return true
 }

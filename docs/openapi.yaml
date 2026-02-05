@@ -134,8 +134,14 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserListResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/ServerError"
   /api/v1/admin/policies:
@@ -149,8 +155,14 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminPolicyListResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/ServerError"
   /api/v1/admin/radius/clients:
@@ -164,8 +176,14 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminRadiusClientListResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/ServerError"
   /api/v1/admin/audit/events:
@@ -179,8 +197,14 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAuditListResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/ServerError"
   /api/v1/admin/logins:
@@ -194,8 +218,14 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminLoginHistoryListResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/ServerError"
   /api/v1/admin/radius/requests:
@@ -209,8 +239,14 @@ paths:
       responses:
         "200":
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminRadiusRequestListResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/ServerError"
 components:
@@ -281,6 +317,128 @@ components:
         username: { type: string }
         password: { type: string }
       required: [username, password]
+    AdminUserListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminUserListItem"
+        page:
+          $ref: "#/components/schemas/PageResponse"
+    AdminUserListItem:
+      type: object
+      properties:
+        id: { type: string }
+        username: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        status: { type: string }
+        role: { type: string }
+    AdminPolicyListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminPolicy"
+        page:
+          $ref: "#/components/schemas/PageResponse"
+    AdminPolicy:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        priority: { type: integer }
+        status: { type: string }
+        rules:
+          type: array
+          items:
+            $ref: "#/components/schemas/PolicyRule"
+    PolicyRule:
+      type: object
+      properties:
+        id: { type: string }
+        type: { type: string }
+        value: { type: string }
+    AdminRadiusClientListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminRadiusClient"
+        page:
+          $ref: "#/components/schemas/PageResponse"
+    AdminRadiusClient:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        ip: { type: string }
+        enabled: { type: boolean }
+    AdminAuditListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminAuditEvent"
+        page:
+          $ref: "#/components/schemas/PageResponse"
+    AdminAuditEvent:
+      type: object
+      properties:
+        id: { type: string }
+        actor_user_id: { type: string }
+        action: { type: string }
+        entity_type: { type: string }
+        entity_id: { type: string }
+        ip: { type: string }
+        created_at: { type: string, format: date-time }
+    AdminLoginHistoryListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/LoginHistory"
+        page:
+          $ref: "#/components/schemas/PageResponse"
+    LoginHistory:
+      type: object
+      properties:
+        id: { type: string }
+        user_id: { type: string }
+        channel: { type: string }
+        result: { type: string }
+        ip: { type: string }
+        device_id: { type: string }
+        created_at: { type: string, format: date-time }
+    AdminRadiusRequestListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RadiusRequest"
+        page:
+          $ref: "#/components/schemas/PageResponse"
+    RadiusRequest:
+      type: object
+      properties:
+        id: { type: string }
+        client_id: { type: string }
+        username: { type: string }
+        nas_ip: { type: string }
+        result: { type: string }
+        created_at: { type: string, format: date-time }
+    PageResponse:
+      type: object
+      properties:
+        total: { type: integer }
+        limit: { type: integer }
+        offset: { type: integer }
     ErrorResponse:
       type: object
       properties:
@@ -300,6 +458,12 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
     ServerError:
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
       description: Internal Server Error
       content:
         application/json:

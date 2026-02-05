@@ -23,3 +23,4 @@ go test ./...
 ## Конфигурация
 - env: `configs/config.example.env`
 - файл: `configs/config.example.yaml` (используется при `CONFIG_PATH`)
+- обязательные параметры: `DB_URL`, `ADMIN_JWT_SECRET`, `RADIUS_SECRET`

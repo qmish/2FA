@@ -96,6 +96,7 @@ const (
     AuditEntityPolicy       AuditEntityType = "policy"
     AuditEntityRadiusClient AuditEntityType = "radius_client"
     AuditEntitySession      AuditEntityType = "session"
+    AuditEntityPermission   AuditEntityType = "permission"
 )
 
 type AuditAction string
@@ -108,6 +109,18 @@ const (
     AuditLogout  AuditAction = "logout"
     AuditEnable  AuditAction = "enable"
     AuditDisable AuditAction = "disable"
+    AuditAuthorize AuditAction = "authorize"
+)
+
+type Permission string
+
+const (
+    PermissionAdminUsersRead        Permission = "admin.users.read"
+    PermissionAdminPoliciesRead     Permission = "admin.policies.read"
+    PermissionAdminRadiusClientsRead Permission = "admin.radius_clients.read"
+    PermissionAdminAuditRead        Permission = "admin.audit.read"
+    PermissionAdminLoginsRead       Permission = "admin.logins.read"
+    PermissionAdminRadiusRequestsRead Permission = "admin.radius_requests.read"
 )
 
 const (

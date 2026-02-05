@@ -1,12 +1,18 @@
 package middlewares
 
 import (
+    "context"
     "net/http"
     "strings"
 )
 
+type AdminClaims struct {
+    UserID string
+    Role   string
+}
+
 type AdminTokenValidator interface {
-    Validate(token string) error
+    ParseClaims(token string) (*AdminClaims, error)
 }
 
 func AdminAuth(validator AdminTokenValidator) func(http.Handler) http.Handler {
@@ -18,11 +24,24 @@ func AdminAuth(validator AdminTokenValidator) func(http.Handler) http.Handler {
                 return
             }
             token := strings.TrimPrefix(header, "Bearer ")
-            if err := validator.Validate(token); err != nil {
+            claims, err := validator.ParseClaims(token)
+            if err != nil {
                 w.WriteHeader(http.StatusUnauthorized)
                 return
             }
-            next.ServeHTTP(w, r)
+            ctx := context.WithValue(r.Context(), adminClaimsKey{}, claims)
+            next.ServeHTTP(w, r.WithContext(ctx))
         })
     }
+}
+
+type adminClaimsKey struct{}
+
+func AdminClaimsFromContext(ctx context.Context) (*AdminClaims, bool) {
+    claims, ok := ctx.Value(adminClaimsKey{}).(*AdminClaims)
+    return claims, ok
+}
+
+func WithAdminClaims(ctx context.Context, claims *AdminClaims) context.Context {
+    return context.WithValue(ctx, adminClaimsKey{}, claims)
 }

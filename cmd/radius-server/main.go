@@ -7,6 +7,7 @@ import (
     "github.com/qmish/2FA/internal/config"
     "github.com/qmish/2FA/internal/radius/server"
     "github.com/qmish/2FA/internal/radius/service"
+    "github.com/qmish/2FA/internal/storage/postgres"
 )
 
 func main() {
@@ -14,6 +15,11 @@ func main() {
     if err != nil {
         log.Fatal(err)
     }
+    db, err := postgres.Open(cfg.DBURL)
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer db.Close()
     secret := cfg.RadiusSecret
     if secret == "" {
         secret = "secret"
