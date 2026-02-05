@@ -61,6 +61,9 @@ func (f fakeUserRepo) Create(ctx context.Context, u *models.User) error {
 func (f fakeUserRepo) Update(ctx context.Context, u *models.User) error {
     return nil
 }
+func (f fakeUserRepo) Delete(ctx context.Context, id string) error {
+    return nil
+}
 func (f fakeUserRepo) SetStatus(ctx context.Context, id string, status models.UserStatus) error {
     return nil
 }

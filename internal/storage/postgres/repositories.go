@@ -220,6 +220,11 @@ func (r *UserRepository) Update(ctx context.Context, u *models.User) error {
     return err
 }
 
+func (r *UserRepository) Delete(ctx context.Context, id string) error {
+    _, err := r.db.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, id)
+    return err
+}
+
 func (r *UserRepository) SetStatus(ctx context.Context, id string, status models.UserStatus) error {
     _, err := r.db.ExecContext(ctx, `UPDATE users SET status = $2 WHERE id = $1`, id, string(status))
     return err
@@ -418,6 +423,11 @@ func (r *PolicyRepository) Update(ctx context.Context, p *models.Policy) error {
     return err
 }
 
+func (r *PolicyRepository) Delete(ctx context.Context, id string) error {
+    _, err := r.db.ExecContext(ctx, `DELETE FROM policies WHERE id = $1`, id)
+    return err
+}
+
 func (r *PolicyRepository) SetStatus(ctx context.Context, id string, status models.PolicyStatus) error {
     _, err := r.db.ExecContext(ctx, `UPDATE policies SET status = $2 WHERE id = $1`, id, string(status))
     return err
@@ -469,12 +479,28 @@ func (r *PolicyRuleRepository) Delete(ctx context.Context, id string) error {
     return err
 }
 
+func (r *PolicyRuleRepository) DeleteByPolicy(ctx context.Context, policyID string) error {
+    _, err := r.db.ExecContext(ctx, `DELETE FROM policy_rules WHERE policy_id = $1`, policyID)
+    return err
+}
+
 type RadiusClientRepository struct {
     db *sql.DB
 }
 
 func NewRadiusClientRepository(db *sql.DB) *RadiusClientRepository {
     return &RadiusClientRepository{db: db}
+}
+
+func (r *RadiusClientRepository) GetByID(ctx context.Context, id string) (*models.RadiusClient, error) {
+    row := r.db.QueryRowContext(ctx, `
+        SELECT id, name, ip, secret, enabled, created_at
+        FROM radius_clients WHERE id = $1`, id)
+    var c models.RadiusClient
+    if err := row.Scan(&c.ID, &c.Name, &c.IP, &c.Secret, &c.Enabled, &c.CreatedAt); err != nil {
+        return nil, err
+    }
+    return &c, nil
 }
 
 func (r *RadiusClientRepository) GetByIP(ctx context.Context, ip string) (*models.RadiusClient, error) {
@@ -527,6 +553,11 @@ func (r *RadiusClientRepository) Update(ctx context.Context, c *models.RadiusCli
     _, err := r.db.ExecContext(ctx, `
         UPDATE radius_clients SET name = $2, secret = $3, enabled = $4 WHERE id = $1`,
         c.ID, c.Name, c.Secret, c.Enabled)
+    return err
+}
+
+func (r *RadiusClientRepository) Delete(ctx context.Context, id string) error {
+    _, err := r.db.ExecContext(ctx, `DELETE FROM radius_clients WHERE id = $1`, id)
     return err
 }
 

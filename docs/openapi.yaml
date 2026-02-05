@@ -144,6 +144,84 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/ServerError"
+  /api/v1/admin/users/create:
+    post:
+      summary: Admin create user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUserCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /api/v1/admin/users/update:
+    put:
+      summary: Admin update user
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUserUpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /api/v1/admin/users/delete:
+    delete:
+      summary: Admin delete user
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
   /api/v1/admin/policies:
     get:
       summary: Admin policies list
@@ -165,6 +243,84 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/ServerError"
+  /api/v1/admin/policies/create:
+    post:
+      summary: Admin create policy
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminPolicyCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminPolicy"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /api/v1/admin/policies/update:
+    put:
+      summary: Admin update policy
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminPolicyUpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminPolicy"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /api/v1/admin/policies/delete:
+    delete:
+      summary: Admin delete policy
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
   /api/v1/admin/radius/clients:
     get:
       summary: Admin radius clients list
@@ -180,6 +336,134 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminRadiusClientListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /api/v1/admin/radius/clients/create:
+    post:
+      summary: Admin create radius client
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminRadiusClientCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminRadiusClient"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /api/v1/admin/radius/clients/update:
+    put:
+      summary: Admin update radius client
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminRadiusClientUpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminRadiusClient"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /api/v1/admin/radius/clients/delete:
+    delete:
+      summary: Admin delete radius client
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /api/v1/admin/role-permissions:
+    get:
+      summary: Admin role permissions
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/role"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RolePermissionsResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /api/v1/admin/role-permissions/update:
+    put:
+      summary: Admin update role permissions
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/role"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RolePermissionsUpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RolePermissionsResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -273,6 +557,16 @@ components:
         type: string
     query:
       name: query
+      in: query
+      schema:
+        type: string
+    id:
+      name: id
+      in: query
+      schema:
+        type: string
+    role:
+      name: role
       in: query
       schema:
         type: string
@@ -371,6 +665,51 @@ components:
         phone: { type: string }
         status: { type: string }
         role: { type: string }
+    AdminUserCreateRequest:
+      type: object
+      properties:
+        username: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        status: { type: string }
+        role: { type: string }
+        password: { type: string }
+      required: [username, password]
+      example:
+        username: "bob"
+        email: "b@example.com"
+        phone: "+70000000000"
+        status: "active"
+        role: "user"
+        password: "secret"
+    AdminUserUpdateRequest:
+      type: object
+      properties:
+        email: { type: string }
+        phone: { type: string }
+        status: { type: string }
+        role: { type: string }
+      example:
+        email: "b2@example.com"
+        phone: "+70000000001"
+        status: "active"
+        role: "user"
+    AdminUserResponse:
+      type: object
+      properties:
+        id: { type: string }
+        username: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        status: { type: string }
+        role: { type: string }
+      example:
+        id: "u1"
+        username: "bob"
+        email: "b@example.com"
+        phone: "+70000000000"
+        status: "active"
+        role: "user"
     AdminPolicyListResponse:
       type: object
       properties:
@@ -411,6 +750,41 @@ components:
         id: { type: string }
         type: { type: string }
         value: { type: string }
+    AdminPolicyCreateRequest:
+      type: object
+      properties:
+        name: { type: string }
+        priority: { type: integer }
+        status: { type: string }
+        rules:
+          type: array
+          items:
+            $ref: "#/components/schemas/PolicyRule"
+      required: [name]
+      example:
+        name: "Default"
+        priority: 0
+        status: "active"
+        rules:
+          - type: "group"
+            value: "admins"
+    AdminPolicyUpdateRequest:
+      type: object
+      properties:
+        name: { type: string }
+        priority: { type: integer }
+        status: { type: string }
+        rules:
+          type: array
+          items:
+            $ref: "#/components/schemas/PolicyRule"
+      example:
+        name: "Default"
+        priority: 1
+        status: "active"
+        rules:
+          - type: "group"
+            value: "ops"
     AdminRadiusClientListResponse:
       type: object
       properties:
@@ -437,6 +811,29 @@ components:
         name: { type: string }
         ip: { type: string }
         enabled: { type: boolean }
+    AdminRadiusClientCreateRequest:
+      type: object
+      properties:
+        name: { type: string }
+        ip: { type: string }
+        secret: { type: string }
+        enabled: { type: boolean }
+      required: [name, ip, secret]
+      example:
+        name: "AnyConnect"
+        ip: "10.0.0.1"
+        secret: "shared"
+        enabled: true
+    AdminRadiusClientUpdateRequest:
+      type: object
+      properties:
+        name: { type: string }
+        secret: { type: string }
+        enabled: { type: boolean }
+      example:
+        name: "AnyConnect"
+        secret: "shared2"
+        enabled: true
     AdminAuditListResponse:
       type: object
       properties:
@@ -531,6 +928,31 @@ components:
         nas_ip: { type: string }
         result: { type: string }
         created_at: { type: string, format: date-time }
+    RolePermissionsResponse:
+      type: object
+      properties:
+        role: { type: string }
+        permissions:
+          type: array
+          items:
+            type: string
+      example:
+        role: "admin"
+        permissions:
+          - "admin.users.read"
+          - "admin.users.write"
+    RolePermissionsUpdateRequest:
+      type: object
+      properties:
+        permissions:
+          type: array
+          items:
+            type: string
+      required: [permissions]
+      example:
+        permissions:
+          - "admin.users.read"
+          - "admin.users.write"
     PageResponse:
       type: object
       properties:
@@ -557,13 +979,25 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
-    ServerError:
     Forbidden:
       description: Forbidden
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ServerError:
       description: Internal Server Error
       content:
         application/json:

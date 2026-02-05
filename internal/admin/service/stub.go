@@ -17,16 +17,86 @@ func (s StubService) ListUsers(ctx context.Context, req dto.AdminUserListRequest
     return dto.AdminUserListResponse{}, ErrNotImplemented
 }
 
+func (s StubService) CreateUser(ctx context.Context, req dto.AdminUserCreateRequest) (dto.AdminUserResponse, error) {
+    _ = ctx
+    _ = req
+    return dto.AdminUserResponse{}, ErrNotImplemented
+}
+
+func (s StubService) UpdateUser(ctx context.Context, id string, req dto.AdminUserUpdateRequest) (dto.AdminUserResponse, error) {
+    _ = ctx
+    _ = id
+    _ = req
+    return dto.AdminUserResponse{}, ErrNotImplemented
+}
+
+func (s StubService) DeleteUser(ctx context.Context, id string) error {
+    _ = ctx
+    _ = id
+    return ErrNotImplemented
+}
+
 func (s StubService) ListPolicies(ctx context.Context, req dto.PageRequest) ([]dto.AdminPolicyDTO, dto.PageResponse, error) {
     _ = ctx
     _ = req
     return nil, dto.PageResponse{}, ErrNotImplemented
 }
 
+func (s StubService) CreatePolicy(ctx context.Context, req dto.AdminPolicyCreateRequest) (dto.AdminPolicyDTO, error) {
+    _ = ctx
+    _ = req
+    return dto.AdminPolicyDTO{}, ErrNotImplemented
+}
+
+func (s StubService) UpdatePolicy(ctx context.Context, id string, req dto.AdminPolicyUpdateRequest) (dto.AdminPolicyDTO, error) {
+    _ = ctx
+    _ = id
+    _ = req
+    return dto.AdminPolicyDTO{}, ErrNotImplemented
+}
+
+func (s StubService) DeletePolicy(ctx context.Context, id string) error {
+    _ = ctx
+    _ = id
+    return ErrNotImplemented
+}
+
 func (s StubService) ListRadiusClients(ctx context.Context, req dto.PageRequest) ([]dto.AdminRadiusClientDTO, dto.PageResponse, error) {
     _ = ctx
     _ = req
     return nil, dto.PageResponse{}, ErrNotImplemented
+}
+
+func (s StubService) CreateRadiusClient(ctx context.Context, req dto.AdminRadiusClientCreateRequest) (dto.AdminRadiusClientDTO, error) {
+    _ = ctx
+    _ = req
+    return dto.AdminRadiusClientDTO{}, ErrNotImplemented
+}
+
+func (s StubService) UpdateRadiusClient(ctx context.Context, id string, req dto.AdminRadiusClientUpdateRequest) (dto.AdminRadiusClientDTO, error) {
+    _ = ctx
+    _ = id
+    _ = req
+    return dto.AdminRadiusClientDTO{}, ErrNotImplemented
+}
+
+func (s StubService) DeleteRadiusClient(ctx context.Context, id string) error {
+    _ = ctx
+    _ = id
+    return ErrNotImplemented
+}
+
+func (s StubService) GetRolePermissions(ctx context.Context, role string) (dto.RolePermissionsResponse, error) {
+    _ = ctx
+    _ = role
+    return dto.RolePermissionsResponse{}, ErrNotImplemented
+}
+
+func (s StubService) SetRolePermissions(ctx context.Context, role string, req dto.RolePermissionsUpdateRequest) (dto.RolePermissionsResponse, error) {
+    _ = ctx
+    _ = role
+    _ = req
+    return dto.RolePermissionsResponse{}, ErrNotImplemented
 }
 
 func (s StubService) ListAuditEvents(ctx context.Context, req dto.AdminAuditListRequest) (dto.AdminAuditListResponse, error) {

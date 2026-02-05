@@ -16,6 +16,7 @@ func TestServiceListUsers(t *testing.T) {
         fakePolicyRepo{},
         fakePolicyRuleRepo{},
         fakeRadiusClientRepo{},
+        fakeRolePermRepo{},
         fakeAuditRepo{},
         fakeLoginRepo{},
         fakeRadiusReqRepo{},
@@ -32,6 +33,38 @@ func TestServiceListUsers(t *testing.T) {
     }
     if len(resp.Items) != 1 || resp.Items[0].Role != models.RoleAdmin {
         t.Fatalf("unexpected response: %+v", resp)
+    }
+}
+
+func TestServiceCreateUser(t *testing.T) {
+    repo := &recordUserRepo{}
+    svc := NewService(
+        repo,
+        fakePolicyRepo{},
+        fakePolicyRuleRepo{},
+        fakeRadiusClientRepo{},
+        fakeRolePermRepo{},
+        fakeAuditRepo{},
+        fakeLoginRepo{},
+        fakeRadiusReqRepo{},
+    )
+
+    _, err := svc.CreateUser(context.Background(), dto.AdminUserCreateRequest{
+        Username: "bob",
+        Email:    "b@example.com",
+        Phone:    "+70000000000",
+        Status:   models.UserActive,
+        Role:     models.RoleUser,
+        Password: "secret",
+    })
+    if err != nil {
+        t.Fatalf("CreateUser error: %v", err)
+    }
+    if repo.created == nil || repo.created.Username != "bob" || repo.created.Role != models.RoleUser {
+        t.Fatalf("unexpected created user: %+v", repo.created)
+    }
+    if repo.created.PasswordHash == "" {
+        t.Fatalf("expected password hash")
     }
 }
 
@@ -53,7 +86,18 @@ func (f fakeUserRepo) List(ctx context.Context, filter repository.UserListFilter
 }
 func (f fakeUserRepo) Create(ctx context.Context, u *models.User) error { return nil }
 func (f fakeUserRepo) Update(ctx context.Context, u *models.User) error { return nil }
+func (f fakeUserRepo) Delete(ctx context.Context, id string) error { return nil }
 func (f fakeUserRepo) SetStatus(ctx context.Context, id string, status models.UserStatus) error {
+    return nil
+}
+
+type recordUserRepo struct {
+    fakeUserRepo
+    created *models.User
+}
+
+func (r *recordUserRepo) Create(ctx context.Context, u *models.User) error {
+    r.created = u
     return nil
 }
 
@@ -65,6 +109,7 @@ func (f fakePolicyRepo) List(ctx context.Context, limit, offset int) ([]models.P
 }
 func (f fakePolicyRepo) Create(ctx context.Context, p *models.Policy) error { return nil }
 func (f fakePolicyRepo) Update(ctx context.Context, p *models.Policy) error { return nil }
+func (f fakePolicyRepo) Delete(ctx context.Context, id string) error { return nil }
 func (f fakePolicyRepo) SetStatus(ctx context.Context, id string, status models.PolicyStatus) error { return nil }
 
 type fakePolicyRuleRepo struct{}
@@ -74,9 +119,13 @@ func (f fakePolicyRuleRepo) ListByPolicy(ctx context.Context, policyID string) (
 }
 func (f fakePolicyRuleRepo) Create(ctx context.Context, r *models.PolicyRule) error { return nil }
 func (f fakePolicyRuleRepo) Delete(ctx context.Context, id string) error { return nil }
+func (f fakePolicyRuleRepo) DeleteByPolicy(ctx context.Context, policyID string) error { return nil }
 
 type fakeRadiusClientRepo struct{}
 
+func (f fakeRadiusClientRepo) GetByID(ctx context.Context, id string) (*models.RadiusClient, error) {
+    return nil, errors.New("not implemented")
+}
 func (f fakeRadiusClientRepo) GetByIP(ctx context.Context, ip string) (*models.RadiusClient, error) {
     return nil, errors.New("not implemented")
 }
@@ -85,6 +134,7 @@ func (f fakeRadiusClientRepo) List(ctx context.Context, limit, offset int) ([]mo
 }
 func (f fakeRadiusClientRepo) Create(ctx context.Context, c *models.RadiusClient) error { return nil }
 func (f fakeRadiusClientRepo) Update(ctx context.Context, c *models.RadiusClient) error { return nil }
+func (f fakeRadiusClientRepo) Delete(ctx context.Context, id string) error { return nil }
 func (f fakeRadiusClientRepo) SetEnabled(ctx context.Context, id string, enabled bool) error { return nil }
 
 type fakeAuditRepo struct{}
@@ -108,4 +158,13 @@ func (f fakeRadiusReqRepo) List(ctx context.Context, filter repository.RadiusReq
     return []models.RadiusRequest{}, 0, nil
 }
 func (f fakeRadiusReqRepo) UpdateResult(ctx context.Context, id string, result models.RadiusResult) error { return nil }
+
+type fakeRolePermRepo struct{}
+
+func (f fakeRolePermRepo) ListByRole(ctx context.Context, role models.UserRole) ([]models.Permission, error) {
+    return []models.Permission{}, nil
+}
+func (f fakeRolePermRepo) SetRolePermissions(ctx context.Context, role models.UserRole, perms []models.Permission) error {
+    return nil
+}
 

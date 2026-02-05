@@ -21,13 +21,15 @@ func (a *Authorizer) HasPermission(ctx context.Context, userID string, role mode
     allowed := false
     if a.rolePerms != nil {
         perms, err := a.rolePerms.ListByRole(ctx, role)
-        if err == nil {
+        if err == nil && len(perms) > 0 {
             for _, p := range perms {
                 if p == perm {
                     allowed = true
                     break
                 }
             }
+        } else if err == nil && len(perms) == 0 {
+            allowed = roleHasPermission(role, perm)
         }
     } else {
         allowed = roleHasPermission(role, perm)

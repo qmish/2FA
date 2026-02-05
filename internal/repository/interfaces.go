@@ -44,6 +44,7 @@ type UserRepository interface {
     List(ctx context.Context, filter UserListFilter, limit, offset int) ([]models.User, int, error)
     Create(ctx context.Context, u *models.User) error
     Update(ctx context.Context, u *models.User) error
+    Delete(ctx context.Context, id string) error
     SetStatus(ctx context.Context, id string, status models.UserStatus) error
 }
 
@@ -64,6 +65,7 @@ type PolicyRepository interface {
     List(ctx context.Context, limit, offset int) ([]models.Policy, int, error)
     Create(ctx context.Context, p *models.Policy) error
     Update(ctx context.Context, p *models.Policy) error
+    Delete(ctx context.Context, id string) error
     SetStatus(ctx context.Context, id string, status models.PolicyStatus) error
 }
 
@@ -71,13 +73,16 @@ type PolicyRuleRepository interface {
     ListByPolicy(ctx context.Context, policyID string) ([]models.PolicyRule, error)
     Create(ctx context.Context, r *models.PolicyRule) error
     Delete(ctx context.Context, id string) error
+    DeleteByPolicy(ctx context.Context, policyID string) error
 }
 
 type RadiusClientRepository interface {
+    GetByID(ctx context.Context, id string) (*models.RadiusClient, error)
     GetByIP(ctx context.Context, ip string) (*models.RadiusClient, error)
     List(ctx context.Context, limit, offset int) ([]models.RadiusClient, int, error)
     Create(ctx context.Context, c *models.RadiusClient) error
     Update(ctx context.Context, c *models.RadiusClient) error
+    Delete(ctx context.Context, id string) error
     SetEnabled(ctx context.Context, id string, enabled bool) error
 }
 

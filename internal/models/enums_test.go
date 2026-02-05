@@ -60,11 +60,16 @@ func TestEnumValues(t *testing.T) {
         {string(AuditDisable), "disable"},
         {string(AuditAuthorize), "authorize"},
         {string(PermissionAdminUsersRead), "admin.users.read"},
+        {string(PermissionAdminUsersWrite), "admin.users.write"},
         {string(PermissionAdminPoliciesRead), "admin.policies.read"},
+        {string(PermissionAdminPoliciesWrite), "admin.policies.write"},
         {string(PermissionAdminRadiusClientsRead), "admin.radius_clients.read"},
+        {string(PermissionAdminRadiusClientsWrite), "admin.radius_clients.write"},
         {string(PermissionAdminAuditRead), "admin.audit.read"},
         {string(PermissionAdminLoginsRead), "admin.logins.read"},
         {string(PermissionAdminRadiusRequestsRead), "admin.radius_requests.read"},
+        {string(PermissionAdminRolePermissionsWrite), "admin.role_permissions.write"},
+        {string(PermissionAdminRolePermissionsRead), "admin.role_permissions.read"},
     }
 
     for _, tc := range cases {

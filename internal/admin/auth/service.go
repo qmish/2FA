@@ -49,7 +49,7 @@ func (s *Service) Login(ctx context.Context, req dto.AdminLoginRequest) (dto.Tok
     }
     now := time.Now()
     claims := AdminClaims{
-        Role: "admin",
+        Role: string(user.Role),
         RegisteredClaims: jwt.RegisteredClaims{
             Issuer:    s.issuer,
             Subject:   user.Username,

@@ -1,0 +1,64 @@
+package dto
+
+import "github.com/qmish/2FA/internal/models"
+
+type AdminUserCreateRequest struct {
+    Username string          `json:"username"`
+    Email    string          `json:"email"`
+    Phone    string          `json:"phone"`
+    Status   models.UserStatus `json:"status"`
+    Role     models.UserRole `json:"role"`
+    Password string          `json:"password"`
+}
+
+type AdminUserUpdateRequest struct {
+    Email  string            `json:"email"`
+    Phone  string            `json:"phone"`
+    Status models.UserStatus `json:"status"`
+    Role   models.UserRole   `json:"role"`
+}
+
+type AdminUserResponse struct {
+    ID       string            `json:"id"`
+    Username string            `json:"username"`
+    Email    string            `json:"email"`
+    Phone    string            `json:"phone"`
+    Status   models.UserStatus `json:"status"`
+    Role     models.UserRole   `json:"role"`
+}
+
+type AdminPolicyCreateRequest struct {
+    Name     string             `json:"name"`
+    Priority int                `json:"priority"`
+    Status   models.PolicyStatus `json:"status"`
+    Rules    []PolicyRuleDTO    `json:"rules"`
+}
+
+type AdminPolicyUpdateRequest struct {
+    Name     string             `json:"name"`
+    Priority int                `json:"priority"`
+    Status   models.PolicyStatus `json:"status"`
+    Rules    []PolicyRuleDTO    `json:"rules"`
+}
+
+type AdminRadiusClientCreateRequest struct {
+    Name    string `json:"name"`
+    IP      string `json:"ip"`
+    Secret  string `json:"secret"`
+    Enabled bool   `json:"enabled"`
+}
+
+type AdminRadiusClientUpdateRequest struct {
+    Name    string `json:"name"`
+    Secret  string `json:"secret"`
+    Enabled bool   `json:"enabled"`
+}
+
+type RolePermissionsResponse struct {
+    Role        models.UserRole     `json:"role"`
+    Permissions []models.Permission `json:"permissions"`
+}
+
+type RolePermissionsUpdateRequest struct {
+    Permissions []models.Permission `json:"permissions"`
+}

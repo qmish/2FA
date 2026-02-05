@@ -38,3 +38,46 @@ func TestAdminUserListItemJSON(t *testing.T) {
         }
     }
 }
+
+func TestAdminUserCreateJSON(t *testing.T) {
+    req := AdminUserCreateRequest{
+        Username: "bob",
+        Email:    "b@example.com",
+        Phone:    "+70000000000",
+        Status:   models.UserActive,
+        Role:     models.RoleUser,
+        Password: "secret",
+    }
+    data, err := json.Marshal(req)
+    if err != nil {
+        t.Fatalf("marshal error: %v", err)
+    }
+    got := string(data)
+    wantFragments := []string{
+        "\"username\":\"bob\"",
+        "\"email\":\"b@example.com\"",
+        "\"phone\":\"+70000000000\"",
+        "\"status\":\"active\"",
+        "\"role\":\"user\"",
+        "\"password\":\"secret\"",
+    }
+    for _, frag := range wantFragments {
+        if !strings.Contains(got, frag) {
+            t.Fatalf("missing json fragment %q in %s", frag, got)
+        }
+    }
+}
+
+func TestRolePermissionsUpdateJSON(t *testing.T) {
+    req := RolePermissionsUpdateRequest{
+        Permissions: []models.Permission{models.PermissionAdminUsersRead},
+    }
+    data, err := json.Marshal(req)
+    if err != nil {
+        t.Fatalf("marshal error: %v", err)
+    }
+    got := string(data)
+    if !strings.Contains(got, "\"permissions\"") {
+        t.Fatalf("missing permissions in json: %s", got)
+    }
+}

@@ -44,6 +44,7 @@ func main() {
         policyRepo,
         policyRuleRepo,
         radiusClientRepo,
+        rolePermRepo,
         auditRepo,
         loginRepo,
         radiusReqRepo,

@@ -116,11 +116,16 @@ type Permission string
 
 const (
     PermissionAdminUsersRead        Permission = "admin.users.read"
+    PermissionAdminUsersWrite       Permission = "admin.users.write"
     PermissionAdminPoliciesRead     Permission = "admin.policies.read"
+    PermissionAdminPoliciesWrite    Permission = "admin.policies.write"
     PermissionAdminRadiusClientsRead Permission = "admin.radius_clients.read"
+    PermissionAdminRadiusClientsWrite Permission = "admin.radius_clients.write"
     PermissionAdminAuditRead        Permission = "admin.audit.read"
     PermissionAdminLoginsRead       Permission = "admin.logins.read"
     PermissionAdminRadiusRequestsRead Permission = "admin.radius_requests.read"
+    PermissionAdminRolePermissionsWrite Permission = "admin.role_permissions.write"
+    PermissionAdminRolePermissionsRead  Permission = "admin.role_permissions.read"
 )
 
 const (

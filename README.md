@@ -24,3 +24,9 @@ go test ./...
 - env: `configs/config.example.env`
 - файл: `configs/config.example.yaml` (используется при `CONFIG_PATH`)
 - обязательные параметры: `DB_URL`, `ADMIN_JWT_SECRET`, `RADIUS_SECRET`
+
+## Админ‑API CRUD
+- пользователи: `/api/v1/admin/users/*`
+- политики: `/api/v1/admin/policies/*`
+- RADIUS клиенты: `/api/v1/admin/radius/clients/*`
+- роли и права: `/api/v1/admin/role-permissions*`
