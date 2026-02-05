@@ -1,0 +1,38 @@
+package dto
+
+import (
+    "encoding/json"
+    "strings"
+    "testing"
+
+    "github.com/qmish/2FA/internal/models"
+)
+
+func TestAdminUserListItemJSON(t *testing.T) {
+    item := AdminUserListItem{
+        ID:       "u1",
+        Username: "alice",
+        Email:    "a@example.com",
+        Phone:    "+79990000000",
+        Status:   models.UserActive,
+    }
+
+    data, err := json.Marshal(item)
+    if err != nil {
+        t.Fatalf("marshal error: %v", err)
+    }
+
+    got := string(data)
+    wantFragments := []string{
+        "\"id\":\"u1\"",
+        "\"username\":\"alice\"",
+        "\"email\":\"a@example.com\"",
+        "\"phone\":\"+79990000000\"",
+        "\"status\":\"active\"",
+    }
+    for _, frag := range wantFragments {
+        if !strings.Contains(got, frag) {
+            t.Fatalf("missing json fragment %q in %s", frag, got)
+        }
+    }
+}
