@@ -121,6 +121,16 @@ type AdminUserListResponse struct {
     Page  PageResponse        `json:"page"`
 }
 
+type AdminPolicyListResponse struct {
+    Items []AdminPolicyDTO `json:"items"`
+    Page  PageResponse     `json:"page"`
+}
+
+type AdminRadiusClientListResponse struct {
+    Items []AdminRadiusClientDTO `json:"items"`
+    Page  PageResponse           `json:"page"`
+}
+
 type AdminAuditListRequest struct {
     Page   PageRequest   `json:"page"`
     Filter AdminAuditFilter `json:"filter"`
