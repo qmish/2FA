@@ -223,6 +223,83 @@ func TestRolePermissionRepositorySetRolePermissions(t *testing.T) {
     }
 }
 
+func TestChallengeRepositoryGetByID(t *testing.T) {
+    db, mock, err := sqlmock.New()
+    if err != nil {
+        t.Fatalf("sqlmock: %v", err)
+    }
+    defer db.Close()
+
+    repo := NewChallengeRepository(db)
+    now := time.Now()
+    rows := sqlmock.NewRows([]string{
+        "id", "user_id", "method", "status", "code_hash", "provider_id", "expires_at", "created_at", "updated_at",
+    }).AddRow("c1", "u1", "otp", "created", "hash", "prov", now, now, now)
+
+    mock.ExpectQuery("FROM challenges WHERE id = \\$1").
+        WithArgs("c1").WillReturnRows(rows)
+
+    c, err := repo.GetByID(context.Background(), "c1")
+    if err != nil {
+        t.Fatalf("GetByID error: %v", err)
+    }
+    if c.Method != models.MethodOTP || c.Status != models.ChallengeCreated {
+        t.Fatalf("unexpected challenge: %+v", c)
+    }
+}
+
+func TestChallengeRepositoryCreate(t *testing.T) {
+    db, mock, err := sqlmock.New()
+    if err != nil {
+        t.Fatalf("sqlmock: %v", err)
+    }
+    defer db.Close()
+
+    repo := NewChallengeRepository(db)
+    now := time.Now()
+    c := &models.Challenge{
+        ID:        "c1",
+        UserID:    "u1",
+        Method:    models.MethodOTP,
+        Status:    models.ChallengeCreated,
+        CodeHash:  "hash",
+        ProviderID:"prov",
+        ExpiresAt: now,
+        CreatedAt: now,
+        UpdatedAt: now,
+    }
+
+    mock.ExpectExec("INSERT INTO challenges").
+        WithArgs(
+            c.ID, c.UserID, string(c.Method), string(c.Status),
+            sql.NullString{String: c.CodeHash, Valid: true},
+            sql.NullString{String: c.ProviderID, Valid: true},
+            c.ExpiresAt, c.CreatedAt, c.UpdatedAt,
+        ).WillReturnResult(sqlmock.NewResult(1, 1))
+
+    if err := repo.Create(context.Background(), c); err != nil {
+        t.Fatalf("Create error: %v", err)
+    }
+}
+
+func TestChallengeRepositoryMarkExpired(t *testing.T) {
+    db, mock, err := sqlmock.New()
+    if err != nil {
+        t.Fatalf("sqlmock: %v", err)
+    }
+    defer db.Close()
+
+    repo := NewChallengeRepository(db)
+    now := time.Now()
+    mock.ExpectExec("UPDATE challenges SET status = 'expired'").
+        WithArgs(now).WillReturnResult(sqlmock.NewResult(1, 2))
+
+    n, err := repo.MarkExpired(context.Background(), now)
+    if err != nil || n != 2 {
+        t.Fatalf("unexpected result: %v %d", err, n)
+    }
+}
+
 func TestGroupRepositoryGetByName(t *testing.T) {
     db, mock, err := sqlmock.New()
     if err != nil {

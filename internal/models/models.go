@@ -36,6 +36,18 @@ type UserSession struct {
     RevokedAt        *time.Time
 }
 
+type Challenge struct {
+    ID         string
+    UserID     string
+    Method     SecondFactorMethod
+    Status     ChallengeStatus
+    CodeHash   string
+    ProviderID string
+    ExpiresAt  time.Time
+    CreatedAt  time.Time
+    UpdatedAt  time.Time
+}
+
 type Policy struct {
     ID        string
     Name      string

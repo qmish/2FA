@@ -359,6 +359,76 @@ func (r *SessionRepository) GetByRefreshHash(ctx context.Context, hash string) (
     return &s, nil
 }
 
+type ChallengeRepository struct {
+    db *sql.DB
+}
+
+func NewChallengeRepository(db *sql.DB) *ChallengeRepository {
+    return &ChallengeRepository{db: db}
+}
+
+func (r *ChallengeRepository) GetByID(ctx context.Context, id string) (*models.Challenge, error) {
+    row := r.db.QueryRowContext(ctx, `
+        SELECT id, user_id, method, status, code_hash, provider_id, expires_at, created_at, updated_at
+        FROM challenges WHERE id = $1`, id)
+    var (
+        method, status     string
+        codeHash, provider sql.NullString
+        c                  models.Challenge
+    )
+    if err := row.Scan(
+        &c.ID,
+        &c.UserID,
+        &method,
+        &status,
+        &codeHash,
+        &provider,
+        &c.ExpiresAt,
+        &c.CreatedAt,
+        &c.UpdatedAt,
+    ); err != nil {
+        return nil, mapNotFound(err)
+    }
+    c.Method = models.SecondFactorMethod(method)
+    c.Status = models.ChallengeStatus(status)
+    c.CodeHash = fromNullString(codeHash)
+    c.ProviderID = fromNullString(provider)
+    return &c, nil
+}
+
+func (r *ChallengeRepository) Create(ctx context.Context, c *models.Challenge) error {
+    _, err := r.db.ExecContext(ctx, `
+        INSERT INTO challenges (id, user_id, method, status, code_hash, provider_id, expires_at, created_at, updated_at)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+        c.ID,
+        c.UserID,
+        string(c.Method),
+        string(c.Status),
+        nullString(c.CodeHash),
+        nullString(c.ProviderID),
+        c.ExpiresAt,
+        c.CreatedAt,
+        c.UpdatedAt,
+    )
+    return err
+}
+
+func (r *ChallengeRepository) UpdateStatus(ctx context.Context, id string, status models.ChallengeStatus) error {
+    _, err := r.db.ExecContext(ctx, `
+        UPDATE challenges SET status = $2, updated_at = now() WHERE id = $1`, id, string(status))
+    return err
+}
+
+func (r *ChallengeRepository) MarkExpired(ctx context.Context, now time.Time) (int64, error) {
+    res, err := r.db.ExecContext(ctx, `
+        UPDATE challenges SET status = 'expired', updated_at = now()
+        WHERE status IN ('created','sent','pending') AND expires_at < $1`, now)
+    if err != nil {
+        return 0, err
+    }
+    return res.RowsAffected()
+}
+
 type DeviceRepository struct {
     db *sql.DB
 }

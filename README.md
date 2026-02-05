@@ -17,6 +17,12 @@ go test ./...
 - `GET /healthz` — healthcheck
 - `GET /metrics` — метрики (заглушка)
 
+## Auth API
+- `POST /api/v1/auth/login` — логин + создание challenge
+- `POST /api/v1/auth/verify` — подтверждение 2FA
+- `POST /api/v1/auth/refresh` — обновление токена
+- `POST /api/v1/auth/logout` — выход
+
 ## OpenAPI
 - `docs/openapi.yaml`
 
@@ -24,6 +30,8 @@ go test ./...
 - env: `configs/config.example.env`
 - файл: `configs/config.example.yaml` (используется при `CONFIG_PATH`)
 - обязательные параметры: `DB_URL`, `ADMIN_JWT_SECRET`, `RADIUS_SECRET`
+- провайдеры 2FA: `EXPRESS_MOBILE_URL`, `EXPRESS_MOBILE_KEY`, `FCM_SERVER_KEY`
+- TTL: `AUTH_CHALLENGE_TTL`, `SESSION_TTL`
 
 ## Админ‑API CRUD
 - пользователи: `/api/v1/admin/users/*`

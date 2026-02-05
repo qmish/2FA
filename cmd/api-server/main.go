@@ -9,6 +9,7 @@ import (
     "github.com/qmish/2FA/internal/api/handlers"
     "github.com/qmish/2FA/internal/api/middlewares"
     "github.com/qmish/2FA/internal/api/router"
+    "github.com/qmish/2FA/internal/auth/providers"
     "github.com/qmish/2FA/internal/auth/service"
     "github.com/qmish/2FA/internal/authz"
     "github.com/qmish/2FA/internal/config"
@@ -37,6 +38,8 @@ func main() {
     loginRepo := postgres.NewLoginHistoryRepository(db)
     radiusReqRepo := postgres.NewRadiusRequestRepository(db)
     rolePermRepo := postgres.NewRolePermissionRepository(db)
+    challengeRepo := postgres.NewChallengeRepository(db)
+    sessionRepo := postgres.NewSessionRepository(db)
     authorizer := authz.NewAuthorizer(auditRepo, rolePermRepo)
 
     adminAuthService := auth.NewService(cfg.AdminJWTIssuer, []byte(cfg.AdminJWTSecret), cfg.AdminJWTTTL, userRepo)
@@ -56,7 +59,27 @@ func main() {
         radiusReqRepo,
     )
     adminHandler := handlers.NewAdminHandler(adminService, authorizer)
-    authHandler := handlers.NewAuthHandler(service.StubAuthService{})
+
+    registry := providers.NewRegistry()
+    if cfg.ExpressMobileURL != "" && cfg.ExpressMobileKey != "" {
+        express := providers.NewExpressMobileClient(cfg.ExpressMobileURL, cfg.ExpressMobileKey)
+        registry.RegisterSMS(providers.DefaultSMSProvider, express)
+        registry.RegisterCall(providers.DefaultCallProvider, express)
+    }
+    if cfg.FCMServerKey != "" {
+        fcm := providers.NewFCMClient(cfg.FCMServerKey)
+        registry.RegisterPush(providers.DefaultPushProvider, fcm)
+    }
+
+    authService := service.NewService(
+        userRepo,
+        challengeRepo,
+        sessionRepo,
+        registry,
+        cfg.AuthChallengeTTL,
+        cfg.SessionTTL,
+    )
+    authHandler := handlers.NewAuthHandler(authService)
 
     adapter := adminTokenAdapter{svc: adminAuthService}
     routes := router.Routes{

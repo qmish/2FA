@@ -18,6 +18,8 @@ type Config struct {
     AdminJWTSecret   string        `yaml:"admin_jwt_secret"`
     AdminJWTIssuer   string        `yaml:"admin_jwt_issuer"`
     AdminJWTTTL      time.Duration `yaml:"admin_jwt_ttl"`
+    AuthChallengeTTL time.Duration `yaml:"auth_challenge_ttl"`
+    SessionTTL       time.Duration `yaml:"session_ttl"`
 }
 
 func Defaults() Config {
@@ -26,6 +28,8 @@ func Defaults() Config {
         RadiusAddr:     ":1812",
         AdminJWTIssuer: "2fa",
         AdminJWTTTL:    15 * time.Minute,
+        AuthChallengeTTL: 5 * time.Minute,
+        SessionTTL:       24 * time.Hour,
     }
 }
 
@@ -61,6 +65,16 @@ func LoadFromEnv() Config {
     if v := os.Getenv("ADMIN_JWT_TTL"); v != "" {
         if d, err := time.ParseDuration(v); err == nil {
             cfg.AdminJWTTTL = d
+        }
+    }
+    if v := os.Getenv("AUTH_CHALLENGE_TTL"); v != "" {
+        if d, err := time.ParseDuration(v); err == nil {
+            cfg.AuthChallengeTTL = d
+        }
+    }
+    if v := os.Getenv("SESSION_TTL"); v != "" {
+        if d, err := time.ParseDuration(v); err == nil {
+            cfg.SessionTTL = d
         }
     }
     return cfg
@@ -121,6 +135,12 @@ func merge(env Config, file Config) Config {
     }
     if env.AdminJWTTTL != Defaults().AdminJWTTTL {
         file.AdminJWTTTL = env.AdminJWTTTL
+    }
+    if env.AuthChallengeTTL != Defaults().AuthChallengeTTL {
+        file.AuthChallengeTTL = env.AuthChallengeTTL
+    }
+    if env.SessionTTL != Defaults().SessionTTL {
+        file.SessionTTL = env.SessionTTL
     }
     return file
 }

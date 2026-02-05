@@ -56,6 +56,13 @@ type SessionRepository interface {
     GetByRefreshHash(ctx context.Context, hash string) (*models.UserSession, error)
 }
 
+type ChallengeRepository interface {
+    GetByID(ctx context.Context, id string) (*models.Challenge, error)
+    Create(ctx context.Context, c *models.Challenge) error
+    UpdateStatus(ctx context.Context, id string, status models.ChallengeStatus) error
+    MarkExpired(ctx context.Context, now time.Time) (int64, error)
+}
+
 type DeviceRepository interface {
     ListByUser(ctx context.Context, userID string) ([]models.Device, error)
     Upsert(ctx context.Context, d *models.Device) error

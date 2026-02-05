@@ -59,6 +59,10 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
         "500":
           $ref: "#/components/responses/ServerError"
   /api/v1/auth/refresh:
@@ -796,22 +800,30 @@ components:
       properties:
         username: { type: string }
         password: { type: string }
-        channel: { type: string }
+        channel:
+          type: string
+          enum: [web, mobile, vpn, mail, rdp, ssh]
+        method:
+          type: string
+          enum: [otp, call, push]
       required: [username, password]
       example:
         username: "alice"
         password: "secret"
         channel: "web"
+        method: "otp"
     LoginResponse:
       type: object
       properties:
         user_id: { type: string }
         challenge_id: { type: string }
         method: { type: string }
+        expires_at: { type: integer }
       example:
         user_id: "u1"
         challenge_id: "c1"
         method: "otp"
+        expires_at: 1738732800
     VerifyRequest:
       type: object
       properties:
@@ -819,6 +831,7 @@ components:
         challenge_id: { type: string }
         method: { type: string }
         code: { type: string }
+      required: [user_id, challenge_id, code]
       example:
         user_id: "u1"
         challenge_id: "c1"
@@ -828,12 +841,14 @@ components:
       type: object
       properties:
         refresh_token: { type: string }
+      required: [refresh_token]
       example:
         refresh_token: "refresh-token"
     LogoutRequest:
       type: object
       properties:
         session_id: { type: string }
+      required: [session_id]
       example:
         session_id: "s1"
     TokenPair:

@@ -8,3 +8,5 @@ fcm_server_key: "CHANGE_ME"
 admin_jwt_secret: "CHANGE_ME"
 admin_jwt_issuer: "2fa"
 admin_jwt_ttl: 15m
+auth_challenge_ttl: 5m
+session_ttl: 24h

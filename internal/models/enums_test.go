@@ -72,6 +72,13 @@ func TestEnumValues(t *testing.T) {
         {string(PermissionAdminRadiusRequestsRead), "admin.radius_requests.read"},
         {string(PermissionAdminRolePermissionsWrite), "admin.role_permissions.write"},
         {string(PermissionAdminRolePermissionsRead), "admin.role_permissions.read"},
+        {string(ChallengeCreated), "created"},
+        {string(ChallengeSent), "sent"},
+        {string(ChallengePending), "pending"},
+        {string(ChallengeApproved), "approved"},
+        {string(ChallengeDenied), "denied"},
+        {string(ChallengeExpired), "expired"},
+        {string(ChallengeFailed), "failed"},
     }
 
     for _, tc := range cases {

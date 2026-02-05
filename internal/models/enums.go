@@ -130,6 +130,18 @@ const (
     PermissionAdminRolePermissionsRead  Permission = "admin.role_permissions.read"
 )
 
+type ChallengeStatus string
+
+const (
+    ChallengeCreated  ChallengeStatus = "created"
+    ChallengeSent     ChallengeStatus = "sent"
+    ChallengePending  ChallengeStatus = "pending"
+    ChallengeApproved ChallengeStatus = "approved"
+    ChallengeDenied   ChallengeStatus = "denied"
+    ChallengeExpired  ChallengeStatus = "expired"
+    ChallengeFailed   ChallengeStatus = "failed"
+)
+
 const (
     OTPWindowSeconds      = 90
     PushTimeoutSeconds    = 90
