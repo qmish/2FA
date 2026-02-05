@@ -8,6 +8,7 @@ import (
 
     "github.com/DATA-DOG/go-sqlmock"
     "github.com/qmish/2FA/internal/models"
+    "github.com/qmish/2FA/internal/repository"
 )
 
 func TestUserRepositoryGetByID(t *testing.T) {
@@ -144,7 +145,7 @@ func TestAuditRepositoryCreate(t *testing.T) {
     }
 }
 
-func TestLoginHistoryRepositoryListByUser(t *testing.T) {
+func TestLoginHistoryRepositoryList(t *testing.T) {
     db, mock, err := sqlmock.New()
     if err != nil {
         t.Fatalf("sqlmock: %v", err)
@@ -157,9 +158,12 @@ func TestLoginHistoryRepositoryListByUser(t *testing.T) {
         "id", "user_id", "channel", "result", "ip", "device_id", "created_at",
     }).AddRow("l1", "u1", "web", "success", "127.0.0.1", "d1", now)
 
-    mock.ExpectQuery("FROM login_history WHERE user_id = \\$1").WithArgs("u1", 10).WillReturnRows(rows)
+    mock.ExpectQuery("SELECT COUNT\\(\\*\\) FROM login_history WHERE user_id = \\$1").
+        WithArgs("u1").WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+    mock.ExpectQuery("FROM login_history WHERE user_id = \\$1").
+        WithArgs("u1", 10, 0).WillReturnRows(rows)
 
-    items, err := repo.ListByUser(context.Background(), "u1", 10)
+    items, _, err := repo.List(context.Background(), repository.LoginHistoryFilter{UserID: "u1"}, 10, 0)
     if err != nil {
         t.Fatalf("ListByUser error: %v", err)
     }
@@ -168,5 +172,53 @@ func TestLoginHistoryRepositoryListByUser(t *testing.T) {
     }
     if err := mock.ExpectationsWereMet(); err != nil {
         t.Fatalf("expectations: %v", err)
+    }
+}
+
+func TestRolePermissionRepositoryListByRole(t *testing.T) {
+    db, mock, err := sqlmock.New()
+    if err != nil {
+        t.Fatalf("sqlmock: %v", err)
+    }
+    defer db.Close()
+
+    repo := NewRolePermissionRepository(db)
+    rows := sqlmock.NewRows([]string{"permission"}).
+        AddRow("admin.users.read").
+        AddRow("admin.audit.read")
+
+    mock.ExpectQuery("FROM role_permissions WHERE role = \\$1").
+        WithArgs("admin").WillReturnRows(rows)
+
+    perms, err := repo.ListByRole(context.Background(), models.RoleAdmin)
+    if err != nil {
+        t.Fatalf("ListByRole error: %v", err)
+    }
+    if len(perms) != 2 {
+        t.Fatalf("unexpected perms: %+v", perms)
+    }
+}
+
+func TestRolePermissionRepositorySetRolePermissions(t *testing.T) {
+    db, mock, err := sqlmock.New()
+    if err != nil {
+        t.Fatalf("sqlmock: %v", err)
+    }
+    defer db.Close()
+
+    repo := NewRolePermissionRepository(db)
+
+    mock.ExpectBegin()
+    mock.ExpectExec("DELETE FROM role_permissions WHERE role = \\$1").
+        WithArgs("admin").
+        WillReturnResult(sqlmock.NewResult(1, 1))
+    mock.ExpectExec("INSERT INTO role_permissions").
+        WithArgs("admin", "admin.users.read").
+        WillReturnResult(sqlmock.NewResult(1, 1))
+    mock.ExpectCommit()
+
+    err = repo.SetRolePermissions(context.Background(), models.RoleAdmin, []models.Permission{models.PermissionAdminUsersRead})
+    if err != nil {
+        t.Fatalf("SetRolePermissions error: %v", err)
     }
 }

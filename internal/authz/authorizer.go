@@ -9,15 +9,29 @@ import (
 )
 
 type Authorizer struct {
-    audit repository.AuditRepository
+    audit     repository.AuditRepository
+    rolePerms repository.RolePermissionRepository
 }
 
-func NewAuthorizer(audit repository.AuditRepository) *Authorizer {
-    return &Authorizer{audit: audit}
+func NewAuthorizer(audit repository.AuditRepository, rolePerms repository.RolePermissionRepository) *Authorizer {
+    return &Authorizer{audit: audit, rolePerms: rolePerms}
 }
 
 func (a *Authorizer) HasPermission(ctx context.Context, userID string, role models.UserRole, perm models.Permission) bool {
-    allowed := roleHasPermission(role, perm)
+    allowed := false
+    if a.rolePerms != nil {
+        perms, err := a.rolePerms.ListByRole(ctx, role)
+        if err == nil {
+            for _, p := range perms {
+                if p == perm {
+                    allowed = true
+                    break
+                }
+            }
+        }
+    } else {
+        allowed = roleHasPermission(role, perm)
+    }
     if a.audit != nil {
         _ = a.audit.Create(ctx, &models.AuditEvent{
             ID:         "",

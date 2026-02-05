@@ -3,9 +3,12 @@ package postgres
 import (
     "context"
     "database/sql"
+    "strconv"
+    "strings"
     "time"
 
     "github.com/qmish/2FA/internal/models"
+    "github.com/qmish/2FA/internal/repository"
 )
 
 type UserRepository struct {
@@ -124,6 +127,62 @@ func (r *UserRepository) GetByUsernameAndRole(ctx context.Context, username stri
     user.CreatedAt = createdAt
     user.UpdatedAt = updatedAt
     return &user, nil
+}
+
+func (r *UserRepository) List(ctx context.Context, filter repository.UserListFilter, limit, offset int) ([]models.User, int, error) {
+    base, args := buildUserListQuery(filter)
+    countQuery := "SELECT COUNT(*) " + base
+    var total int
+    if err := r.db.QueryRowContext(ctx, countQuery, args...).Scan(&total); err != nil {
+        return nil, 0, err
+    }
+
+    args = append(args, limit, offset)
+    listQuery := `
+        SELECT u.id, u.username, u.email, u.phone, u.status, u.role, u.password_hash, u.ad_dn, u.created_at, u.updated_at
+        ` + base + ` ORDER BY u.created_at DESC LIMIT $` + itoa(len(args)-1) + ` OFFSET $` + itoa(len(args))
+    rows, err := r.db.QueryContext(ctx, listQuery, args...)
+    if err != nil {
+        return nil, 0, err
+    }
+    defer rows.Close()
+
+    var items []models.User
+    for rows.Next() {
+        var (
+            email, phone, passwordHash, adDN sql.NullString
+            status, role                    string
+            createdAt, updatedAt            time.Time
+            user                            models.User
+        )
+        if err := rows.Scan(
+            &user.ID,
+            &user.Username,
+            &email,
+            &phone,
+            &status,
+            &role,
+            &passwordHash,
+            &adDN,
+            &createdAt,
+            &updatedAt,
+        ); err != nil {
+            return nil, 0, err
+        }
+        user.Email = fromNullString(email)
+        user.Phone = fromNullString(phone)
+        user.Status = models.UserStatus(status)
+        user.Role = models.UserRole(role)
+        user.PasswordHash = fromNullString(passwordHash)
+        user.AdDN = fromNullString(adDN)
+        user.CreatedAt = createdAt
+        user.UpdatedAt = updatedAt
+        items = append(items, user)
+    }
+    if err := rows.Err(); err != nil {
+        return nil, 0, err
+    }
+    return items, total, nil
 }
 
 func (r *UserRepository) Create(ctx context.Context, u *models.User) error {
@@ -315,12 +374,16 @@ func (r *PolicyRepository) GetByID(ctx context.Context, id string) (*models.Poli
     return &p, nil
 }
 
-func (r *PolicyRepository) List(ctx context.Context) ([]models.Policy, error) {
+func (r *PolicyRepository) List(ctx context.Context, limit, offset int) ([]models.Policy, int, error) {
+    var total int
+    if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM policies`).Scan(&total); err != nil {
+        return nil, 0, err
+    }
     rows, err := r.db.QueryContext(ctx, `
         SELECT id, name, priority, status, created_at
-        FROM policies ORDER BY priority ASC`)
+        FROM policies ORDER BY priority ASC LIMIT $1 OFFSET $2`, limit, offset)
     if err != nil {
-        return nil, err
+        return nil, 0, err
     }
     defer rows.Close()
 
@@ -329,15 +392,15 @@ func (r *PolicyRepository) List(ctx context.Context) ([]models.Policy, error) {
         var status string
         var p models.Policy
         if err := rows.Scan(&p.ID, &p.Name, &p.Priority, &status, &p.CreatedAt); err != nil {
-            return nil, err
+            return nil, 0, err
         }
         p.Status = models.PolicyStatus(status)
         items = append(items, p)
     }
     if err := rows.Err(); err != nil {
-        return nil, err
+        return nil, 0, err
     }
-    return items, nil
+    return items, total, nil
 }
 
 func (r *PolicyRepository) Create(ctx context.Context, p *models.Policy) error {
@@ -425,12 +488,16 @@ func (r *RadiusClientRepository) GetByIP(ctx context.Context, ip string) (*model
     return &c, nil
 }
 
-func (r *RadiusClientRepository) List(ctx context.Context) ([]models.RadiusClient, error) {
+func (r *RadiusClientRepository) List(ctx context.Context, limit, offset int) ([]models.RadiusClient, int, error) {
+    var total int
+    if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM radius_clients`).Scan(&total); err != nil {
+        return nil, 0, err
+    }
     rows, err := r.db.QueryContext(ctx, `
         SELECT id, name, ip, secret, enabled, created_at
-        FROM radius_clients ORDER BY created_at DESC`)
+        FROM radius_clients ORDER BY created_at DESC LIMIT $1 OFFSET $2`, limit, offset)
     if err != nil {
-        return nil, err
+        return nil, 0, err
     }
     defer rows.Close()
 
@@ -438,14 +505,14 @@ func (r *RadiusClientRepository) List(ctx context.Context) ([]models.RadiusClien
     for rows.Next() {
         var c models.RadiusClient
         if err := rows.Scan(&c.ID, &c.Name, &c.IP, &c.Secret, &c.Enabled, &c.CreatedAt); err != nil {
-            return nil, err
+            return nil, 0, err
         }
         items = append(items, c)
     }
     if err := rows.Err(); err != nil {
-        return nil, err
+        return nil, 0, err
     }
-    return items, nil
+    return items, total, nil
 }
 
 func (r *RadiusClientRepository) Create(ctx context.Context, c *models.RadiusClient) error {
@@ -492,13 +559,43 @@ func (r *AuditRepository) Create(ctx context.Context, e *models.AuditEvent) erro
     return err
 }
 
-func (r *AuditRepository) ListByActor(ctx context.Context, actorUserID string, limit int) ([]models.AuditEvent, error) {
+func (r *AuditRepository) List(ctx context.Context, filter repository.AuditFilter, limit, offset int) ([]models.AuditEvent, int, error) {
+    where := []string{}
+    args := []any{}
+    if filter.ActorUserID != "" {
+        where = append(where, "actor_user_id = $"+itoa(len(args)+1))
+        args = append(args, filter.ActorUserID)
+    }
+    if filter.EntityType != "" {
+        where = append(where, "entity_type = $"+itoa(len(args)+1))
+        args = append(args, string(filter.EntityType))
+    }
+    if filter.Action != "" {
+        where = append(where, "action = $"+itoa(len(args)+1))
+        args = append(args, string(filter.Action))
+    }
+    if !filter.From.IsZero() {
+        where = append(where, "created_at >= $"+itoa(len(args)+1))
+        args = append(args, filter.From)
+    }
+    if !filter.To.IsZero() {
+        where = append(where, "created_at <= $"+itoa(len(args)+1))
+        args = append(args, filter.To)
+    }
+    base := "FROM audit_events"
+    if len(where) > 0 {
+        base += " WHERE " + strings.Join(where, " AND ")
+    }
+    var total int
+    if err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) "+base, args...).Scan(&total); err != nil {
+        return nil, 0, err
+    }
+    args = append(args, limit, offset)
     rows, err := r.db.QueryContext(ctx, `
         SELECT id, actor_user_id, action, entity_type, entity_id, payload, ip, created_at
-        FROM audit_events WHERE actor_user_id = $1 ORDER BY created_at DESC LIMIT $2`,
-        actorUserID, limit)
+        `+base+` ORDER BY created_at DESC LIMIT $`+itoa(len(args)-1)+` OFFSET $`+itoa(len(args)), args...)
     if err != nil {
-        return nil, err
+        return nil, 0, err
     }
     defer rows.Close()
 
@@ -510,7 +607,7 @@ func (r *AuditRepository) ListByActor(ctx context.Context, actorUserID string, l
             e                               models.AuditEvent
         )
         if err := rows.Scan(&e.ID, &actorID, &action, &entityType, &entityID, &payload, &ip, &e.CreatedAt); err != nil {
-            return nil, err
+            return nil, 0, err
         }
         e.ActorUserID = fromNullString(actorID)
         e.Action = models.AuditAction(action)
@@ -521,43 +618,9 @@ func (r *AuditRepository) ListByActor(ctx context.Context, actorUserID string, l
         items = append(items, e)
     }
     if err := rows.Err(); err != nil {
-        return nil, err
+        return nil, 0, err
     }
-    return items, nil
-}
-
-func (r *AuditRepository) ListByEntity(ctx context.Context, entityType models.AuditEntityType, entityID string, limit int) ([]models.AuditEvent, error) {
-    rows, err := r.db.QueryContext(ctx, `
-        SELECT id, actor_user_id, action, entity_type, entity_id, payload, ip, created_at
-        FROM audit_events WHERE entity_type = $1 AND entity_id = $2 ORDER BY created_at DESC LIMIT $3`,
-        string(entityType), entityID, limit)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
-
-    var items []models.AuditEvent
-    for rows.Next() {
-        var (
-            actorID, entityIDValue, payload, ip sql.NullString
-            action, entityTypeValue            string
-            e                                  models.AuditEvent
-        )
-        if err := rows.Scan(&e.ID, &actorID, &action, &entityTypeValue, &entityIDValue, &payload, &ip, &e.CreatedAt); err != nil {
-            return nil, err
-        }
-        e.ActorUserID = fromNullString(actorID)
-        e.Action = models.AuditAction(action)
-        e.EntityType = models.AuditEntityType(entityTypeValue)
-        e.EntityID = fromNullString(entityIDValue)
-        e.Payload = fromNullString(payload)
-        e.IP = fromNullString(ip)
-        items = append(items, e)
-    }
-    if err := rows.Err(); err != nil {
-        return nil, err
-    }
-    return items, nil
+    return items, total, nil
 }
 
 type LoginHistoryRepository struct {
@@ -583,76 +646,43 @@ func (r *LoginHistoryRepository) Create(ctx context.Context, h *models.LoginHist
     return err
 }
 
-func (r *LoginHistoryRepository) ListByUser(ctx context.Context, userID string, limit int) ([]models.LoginHistory, error) {
+func (r *LoginHistoryRepository) List(ctx context.Context, filter repository.LoginHistoryFilter, limit, offset int) ([]models.LoginHistory, int, error) {
+    where := []string{}
+    args := []any{}
+    if filter.UserID != "" {
+        where = append(where, "user_id = $"+itoa(len(args)+1))
+        args = append(args, filter.UserID)
+    }
+    if filter.Channel != "" {
+        where = append(where, "channel = $"+itoa(len(args)+1))
+        args = append(args, string(filter.Channel))
+    }
+    if filter.Result != "" {
+        where = append(where, "result = $"+itoa(len(args)+1))
+        args = append(args, string(filter.Result))
+    }
+    if !filter.From.IsZero() {
+        where = append(where, "created_at >= $"+itoa(len(args)+1))
+        args = append(args, filter.From)
+    }
+    if !filter.To.IsZero() {
+        where = append(where, "created_at <= $"+itoa(len(args)+1))
+        args = append(args, filter.To)
+    }
+    base := "FROM login_history"
+    if len(where) > 0 {
+        base += " WHERE " + strings.Join(where, " AND ")
+    }
+    var total int
+    if err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) "+base, args...).Scan(&total); err != nil {
+        return nil, 0, err
+    }
+    args = append(args, limit, offset)
     rows, err := r.db.QueryContext(ctx, `
         SELECT id, user_id, channel, result, ip, device_id, created_at
-        FROM login_history WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2`, userID, limit)
+        `+base+` ORDER BY created_at DESC LIMIT $`+itoa(len(args)-1)+` OFFSET $`+itoa(len(args)), args...)
     if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
-
-    var items []models.LoginHistory
-    for rows.Next() {
-        var (
-            userIDValue, ip, deviceID sql.NullString
-            channel, result           string
-            h                         models.LoginHistory
-        )
-        if err := rows.Scan(&h.ID, &userIDValue, &channel, &result, &ip, &deviceID, &h.CreatedAt); err != nil {
-            return nil, err
-        }
-        h.UserID = fromNullString(userIDValue)
-        h.Channel = models.AuthChannel(channel)
-        h.Result = models.AuthResult(result)
-        h.IP = fromNullString(ip)
-        h.DeviceID = fromNullString(deviceID)
-        items = append(items, h)
-    }
-    if err := rows.Err(); err != nil {
-        return nil, err
-    }
-    return items, nil
-}
-
-func (r *LoginHistoryRepository) ListByChannel(ctx context.Context, channel models.AuthChannel, limit int) ([]models.LoginHistory, error) {
-    rows, err := r.db.QueryContext(ctx, `
-        SELECT id, user_id, channel, result, ip, device_id, created_at
-        FROM login_history WHERE channel = $1 ORDER BY created_at DESC LIMIT $2`, string(channel), limit)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
-
-    var items []models.LoginHistory
-    for rows.Next() {
-        var (
-            userIDValue, ip, deviceID sql.NullString
-            channelValue, result      string
-            h                         models.LoginHistory
-        )
-        if err := rows.Scan(&h.ID, &userIDValue, &channelValue, &result, &ip, &deviceID, &h.CreatedAt); err != nil {
-            return nil, err
-        }
-        h.UserID = fromNullString(userIDValue)
-        h.Channel = models.AuthChannel(channelValue)
-        h.Result = models.AuthResult(result)
-        h.IP = fromNullString(ip)
-        h.DeviceID = fromNullString(deviceID)
-        items = append(items, h)
-    }
-    if err := rows.Err(); err != nil {
-        return nil, err
-    }
-    return items, nil
-}
-
-func (r *LoginHistoryRepository) ListByPeriod(ctx context.Context, from, to time.Time, limit int) ([]models.LoginHistory, error) {
-    rows, err := r.db.QueryContext(ctx, `
-        SELECT id, user_id, channel, result, ip, device_id, created_at
-        FROM login_history WHERE created_at BETWEEN $1 AND $2 ORDER BY created_at DESC LIMIT $3`, from, to, limit)
-    if err != nil {
-        return nil, err
+        return nil, 0, err
     }
     defer rows.Close()
 
@@ -664,7 +694,7 @@ func (r *LoginHistoryRepository) ListByPeriod(ctx context.Context, from, to time
             h                         models.LoginHistory
         )
         if err := rows.Scan(&h.ID, &userIDValue, &channelValue, &result, &ip, &deviceID, &h.CreatedAt); err != nil {
-            return nil, err
+            return nil, 0, err
         }
         h.UserID = fromNullString(userIDValue)
         h.Channel = models.AuthChannel(channelValue)
@@ -674,9 +704,9 @@ func (r *LoginHistoryRepository) ListByPeriod(ctx context.Context, from, to time
         items = append(items, h)
     }
     if err := rows.Err(); err != nil {
-        return nil, err
+        return nil, 0, err
     }
-    return items, nil
+    return items, total, nil
 }
 
 type RadiusRequestRepository struct {
@@ -704,46 +734,43 @@ func (r *RadiusRequestRepository) Create(ctx context.Context, req *models.Radius
     return err
 }
 
-func (r *RadiusRequestRepository) ListByClient(ctx context.Context, clientID string, limit int) ([]models.RadiusRequest, error) {
+func (r *RadiusRequestRepository) List(ctx context.Context, filter repository.RadiusRequestFilter, limit, offset int) ([]models.RadiusRequest, int, error) {
+    where := []string{}
+    args := []any{}
+    if filter.ClientID != "" {
+        where = append(where, "client_id = $"+itoa(len(args)+1))
+        args = append(args, filter.ClientID)
+    }
+    if filter.Username != "" {
+        where = append(where, "username = $"+itoa(len(args)+1))
+        args = append(args, filter.Username)
+    }
+    if filter.Result != "" {
+        where = append(where, "result = $"+itoa(len(args)+1))
+        args = append(args, string(filter.Result))
+    }
+    if !filter.From.IsZero() {
+        where = append(where, "created_at >= $"+itoa(len(args)+1))
+        args = append(args, filter.From)
+    }
+    if !filter.To.IsZero() {
+        where = append(where, "created_at <= $"+itoa(len(args)+1))
+        args = append(args, filter.To)
+    }
+    base := "FROM radius_requests"
+    if len(where) > 0 {
+        base += " WHERE " + strings.Join(where, " AND ")
+    }
+    var total int
+    if err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) "+base, args...).Scan(&total); err != nil {
+        return nil, 0, err
+    }
+    args = append(args, limit, offset)
     rows, err := r.db.QueryContext(ctx, `
         SELECT id, client_id, username, nas_ip, result, request_id, request_attrs, response_attrs, created_at
-        FROM radius_requests WHERE client_id = $1 ORDER BY created_at DESC LIMIT $2`, clientID, limit)
+        `+base+` ORDER BY created_at DESC LIMIT $`+itoa(len(args)-1)+` OFFSET $`+itoa(len(args)), args...)
     if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
-
-    var items []models.RadiusRequest
-    for rows.Next() {
-        var (
-            clientIDValue, username, nasIP, requestID, requestAttrs, responseAttrs sql.NullString
-            resultValue                                                         string
-            req                                                                 models.RadiusRequest
-        )
-        if err := rows.Scan(&req.ID, &clientIDValue, &username, &nasIP, &resultValue, &requestID, &requestAttrs, &responseAttrs, &req.CreatedAt); err != nil {
-            return nil, err
-        }
-        req.ClientID = fromNullString(clientIDValue)
-        req.Username = fromNullString(username)
-        req.NASIP = fromNullString(nasIP)
-        req.Result = models.RadiusResult(resultValue)
-        req.RequestID = fromNullString(requestID)
-        req.RequestAttrs = fromNullString(requestAttrs)
-        req.ResponseAttrs = fromNullString(responseAttrs)
-        items = append(items, req)
-    }
-    if err := rows.Err(); err != nil {
-        return nil, err
-    }
-    return items, nil
-}
-
-func (r *RadiusRequestRepository) ListByUser(ctx context.Context, username string, limit int) ([]models.RadiusRequest, error) {
-    rows, err := r.db.QueryContext(ctx, `
-        SELECT id, client_id, username, nas_ip, result, request_id, request_attrs, response_attrs, created_at
-        FROM radius_requests WHERE username = $1 ORDER BY created_at DESC LIMIT $2`, username, limit)
-    if err != nil {
-        return nil, err
+        return nil, 0, err
     }
     defer rows.Close()
 
@@ -755,7 +782,7 @@ func (r *RadiusRequestRepository) ListByUser(ctx context.Context, username strin
             req                                                                       models.RadiusRequest
         )
         if err := rows.Scan(&req.ID, &clientIDValue, &usernameValue, &nasIP, &resultValue, &requestID, &requestAttrs, &responseAttrs, &req.CreatedAt); err != nil {
-            return nil, err
+            return nil, 0, err
         }
         req.ClientID = fromNullString(clientIDValue)
         req.Username = fromNullString(usernameValue)
@@ -767,12 +794,88 @@ func (r *RadiusRequestRepository) ListByUser(ctx context.Context, username strin
         items = append(items, req)
     }
     if err := rows.Err(); err != nil {
-        return nil, err
+        return nil, 0, err
     }
-    return items, nil
+    return items, total, nil
 }
 
 func (r *RadiusRequestRepository) UpdateResult(ctx context.Context, id string, result models.RadiusResult) error {
     _, err := r.db.ExecContext(ctx, `UPDATE radius_requests SET result = $2 WHERE id = $1`, id, string(result))
     return err
+}
+
+type RolePermissionRepository struct {
+    db *sql.DB
+}
+
+func NewRolePermissionRepository(db *sql.DB) *RolePermissionRepository {
+    return &RolePermissionRepository{db: db}
+}
+
+func (r *RolePermissionRepository) ListByRole(ctx context.Context, role models.UserRole) ([]models.Permission, error) {
+    rows, err := r.db.QueryContext(ctx, `
+        SELECT permission FROM role_permissions WHERE role = $1`, string(role))
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var perms []models.Permission
+    for rows.Next() {
+        var p string
+        if err := rows.Scan(&p); err != nil {
+            return nil, err
+        }
+        perms = append(perms, models.Permission(p))
+    }
+    if err := rows.Err(); err != nil {
+        return nil, err
+    }
+    return perms, nil
+}
+
+func (r *RolePermissionRepository) SetRolePermissions(ctx context.Context, role models.UserRole, perms []models.Permission) error {
+    tx, err := r.db.BeginTx(ctx, nil)
+    if err != nil {
+        return err
+    }
+    if _, err := tx.ExecContext(ctx, `DELETE FROM role_permissions WHERE role = $1`, string(role)); err != nil {
+        _ = tx.Rollback()
+        return err
+    }
+    for _, perm := range perms {
+        if _, err := tx.ExecContext(ctx, `
+            INSERT INTO role_permissions (role, permission) VALUES ($1,$2)`, string(role), string(perm)); err != nil {
+            _ = tx.Rollback()
+            return err
+        }
+    }
+    return tx.Commit()
+}
+
+func buildUserListQuery(filter repository.UserListFilter) (string, []any) {
+    base := "FROM users u"
+    where := []string{}
+    args := []any{}
+    if filter.GroupID != "" {
+        base += " JOIN user_groups ug ON ug.user_id = u.id"
+        where = append(where, "ug.group_id = $"+itoa(len(args)+1))
+        args = append(args, filter.GroupID)
+    }
+    if filter.Status != "" {
+        where = append(where, "u.status = $"+itoa(len(args)+1))
+        args = append(args, string(filter.Status))
+    }
+    if filter.Query != "" {
+        where = append(where, "(u.username ILIKE $"+itoa(len(args)+1)+" OR u.email ILIKE $"+itoa(len(args)+1)+" OR u.phone ILIKE $"+itoa(len(args)+1)+")")
+        args = append(args, "%"+filter.Query+"%")
+    }
+    if len(where) > 0 {
+        base += " WHERE " + strings.Join(where, " AND ")
+    }
+    return base, args
+}
+
+func itoa(v int) string {
+    return strconv.Itoa(v)
 }

@@ -9,6 +9,7 @@ import (
 
     "github.com/qmish/2FA/internal/dto"
     "github.com/qmish/2FA/internal/models"
+    "github.com/qmish/2FA/internal/repository"
 )
 
 func TestAdminLoginAndValidate(t *testing.T) {
@@ -50,6 +51,9 @@ func (f fakeUserRepo) GetByID(ctx context.Context, id string) (*models.User, err
 }
 func (f fakeUserRepo) GetByUsername(ctx context.Context, username string) (*models.User, error) {
     return nil, ErrInvalidCredentials
+}
+func (f fakeUserRepo) List(ctx context.Context, filter repository.UserListFilter, limit, offset int) ([]models.User, int, error) {
+    return nil, 0, ErrInvalidCredentials
 }
 func (f fakeUserRepo) Create(ctx context.Context, u *models.User) error {
     return nil

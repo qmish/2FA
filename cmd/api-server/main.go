@@ -27,13 +27,28 @@ func main() {
     defer db.Close()
 
     userRepo := postgres.NewUserRepository(db)
+    policyRepo := postgres.NewPolicyRepository(db)
+    policyRuleRepo := postgres.NewPolicyRuleRepository(db)
+    radiusClientRepo := postgres.NewRadiusClientRepository(db)
     auditRepo := postgres.NewAuditRepository(db)
-    authorizer := authz.NewAuthorizer(auditRepo)
+    loginRepo := postgres.NewLoginHistoryRepository(db)
+    radiusReqRepo := postgres.NewRadiusRequestRepository(db)
+    rolePermRepo := postgres.NewRolePermissionRepository(db)
+    authorizer := authz.NewAuthorizer(auditRepo, rolePermRepo)
 
     adminAuthService := auth.NewService(cfg.AdminJWTIssuer, []byte(cfg.AdminJWTSecret), cfg.AdminJWTTTL, userRepo)
     adminAuthHandler := handlers.NewAdminAuthHandler(adminAuthService)
 
-    adminHandler := handlers.NewAdminHandler(adminsvc.StubService{}, authorizer)
+    adminService := adminsvc.NewService(
+        userRepo,
+        policyRepo,
+        policyRuleRepo,
+        radiusClientRepo,
+        auditRepo,
+        loginRepo,
+        radiusReqRepo,
+    )
+    adminHandler := handlers.NewAdminHandler(adminService, authorizer)
     authHandler := handlers.NewAuthHandler(service.StubAuthService{})
 
     adapter := adminTokenAdapter{svc: adminAuthService}

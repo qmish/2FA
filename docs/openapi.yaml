@@ -284,12 +284,20 @@ components:
         password: { type: string }
         channel: { type: string }
       required: [username, password]
+      example:
+        username: "alice"
+        password: "secret"
+        channel: "web"
     LoginResponse:
       type: object
       properties:
         user_id: { type: string }
         challenge_id: { type: string }
         method: { type: string }
+      example:
+        user_id: "u1"
+        challenge_id: "c1"
+        method: "otp"
     VerifyRequest:
       type: object
       properties:
@@ -297,26 +305,42 @@ components:
         challenge_id: { type: string }
         method: { type: string }
         code: { type: string }
+      example:
+        user_id: "u1"
+        challenge_id: "c1"
+        method: "otp"
+        code: "123456"
     RefreshRequest:
       type: object
       properties:
         refresh_token: { type: string }
+      example:
+        refresh_token: "refresh-token"
     LogoutRequest:
       type: object
       properties:
         session_id: { type: string }
+      example:
+        session_id: "s1"
     TokenPair:
       type: object
       properties:
         access_token: { type: string }
         refresh_token: { type: string }
         expires_in: { type: integer }
+      example:
+        access_token: "access-token"
+        refresh_token: "refresh-token"
+        expires_in: 900
     AdminLoginRequest:
       type: object
       properties:
         username: { type: string }
         password: { type: string }
       required: [username, password]
+      example:
+        username: "admin"
+        password: "P@ssw0rd"
     AdminUserListResponse:
       type: object
       properties:
@@ -326,6 +350,18 @@ components:
             $ref: "#/components/schemas/AdminUserListItem"
         page:
           $ref: "#/components/schemas/PageResponse"
+      example:
+        items:
+          - id: "u1"
+            username: "admin"
+            email: "admin@example.com"
+            phone: "+79990000000"
+            status: "active"
+            role: "admin"
+        page:
+          total: 1
+          limit: 10
+          offset: 0
     AdminUserListItem:
       type: object
       properties:
@@ -344,6 +380,20 @@ components:
             $ref: "#/components/schemas/AdminPolicy"
         page:
           $ref: "#/components/schemas/PageResponse"
+      example:
+        items:
+          - id: "p1"
+            name: "Default"
+            priority: 0
+            status: "active"
+            rules:
+              - id: "r1"
+                type: "group"
+                value: "admins"
+        page:
+          total: 1
+          limit: 10
+          offset: 0
     AdminPolicy:
       type: object
       properties:
@@ -370,6 +420,16 @@ components:
             $ref: "#/components/schemas/AdminRadiusClient"
         page:
           $ref: "#/components/schemas/PageResponse"
+      example:
+        items:
+          - id: "c1"
+            name: "AnyConnect"
+            ip: "10.0.0.1"
+            enabled: true
+        page:
+          total: 1
+          limit: 10
+          offset: 0
     AdminRadiusClient:
       type: object
       properties:
@@ -386,6 +446,19 @@ components:
             $ref: "#/components/schemas/AdminAuditEvent"
         page:
           $ref: "#/components/schemas/PageResponse"
+      example:
+        items:
+          - id: "a1"
+            actor_user_id: "u1"
+            action: "authorize"
+            entity_type: "permission"
+            entity_id: "admin.users.read"
+            ip: "127.0.0.1"
+            created_at: "2026-02-05T15:00:00Z"
+        page:
+          total: 1
+          limit: 10
+          offset: 0
     AdminAuditEvent:
       type: object
       properties:
@@ -405,6 +478,19 @@ components:
             $ref: "#/components/schemas/LoginHistory"
         page:
           $ref: "#/components/schemas/PageResponse"
+      example:
+        items:
+          - id: "l1"
+            user_id: "u1"
+            channel: "web"
+            result: "success"
+            ip: "127.0.0.1"
+            device_id: "d1"
+            created_at: "2026-02-05T15:00:00Z"
+        page:
+          total: 1
+          limit: 10
+          offset: 0
     LoginHistory:
       type: object
       properties:
@@ -424,6 +510,18 @@ components:
             $ref: "#/components/schemas/RadiusRequest"
         page:
           $ref: "#/components/schemas/PageResponse"
+      example:
+        items:
+          - id: "rr1"
+            client_id: "c1"
+            username: "alice"
+            nas_ip: "10.0.0.1"
+            result: "accept"
+            created_at: "2026-02-05T15:00:00Z"
+        page:
+          total: 1
+          limit: 10
+          offset: 0
     RadiusRequest:
       type: object
       properties:
@@ -444,6 +542,8 @@ components:
       properties:
         error: { type: string }
       required: [error]
+      example:
+        error: "unauthorized"
   responses:
     BadRequest:
       description: Bad Request
