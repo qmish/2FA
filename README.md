@@ -12,3 +12,7 @@ go test ./...
 - `cmd/radius-server` — RADIUS сервер
 - `internal` — бизнес-логика и сервисы
 - `pkg` — общие библиотеки
+
+## Сервисные эндпоинты
+- `GET /healthz` — healthcheck
+- `GET /metrics` — метрики (заглушка)
