@@ -9,9 +9,9 @@ func TestRegistry_DefaultProvider(t *testing.T) {
     registry := NewRegistry()
     mock := NewExpressMobileMock()
 
-    registry.RegisterSMS(DefaultProviderName, mock)
-    registry.RegisterCall(DefaultProviderName, mock)
-    registry.RegisterPush(DefaultProviderName, mock)
+    registry.RegisterSMS(DefaultSMSProvider, mock)
+    registry.RegisterCall(DefaultCallProvider, mock)
+    registry.RegisterPush(DefaultPushProvider, mock)
 
     smsID, err := registry.SendSMS(context.Background(), "", "+79990000000", "code")
     if err != nil || smsID == "" {

@@ -1,0 +1,231 @@
+openapi: 3.0.3
+info:
+  title: 2FA API
+  version: 0.9.0
+servers:
+  - url: https://localhost
+paths:
+  /healthz:
+    get:
+      summary: Healthcheck
+      responses:
+        "200":
+          description: OK
+  /metrics:
+    get:
+      summary: Metrics placeholder
+      responses:
+        "200":
+          description: OK
+  /api/v1/auth/login:
+    post:
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+  /api/v1/auth/verify:
+    post:
+      summary: Verify second factor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenPair"
+  /api/v1/auth/refresh:
+    post:
+      summary: Refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenPair"
+  /api/v1/auth/logout:
+    post:
+      summary: Logout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LogoutRequest"
+      responses:
+        "204":
+          description: No Content
+  /api/v1/admin/auth/login:
+    post:
+      summary: Admin login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenPair"
+  /api/v1/admin/users:
+    get:
+      summary: Admin users list
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/status"
+        - $ref: "#/components/parameters/query"
+      responses:
+        "200":
+          description: OK
+  /api/v1/admin/policies:
+    get:
+      summary: Admin policies list
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: OK
+  /api/v1/admin/radius/clients:
+    get:
+      summary: Admin radius clients list
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: OK
+  /api/v1/admin/audit/events:
+    get:
+      summary: Admin audit events
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: OK
+  /api/v1/admin/logins:
+    get:
+      summary: Admin login history
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: OK
+  /api/v1/admin/radius/requests:
+    get:
+      summary: Admin radius requests
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: OK
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+    offset:
+      name: offset
+      in: query
+      schema:
+        type: integer
+    status:
+      name: status
+      in: query
+      schema:
+        type: string
+    query:
+      name: query
+      in: query
+      schema:
+        type: string
+  schemas:
+    LoginRequest:
+      type: object
+      properties:
+        username: { type: string }
+        password: { type: string }
+        channel: { type: string }
+      required: [username, password]
+    LoginResponse:
+      type: object
+      properties:
+        user_id: { type: string }
+        challenge_id: { type: string }
+        method: { type: string }
+    VerifyRequest:
+      type: object
+      properties:
+        user_id: { type: string }
+        challenge_id: { type: string }
+        method: { type: string }
+        code: { type: string }
+    RefreshRequest:
+      type: object
+      properties:
+        refresh_token: { type: string }
+    LogoutRequest:
+      type: object
+      properties:
+        session_id: { type: string }
+    TokenPair:
+      type: object
+      properties:
+        access_token: { type: string }
+        refresh_token: { type: string }
+        expires_in: { type: integer }
+    AdminLoginRequest:
+      type: object
+      properties:
+        username: { type: string }
+        password: { type: string }
+      required: [username, password]

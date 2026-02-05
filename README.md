@@ -16,3 +16,6 @@ go test ./...
 ## Сервисные эндпоинты
 - `GET /healthz` — healthcheck
 - `GET /metrics` — метрики (заглушка)
+
+## OpenAPI
+- `docs/openapi.yaml`

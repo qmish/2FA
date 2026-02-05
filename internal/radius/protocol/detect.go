@@ -19,5 +19,11 @@ func DetectVendor(attrs AttributeMap) string {
     if _, ok := attrs["Mikrotik-Realm"]; ok {
         return VendorMikroTik
     }
+    if attrs["Vendor-Id"] == "9" {
+        return VendorCiscoAnyConnect
+    }
+    if attrs["Vendor-Id"] == "14988" {
+        return VendorMikroTik
+    }
     return VendorGeneric
 }

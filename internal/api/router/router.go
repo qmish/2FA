@@ -10,6 +10,8 @@ import (
 type Routes struct {
     Auth *handlers.AuthHandler
     Admin *handlers.AdminHandler
+    AdminAuth *handlers.AdminAuthHandler
+    AdminToken middlewares.AdminTokenValidator
 }
 
 func New(r Routes) http.Handler {
@@ -20,11 +22,14 @@ func New(r Routes) http.Handler {
     mux.HandleFunc("/api/v1/auth/verify", r.Auth.Verify)
     mux.HandleFunc("/api/v1/auth/refresh", r.Auth.Refresh)
     mux.HandleFunc("/api/v1/auth/logout", r.Auth.Logout)
-    mux.HandleFunc("/api/v1/admin/users", r.Admin.ListUsers)
-    mux.HandleFunc("/api/v1/admin/policies", r.Admin.ListPolicies)
-    mux.HandleFunc("/api/v1/admin/radius/clients", r.Admin.ListRadiusClients)
-    mux.HandleFunc("/api/v1/admin/audit/events", r.Admin.ListAuditEvents)
-    mux.HandleFunc("/api/v1/admin/logins", r.Admin.ListLoginHistory)
-    mux.HandleFunc("/api/v1/admin/radius/requests", r.Admin.ListRadiusRequests)
+    mux.HandleFunc("/api/v1/admin/auth/login", r.AdminAuth.Login)
+
+    adminAuth := middlewares.AdminAuth(r.AdminToken)
+    mux.Handle("/api/v1/admin/users", adminAuth(http.HandlerFunc(r.Admin.ListUsers)))
+    mux.Handle("/api/v1/admin/policies", adminAuth(http.HandlerFunc(r.Admin.ListPolicies)))
+    mux.Handle("/api/v1/admin/radius/clients", adminAuth(http.HandlerFunc(r.Admin.ListRadiusClients)))
+    mux.Handle("/api/v1/admin/audit/events", adminAuth(http.HandlerFunc(r.Admin.ListAuditEvents)))
+    mux.Handle("/api/v1/admin/logins", adminAuth(http.HandlerFunc(r.Admin.ListLoginHistory)))
+    mux.Handle("/api/v1/admin/radius/requests", adminAuth(http.HandlerFunc(r.Admin.ListRadiusRequests)))
     return middlewares.RequestID(mux)
 }

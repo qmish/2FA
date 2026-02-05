@@ -2,7 +2,11 @@ package providers
 
 import "context"
 
-const DefaultProviderName = "express_mobile"
+const (
+    DefaultSMSProvider  = "express_mobile"
+    DefaultCallProvider = "express_mobile"
+    DefaultPushProvider = "fcm"
+)
 
 type SMSProvider interface {
     SendSMS(ctx context.Context, to, message string) (string, error)
@@ -17,7 +21,9 @@ type PushProvider interface {
 }
 
 type Registry struct {
-    defaultProvider string
+    defaultSMS  string
+    defaultCall string
+    defaultPush string
     sms             map[string]SMSProvider
     call            map[string]CallProvider
     push            map[string]PushProvider
@@ -25,16 +31,30 @@ type Registry struct {
 
 func NewRegistry() *Registry {
     return &Registry{
-        defaultProvider: DefaultProviderName,
+        defaultSMS:      DefaultSMSProvider,
+        defaultCall:     DefaultCallProvider,
+        defaultPush:     DefaultPushProvider,
         sms:             map[string]SMSProvider{},
         call:            map[string]CallProvider{},
         push:            map[string]PushProvider{},
     }
 }
 
-func (r *Registry) SetDefaultProvider(name string) {
+func (r *Registry) SetDefaultSMS(name string) {
     if name != "" {
-        r.defaultProvider = name
+        r.defaultSMS = name
+    }
+}
+
+func (r *Registry) SetDefaultCall(name string) {
+    if name != "" {
+        r.defaultCall = name
+    }
+}
+
+func (r *Registry) SetDefaultPush(name string) {
+    if name != "" {
+        r.defaultPush = name
     }
 }
 
@@ -51,7 +71,7 @@ func (r *Registry) RegisterPush(name string, p PushProvider) {
 }
 
 func (r *Registry) SendSMS(ctx context.Context, providerName, to, message string) (string, error) {
-    p := r.sms[r.resolve(providerName)]
+    p := r.sms[r.resolve(providerName, r.defaultSMS)]
     if p == nil {
         return "", ErrProviderNotFound
     }
@@ -59,7 +79,7 @@ func (r *Registry) SendSMS(ctx context.Context, providerName, to, message string
 }
 
 func (r *Registry) StartCall(ctx context.Context, providerName, to, text string) (string, error) {
-    p := r.call[r.resolve(providerName)]
+    p := r.call[r.resolve(providerName, r.defaultCall)]
     if p == nil {
         return "", ErrProviderNotFound
     }
@@ -67,16 +87,16 @@ func (r *Registry) StartCall(ctx context.Context, providerName, to, text string)
 }
 
 func (r *Registry) SendPush(ctx context.Context, providerName, deviceID, title, body string) (string, error) {
-    p := r.push[r.resolve(providerName)]
+    p := r.push[r.resolve(providerName, r.defaultPush)]
     if p == nil {
         return "", ErrProviderNotFound
     }
     return p.SendPush(ctx, deviceID, title, body)
 }
 
-func (r *Registry) resolve(name string) string {
+func (r *Registry) resolve(name string, fallback string) string {
     if name == "" {
-        return r.defaultProvider
+        return fallback
     }
     return name
 }
