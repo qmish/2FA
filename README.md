@@ -30,3 +30,7 @@ go test ./...
 - политики: `/api/v1/admin/policies/*`
 - RADIUS клиенты: `/api/v1/admin/radius/clients/*`
 - роли и права: `/api/v1/admin/role-permissions*`
+- группы: `/api/v1/admin/groups*`
+
+## Валидация
+- email, телефон (E.164), IP проверяются на входе

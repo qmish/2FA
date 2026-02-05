@@ -62,3 +62,37 @@ type RolePermissionsResponse struct {
 type RolePermissionsUpdateRequest struct {
     Permissions []models.Permission `json:"permissions"`
 }
+
+type AdminGroupCreateRequest struct {
+    Name        string `json:"name"`
+    Description string `json:"description"`
+}
+
+type AdminGroupUpdateRequest struct {
+    Name        string `json:"name"`
+    Description string `json:"description"`
+}
+
+type AdminGroupResponse struct {
+    ID          string `json:"id"`
+    Name        string `json:"name"`
+    Description string `json:"description"`
+}
+
+type AdminGroupListResponse struct {
+    Items []AdminGroupResponse `json:"items"`
+    Page  PageResponse         `json:"page"`
+}
+
+type AdminGroupMemberRequest struct {
+    UserID string `json:"user_id"`
+}
+
+type AdminGroupMembersResponse struct {
+    Items []AdminUserListItem `json:"items"`
+    Page  PageResponse        `json:"page"`
+}
+
+type AdminGroupPolicyRequest struct {
+    PolicyID string `json:"policy_id"`
+}

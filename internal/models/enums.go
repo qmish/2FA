@@ -117,6 +117,8 @@ type Permission string
 const (
     PermissionAdminUsersRead        Permission = "admin.users.read"
     PermissionAdminUsersWrite       Permission = "admin.users.write"
+    PermissionAdminGroupsRead       Permission = "admin.groups.read"
+    PermissionAdminGroupsWrite      Permission = "admin.groups.write"
     PermissionAdminPoliciesRead     Permission = "admin.policies.read"
     PermissionAdminPoliciesWrite    Permission = "admin.policies.write"
     PermissionAdminRadiusClientsRead Permission = "admin.radius_clients.read"

@@ -30,6 +30,9 @@ func main() {
     policyRepo := postgres.NewPolicyRepository(db)
     policyRuleRepo := postgres.NewPolicyRuleRepository(db)
     radiusClientRepo := postgres.NewRadiusClientRepository(db)
+    groupRepo := postgres.NewGroupRepository(db)
+    userGroupRepo := postgres.NewUserGroupRepository(db)
+    groupPolicyRepo := postgres.NewGroupPolicyRepository(db)
     auditRepo := postgres.NewAuditRepository(db)
     loginRepo := postgres.NewLoginHistoryRepository(db)
     radiusReqRepo := postgres.NewRadiusRequestRepository(db)
@@ -45,6 +48,9 @@ func main() {
         policyRuleRepo,
         radiusClientRepo,
         rolePermRepo,
+        groupRepo,
+        userGroupRepo,
+        groupPolicyRepo,
         auditRepo,
         loginRepo,
         radiusReqRepo,

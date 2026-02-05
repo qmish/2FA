@@ -42,7 +42,7 @@ func (r *UserRepository) GetByID(ctx context.Context, id string) (*models.User, 
         &createdAt,
         &updatedAt,
     ); err != nil {
-        return nil, err
+        return nil, mapNotFound(err)
     }
 
     user.Email = fromNullString(email)
@@ -79,7 +79,7 @@ func (r *UserRepository) GetByUsername(ctx context.Context, username string) (*m
         &createdAt,
         &updatedAt,
     ); err != nil {
-        return nil, err
+        return nil, mapNotFound(err)
     }
     user.Email = fromNullString(email)
     user.Phone = fromNullString(phone)
@@ -115,11 +115,83 @@ func (r *UserRepository) GetByUsernameAndRole(ctx context.Context, username stri
         &createdAt,
         &updatedAt,
     ); err != nil {
-        return nil, err
+        return nil, mapNotFound(err)
     }
 
     user.Email = fromNullString(email)
     user.Phone = fromNullString(phone)
+    user.Status = models.UserStatus(status)
+    user.Role = models.UserRole(roleValue)
+    user.PasswordHash = fromNullString(passwordHash)
+    user.AdDN = fromNullString(adDN)
+    user.CreatedAt = createdAt
+    user.UpdatedAt = updatedAt
+    return &user, nil
+}
+
+func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.User, error) {
+    row := r.db.QueryRowContext(ctx, `
+        SELECT id, username, email, phone, status, role, password_hash, ad_dn, created_at, updated_at
+        FROM users WHERE email = $1`, email)
+
+    var (
+        emailValue, phone, passwordHash, adDN sql.NullString
+        status, roleValue                    string
+        createdAt, updatedAt                 time.Time
+        user                                 models.User
+    )
+    if err := row.Scan(
+        &user.ID,
+        &user.Username,
+        &emailValue,
+        &phone,
+        &status,
+        &roleValue,
+        &passwordHash,
+        &adDN,
+        &createdAt,
+        &updatedAt,
+    ); err != nil {
+        return nil, mapNotFound(err)
+    }
+    user.Email = fromNullString(emailValue)
+    user.Phone = fromNullString(phone)
+    user.Status = models.UserStatus(status)
+    user.Role = models.UserRole(roleValue)
+    user.PasswordHash = fromNullString(passwordHash)
+    user.AdDN = fromNullString(adDN)
+    user.CreatedAt = createdAt
+    user.UpdatedAt = updatedAt
+    return &user, nil
+}
+
+func (r *UserRepository) GetByPhone(ctx context.Context, phone string) (*models.User, error) {
+    row := r.db.QueryRowContext(ctx, `
+        SELECT id, username, email, phone, status, role, password_hash, ad_dn, created_at, updated_at
+        FROM users WHERE phone = $1`, phone)
+
+    var (
+        emailValue, phoneValue, passwordHash, adDN sql.NullString
+        status, roleValue                           string
+        createdAt, updatedAt                        time.Time
+        user                                        models.User
+    )
+    if err := row.Scan(
+        &user.ID,
+        &user.Username,
+        &emailValue,
+        &phoneValue,
+        &status,
+        &roleValue,
+        &passwordHash,
+        &adDN,
+        &createdAt,
+        &updatedAt,
+    ); err != nil {
+        return nil, mapNotFound(err)
+    }
+    user.Email = fromNullString(emailValue)
+    user.Phone = fromNullString(phoneValue)
     user.Status = models.UserStatus(status)
     user.Role = models.UserRole(roleValue)
     user.PasswordHash = fromNullString(passwordHash)
@@ -373,7 +445,20 @@ func (r *PolicyRepository) GetByID(ctx context.Context, id string) (*models.Poli
     var status string
     var p models.Policy
     if err := row.Scan(&p.ID, &p.Name, &p.Priority, &status, &p.CreatedAt); err != nil {
-        return nil, err
+        return nil, mapNotFound(err)
+    }
+    p.Status = models.PolicyStatus(status)
+    return &p, nil
+}
+
+func (r *PolicyRepository) GetByName(ctx context.Context, name string) (*models.Policy, error) {
+    row := r.db.QueryRowContext(ctx, `
+        SELECT id, name, priority, status, created_at
+        FROM policies WHERE name = $1`, name)
+    var status string
+    var p models.Policy
+    if err := row.Scan(&p.ID, &p.Name, &p.Priority, &status, &p.CreatedAt); err != nil {
+        return nil, mapNotFound(err)
     }
     p.Status = models.PolicyStatus(status)
     return &p, nil
@@ -498,7 +583,7 @@ func (r *RadiusClientRepository) GetByID(ctx context.Context, id string) (*model
         FROM radius_clients WHERE id = $1`, id)
     var c models.RadiusClient
     if err := row.Scan(&c.ID, &c.Name, &c.IP, &c.Secret, &c.Enabled, &c.CreatedAt); err != nil {
-        return nil, err
+        return nil, mapNotFound(err)
     }
     return &c, nil
 }
@@ -509,7 +594,7 @@ func (r *RadiusClientRepository) GetByIP(ctx context.Context, ip string) (*model
         FROM radius_clients WHERE ip = $1`, ip)
     var c models.RadiusClient
     if err := row.Scan(&c.ID, &c.Name, &c.IP, &c.Secret, &c.Enabled, &c.CreatedAt); err != nil {
-        return nil, err
+        return nil, mapNotFound(err)
     }
     return &c, nil
 }
@@ -882,6 +967,196 @@ func (r *RolePermissionRepository) SetRolePermissions(ctx context.Context, role 
         }
     }
     return tx.Commit()
+}
+
+type GroupRepository struct {
+    db *sql.DB
+}
+
+func NewGroupRepository(db *sql.DB) *GroupRepository {
+    return &GroupRepository{db: db}
+}
+
+func (r *GroupRepository) GetByID(ctx context.Context, id string) (*models.Group, error) {
+    row := r.db.QueryRowContext(ctx, `
+        SELECT id, name, description, created_at
+        FROM groups WHERE id = $1`, id)
+    var g models.Group
+    var desc sql.NullString
+    if err := row.Scan(&g.ID, &g.Name, &desc, &g.CreatedAt); err != nil {
+        return nil, mapNotFound(err)
+    }
+    g.Description = fromNullString(desc)
+    return &g, nil
+}
+
+func (r *GroupRepository) GetByName(ctx context.Context, name string) (*models.Group, error) {
+    row := r.db.QueryRowContext(ctx, `
+        SELECT id, name, description, created_at
+        FROM groups WHERE name = $1`, name)
+    var g models.Group
+    var desc sql.NullString
+    if err := row.Scan(&g.ID, &g.Name, &desc, &g.CreatedAt); err != nil {
+        return nil, mapNotFound(err)
+    }
+    g.Description = fromNullString(desc)
+    return &g, nil
+}
+
+func (r *GroupRepository) List(ctx context.Context, limit, offset int) ([]models.Group, int, error) {
+    var total int
+    if err := r.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM groups`).Scan(&total); err != nil {
+        return nil, 0, err
+    }
+    rows, err := r.db.QueryContext(ctx, `
+        SELECT id, name, description, created_at
+        FROM groups ORDER BY created_at DESC LIMIT $1 OFFSET $2`, limit, offset)
+    if err != nil {
+        return nil, 0, err
+    }
+    defer rows.Close()
+
+    var items []models.Group
+    for rows.Next() {
+        var g models.Group
+        var desc sql.NullString
+        if err := rows.Scan(&g.ID, &g.Name, &desc, &g.CreatedAt); err != nil {
+            return nil, 0, err
+        }
+        g.Description = fromNullString(desc)
+        items = append(items, g)
+    }
+    if err := rows.Err(); err != nil {
+        return nil, 0, err
+    }
+    return items, total, nil
+}
+
+func (r *GroupRepository) Create(ctx context.Context, g *models.Group) error {
+    _, err := r.db.ExecContext(ctx, `
+        INSERT INTO groups (id, name, description, created_at)
+        VALUES ($1,$2,$3,$4)`, g.ID, g.Name, nullString(g.Description), g.CreatedAt)
+    return err
+}
+
+func (r *GroupRepository) Update(ctx context.Context, g *models.Group) error {
+    _, err := r.db.ExecContext(ctx, `
+        UPDATE groups SET name = $2, description = $3 WHERE id = $1`,
+        g.ID, g.Name, nullString(g.Description))
+    return err
+}
+
+func (r *GroupRepository) Delete(ctx context.Context, id string) error {
+    _, err := r.db.ExecContext(ctx, `DELETE FROM groups WHERE id = $1`, id)
+    return err
+}
+
+type UserGroupRepository struct {
+    db *sql.DB
+}
+
+func NewUserGroupRepository(db *sql.DB) *UserGroupRepository {
+    return &UserGroupRepository{db: db}
+}
+
+func (r *UserGroupRepository) AddUser(ctx context.Context, groupID, userID string) error {
+    _, err := r.db.ExecContext(ctx, `
+        INSERT INTO user_groups (user_id, group_id, created_at)
+        VALUES ($1,$2,now())`, userID, groupID)
+    return err
+}
+
+func (r *UserGroupRepository) RemoveUser(ctx context.Context, groupID, userID string) error {
+    _, err := r.db.ExecContext(ctx, `
+        DELETE FROM user_groups WHERE group_id = $1 AND user_id = $2`, groupID, userID)
+    return err
+}
+
+func (r *UserGroupRepository) ListUsers(ctx context.Context, groupID string, limit, offset int) ([]models.User, int, error) {
+    var total int
+    if err := r.db.QueryRowContext(ctx, `
+        SELECT COUNT(*) FROM user_groups WHERE group_id = $1`, groupID).Scan(&total); err != nil {
+        return nil, 0, err
+    }
+    rows, err := r.db.QueryContext(ctx, `
+        SELECT u.id, u.username, u.email, u.phone, u.status, u.role, u.password_hash, u.ad_dn, u.created_at, u.updated_at
+        FROM user_groups ug
+        JOIN users u ON u.id = ug.user_id
+        WHERE ug.group_id = $1
+        ORDER BY u.created_at DESC
+        LIMIT $2 OFFSET $3`, groupID, limit, offset)
+    if err != nil {
+        return nil, 0, err
+    }
+    defer rows.Close()
+
+    var items []models.User
+    for rows.Next() {
+        var (
+            email, phone, passwordHash, adDN sql.NullString
+            status, role                    string
+            createdAt, updatedAt            time.Time
+            user                            models.User
+        )
+        if err := rows.Scan(
+            &user.ID,
+            &user.Username,
+            &email,
+            &phone,
+            &status,
+            &role,
+            &passwordHash,
+            &adDN,
+            &createdAt,
+            &updatedAt,
+        ); err != nil {
+            return nil, 0, err
+        }
+        user.Email = fromNullString(email)
+        user.Phone = fromNullString(phone)
+        user.Status = models.UserStatus(status)
+        user.Role = models.UserRole(role)
+        user.PasswordHash = fromNullString(passwordHash)
+        user.AdDN = fromNullString(adDN)
+        user.CreatedAt = createdAt
+        user.UpdatedAt = updatedAt
+        items = append(items, user)
+    }
+    if err := rows.Err(); err != nil {
+        return nil, 0, err
+    }
+    return items, total, nil
+}
+
+type GroupPolicyRepository struct {
+    db *sql.DB
+}
+
+func NewGroupPolicyRepository(db *sql.DB) *GroupPolicyRepository {
+    return &GroupPolicyRepository{db: db}
+}
+
+func (r *GroupPolicyRepository) SetPolicy(ctx context.Context, groupID, policyID string) error {
+    _, err := r.db.ExecContext(ctx, `
+        INSERT INTO group_policies (group_id, policy_id, created_at)
+        VALUES ($1,$2,now())
+        ON CONFLICT (group_id) DO UPDATE SET policy_id = EXCLUDED.policy_id`, groupID, policyID)
+    return err
+}
+
+func (r *GroupPolicyRepository) GetPolicy(ctx context.Context, groupID string) (string, error) {
+    row := r.db.QueryRowContext(ctx, `
+        SELECT policy_id FROM group_policies WHERE group_id = $1`, groupID)
+    var policyID string
+    if err := row.Scan(&policyID); err != nil {
+        return "", mapNotFound(err)
+    }
+    return policyID, nil
+}
+
+func (r *GroupPolicyRepository) ClearPolicy(ctx context.Context, groupID string) error {
+    _, err := r.db.ExecContext(ctx, `DELETE FROM group_policies WHERE group_id = $1`, groupID)
+    return err
 }
 
 func buildUserListQuery(filter repository.UserListFilter) (string, []any) {

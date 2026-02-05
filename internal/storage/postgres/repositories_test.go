@@ -222,3 +222,49 @@ func TestRolePermissionRepositorySetRolePermissions(t *testing.T) {
         t.Fatalf("SetRolePermissions error: %v", err)
     }
 }
+
+func TestGroupRepositoryGetByName(t *testing.T) {
+    db, mock, err := sqlmock.New()
+    if err != nil {
+        t.Fatalf("sqlmock: %v", err)
+    }
+    defer db.Close()
+
+    repo := NewGroupRepository(db)
+    now := time.Now()
+    rows := sqlmock.NewRows([]string{"id", "name", "description", "created_at"}).
+        AddRow("g1", "admins", "admins group", now)
+    mock.ExpectQuery("FROM groups WHERE name = \\$1").
+        WithArgs("admins").WillReturnRows(rows)
+
+    g, err := repo.GetByName(context.Background(), "admins")
+    if err != nil {
+        t.Fatalf("GetByName error: %v", err)
+    }
+    if g.Name != "admins" {
+        t.Fatalf("unexpected group: %+v", g)
+    }
+}
+
+func TestUserGroupRepositoryListUsers(t *testing.T) {
+    db, mock, err := sqlmock.New()
+    if err != nil {
+        t.Fatalf("sqlmock: %v", err)
+    }
+    defer db.Close()
+
+    repo := NewUserGroupRepository(db)
+    now := time.Now()
+    mock.ExpectQuery("SELECT COUNT\\(\\*\\) FROM user_groups WHERE group_id = \\$1").
+        WithArgs("g1").WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
+    rows := sqlmock.NewRows([]string{
+        "id", "username", "email", "phone", "status", "role", "password_hash", "ad_dn", "created_at", "updated_at",
+    }).AddRow("u1", "alice", "a@example.com", "+79990000000", "active", "admin", "hash", "dn", now, now)
+    mock.ExpectQuery("FROM user_groups ug").
+        WithArgs("g1", 10, 0).WillReturnRows(rows)
+
+    users, total, err := repo.ListUsers(context.Background(), "g1", 10, 0)
+    if err != nil || total != 1 || len(users) != 1 {
+        t.Fatalf("unexpected result: total=%d len=%d err=%v", total, len(users), err)
+    }
+}

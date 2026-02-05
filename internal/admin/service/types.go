@@ -21,6 +21,15 @@ type AdminService interface {
     DeleteRadiusClient(ctx context.Context, id string) error
     GetRolePermissions(ctx context.Context, role string) (dto.RolePermissionsResponse, error)
     SetRolePermissions(ctx context.Context, role string, req dto.RolePermissionsUpdateRequest) (dto.RolePermissionsResponse, error)
+    ListGroups(ctx context.Context, req dto.PageRequest) (dto.AdminGroupListResponse, error)
+    CreateGroup(ctx context.Context, req dto.AdminGroupCreateRequest) (dto.AdminGroupResponse, error)
+    UpdateGroup(ctx context.Context, id string, req dto.AdminGroupUpdateRequest) (dto.AdminGroupResponse, error)
+    DeleteGroup(ctx context.Context, id string) error
+    AddGroupMember(ctx context.Context, groupID string, req dto.AdminGroupMemberRequest) error
+    RemoveGroupMember(ctx context.Context, groupID string, req dto.AdminGroupMemberRequest) error
+    ListGroupMembers(ctx context.Context, groupID string, page dto.PageRequest) (dto.AdminGroupMembersResponse, error)
+    SetGroupPolicy(ctx context.Context, groupID string, req dto.AdminGroupPolicyRequest) error
+    ClearGroupPolicy(ctx context.Context, groupID string) error
     ListAuditEvents(ctx context.Context, req dto.AdminAuditListRequest) (dto.AdminAuditListResponse, error)
     ListLoginHistory(ctx context.Context, req dto.AdminLoginHistoryListRequest) (dto.AdminLoginHistoryListResponse, error)
     ListRadiusRequests(ctx context.Context, req dto.AdminRadiusRequestListRequest) (dto.AdminRadiusRequestListResponse, error)

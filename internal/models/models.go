@@ -93,3 +93,10 @@ type RadiusRequest struct {
     ResponseAttrs string
     CreatedAt     time.Time
 }
+
+type Group struct {
+    ID          string
+    Name        string
+    Description string
+    CreatedAt   time.Time
+}

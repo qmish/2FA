@@ -61,6 +61,8 @@ func TestEnumValues(t *testing.T) {
         {string(AuditAuthorize), "authorize"},
         {string(PermissionAdminUsersRead), "admin.users.read"},
         {string(PermissionAdminUsersWrite), "admin.users.write"},
+        {string(PermissionAdminGroupsRead), "admin.groups.read"},
+        {string(PermissionAdminGroupsWrite), "admin.groups.write"},
         {string(PermissionAdminPoliciesRead), "admin.policies.read"},
         {string(PermissionAdminPoliciesWrite), "admin.policies.write"},
         {string(PermissionAdminRadiusClientsRead), "admin.radius_clients.read"},

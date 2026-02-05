@@ -470,6 +470,221 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/ServerError"
+  /api/v1/admin/groups:
+    get:
+      summary: Admin groups list
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminGroupListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /api/v1/admin/groups/create:
+    post:
+      summary: Admin create group
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminGroupCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminGroupResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /api/v1/admin/groups/update:
+    put:
+      summary: Admin update group
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminGroupUpdateRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminGroupResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /api/v1/admin/groups/delete:
+    delete:
+      summary: Admin delete group
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/id"
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /api/v1/admin/groups/members:
+    get:
+      summary: Admin group members list
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/group_id"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminGroupMembersResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /api/v1/admin/groups/members/add:
+    post:
+      summary: Admin add member to group
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/group_id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminGroupMemberRequest"
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /api/v1/admin/groups/members/remove:
+    post:
+      summary: Admin remove member from group
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/group_id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminGroupMemberRequest"
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /api/v1/admin/groups/policy:
+    post:
+      summary: Admin set group policy
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/group_id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminGroupPolicyRequest"
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /api/v1/admin/groups/policy/clear:
+    post:
+      summary: Admin clear group policy
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/group_id"
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
   /api/v1/admin/audit/events:
     get:
       summary: Admin audit events
@@ -567,6 +782,11 @@ components:
         type: string
     role:
       name: role
+      in: query
+      schema:
+        type: string
+    group_id:
+      name: group_id
       in: query
       schema:
         type: string
@@ -953,6 +1173,86 @@ components:
         permissions:
           - "admin.users.read"
           - "admin.users.write"
+    AdminGroupCreateRequest:
+      type: object
+      properties:
+        name: { type: string }
+        description: { type: string }
+      required: [name]
+      example:
+        name: "ops"
+        description: "ops team"
+    AdminGroupUpdateRequest:
+      type: object
+      properties:
+        name: { type: string }
+        description: { type: string }
+      example:
+        name: "ops"
+        description: "ops team"
+    AdminGroupResponse:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+      example:
+        id: "g1"
+        name: "ops"
+        description: "ops team"
+    AdminGroupListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminGroupResponse"
+        page:
+          $ref: "#/components/schemas/PageResponse"
+      example:
+        items:
+          - id: "g1"
+            name: "ops"
+            description: "ops team"
+        page:
+          total: 1
+          limit: 10
+          offset: 0
+    AdminGroupMemberRequest:
+      type: object
+      properties:
+        user_id: { type: string }
+      required: [user_id]
+      example:
+        user_id: "u1"
+    AdminGroupMembersResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminUserListItem"
+        page:
+          $ref: "#/components/schemas/PageResponse"
+      example:
+        items:
+          - id: "u1"
+            username: "admin"
+            email: "admin@example.com"
+            phone: "+79990000000"
+            status: "active"
+            role: "admin"
+        page:
+          total: 1
+          limit: 10
+          offset: 0
+    AdminGroupPolicyRequest:
+      type: object
+      properties:
+        policy_id: { type: string }
+      required: [policy_id]
+      example:
+        policy_id: "p1"
     PageResponse:
       type: object
       properties:

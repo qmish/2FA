@@ -17,6 +17,9 @@ func TestServiceListUsers(t *testing.T) {
         fakePolicyRuleRepo{},
         fakeRadiusClientRepo{},
         fakeRolePermRepo{},
+        fakeGroupRepo{},
+        fakeUserGroupRepo{},
+        fakeGroupPolicyRepo{},
         fakeAuditRepo{},
         fakeLoginRepo{},
         fakeRadiusReqRepo{},
@@ -44,6 +47,9 @@ func TestServiceCreateUser(t *testing.T) {
         fakePolicyRuleRepo{},
         fakeRadiusClientRepo{},
         fakeRolePermRepo{},
+        fakeGroupRepo{},
+        fakeUserGroupRepo{},
+        fakeGroupPolicyRepo{},
         fakeAuditRepo{},
         fakeLoginRepo{},
         fakeRadiusReqRepo{},
@@ -73,13 +79,19 @@ type fakeUserRepo struct {
 }
 
 func (f fakeUserRepo) GetByID(ctx context.Context, id string) (*models.User, error) {
-    return nil, errors.New("not implemented")
+    return nil, repository.ErrNotFound
 }
 func (f fakeUserRepo) GetByUsername(ctx context.Context, username string) (*models.User, error) {
-    return nil, errors.New("not implemented")
+    return nil, repository.ErrNotFound
 }
 func (f fakeUserRepo) GetByUsernameAndRole(ctx context.Context, username string, role models.UserRole) (*models.User, error) {
-    return nil, errors.New("not implemented")
+    return nil, repository.ErrNotFound
+}
+func (f fakeUserRepo) GetByEmail(ctx context.Context, email string) (*models.User, error) {
+    return nil, repository.ErrNotFound
+}
+func (f fakeUserRepo) GetByPhone(ctx context.Context, phone string) (*models.User, error) {
+    return nil, repository.ErrNotFound
 }
 func (f fakeUserRepo) List(ctx context.Context, filter repository.UserListFilter, limit, offset int) ([]models.User, int, error) {
     return f.items, len(f.items), nil
@@ -103,7 +115,10 @@ func (r *recordUserRepo) Create(ctx context.Context, u *models.User) error {
 
 type fakePolicyRepo struct{}
 
-func (f fakePolicyRepo) GetByID(ctx context.Context, id string) (*models.Policy, error) { return nil, errors.New("not implemented") }
+func (f fakePolicyRepo) GetByID(ctx context.Context, id string) (*models.Policy, error) { return nil, repository.ErrNotFound }
+func (f fakePolicyRepo) GetByName(ctx context.Context, name string) (*models.Policy, error) {
+    return nil, repository.ErrNotFound
+}
 func (f fakePolicyRepo) List(ctx context.Context, limit, offset int) ([]models.Policy, int, error) {
     return []models.Policy{}, 0, nil
 }
@@ -124,10 +139,10 @@ func (f fakePolicyRuleRepo) DeleteByPolicy(ctx context.Context, policyID string)
 type fakeRadiusClientRepo struct{}
 
 func (f fakeRadiusClientRepo) GetByID(ctx context.Context, id string) (*models.RadiusClient, error) {
-    return nil, errors.New("not implemented")
+    return nil, repository.ErrNotFound
 }
 func (f fakeRadiusClientRepo) GetByIP(ctx context.Context, ip string) (*models.RadiusClient, error) {
-    return nil, errors.New("not implemented")
+    return nil, repository.ErrNotFound
 }
 func (f fakeRadiusClientRepo) List(ctx context.Context, limit, offset int) ([]models.RadiusClient, int, error) {
     return []models.RadiusClient{}, 0, nil
@@ -167,4 +182,35 @@ func (f fakeRolePermRepo) ListByRole(ctx context.Context, role models.UserRole) 
 func (f fakeRolePermRepo) SetRolePermissions(ctx context.Context, role models.UserRole, perms []models.Permission) error {
     return nil
 }
+
+type fakeGroupRepo struct{}
+
+func (f fakeGroupRepo) GetByID(ctx context.Context, id string) (*models.Group, error) {
+    return nil, repository.ErrNotFound
+}
+func (f fakeGroupRepo) GetByName(ctx context.Context, name string) (*models.Group, error) {
+    return nil, repository.ErrNotFound
+}
+func (f fakeGroupRepo) List(ctx context.Context, limit, offset int) ([]models.Group, int, error) {
+    return []models.Group{}, 0, nil
+}
+func (f fakeGroupRepo) Create(ctx context.Context, g *models.Group) error { return nil }
+func (f fakeGroupRepo) Update(ctx context.Context, g *models.Group) error { return nil }
+func (f fakeGroupRepo) Delete(ctx context.Context, id string) error { return nil }
+
+type fakeUserGroupRepo struct{}
+
+func (f fakeUserGroupRepo) AddUser(ctx context.Context, groupID, userID string) error { return nil }
+func (f fakeUserGroupRepo) RemoveUser(ctx context.Context, groupID, userID string) error { return nil }
+func (f fakeUserGroupRepo) ListUsers(ctx context.Context, groupID string, limit, offset int) ([]models.User, int, error) {
+    return []models.User{}, 0, nil
+}
+
+type fakeGroupPolicyRepo struct{}
+
+func (f fakeGroupPolicyRepo) SetPolicy(ctx context.Context, groupID, policyID string) error { return nil }
+func (f fakeGroupPolicyRepo) GetPolicy(ctx context.Context, groupID string) (string, error) {
+    return "", errors.New("not implemented")
+}
+func (f fakeGroupPolicyRepo) ClearPolicy(ctx context.Context, groupID string) error { return nil }
 

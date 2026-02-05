@@ -21,6 +21,9 @@ type Service struct {
     policyRules   repository.PolicyRuleRepository
     radiusClients repository.RadiusClientRepository
     rolePerms     repository.RolePermissionRepository
+    groups        repository.GroupRepository
+    userGroups    repository.UserGroupRepository
+    groupPolicies repository.GroupPolicyRepository
     audit         repository.AuditRepository
     logins        repository.LoginHistoryRepository
     radiusReqs    repository.RadiusRequestRepository
@@ -32,6 +35,9 @@ func NewService(
     policyRules repository.PolicyRuleRepository,
     radiusClients repository.RadiusClientRepository,
     rolePerms repository.RolePermissionRepository,
+    groups repository.GroupRepository,
+    userGroups repository.UserGroupRepository,
+    groupPolicies repository.GroupPolicyRepository,
     audit repository.AuditRepository,
     logins repository.LoginHistoryRepository,
     radiusReqs repository.RadiusRequestRepository,
@@ -42,6 +48,9 @@ func NewService(
         policyRules:   policyRules,
         radiusClients: radiusClients,
         rolePerms:     rolePerms,
+        groups:        groups,
+        userGroups:    userGroups,
+        groupPolicies: groupPolicies,
         audit:         audit,
         logins:        logins,
         radiusReqs:    radiusReqs,
@@ -75,6 +84,25 @@ func (s *Service) ListUsers(ctx context.Context, req dto.AdminUserListRequest) (
 }
 
 func (s *Service) CreateUser(ctx context.Context, req dto.AdminUserCreateRequest) (dto.AdminUserResponse, error) {
+    if _, err := s.users.GetByUsername(ctx, req.Username); err == nil {
+        return dto.AdminUserResponse{}, ErrConflict
+    } else if !errors.Is(err, repository.ErrNotFound) {
+        return dto.AdminUserResponse{}, err
+    }
+    if req.Email != "" {
+        if _, err := s.users.GetByEmail(ctx, req.Email); err == nil {
+            return dto.AdminUserResponse{}, ErrConflict
+        } else if !errors.Is(err, repository.ErrNotFound) {
+            return dto.AdminUserResponse{}, err
+        }
+    }
+    if req.Phone != "" {
+        if _, err := s.users.GetByPhone(ctx, req.Phone); err == nil {
+            return dto.AdminUserResponse{}, ErrConflict
+        } else if !errors.Is(err, repository.ErrNotFound) {
+            return dto.AdminUserResponse{}, err
+        }
+    }
     hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
     if err != nil {
         return dto.AdminUserResponse{}, err
@@ -107,7 +135,24 @@ func (s *Service) CreateUser(ctx context.Context, req dto.AdminUserCreateRequest
 func (s *Service) UpdateUser(ctx context.Context, id string, req dto.AdminUserUpdateRequest) (dto.AdminUserResponse, error) {
     user, err := s.users.GetByID(ctx, id)
     if err != nil {
+        if errors.Is(err, repository.ErrNotFound) {
+            return dto.AdminUserResponse{}, ErrNotFound
+        }
         return dto.AdminUserResponse{}, err
+    }
+    if req.Email != "" {
+        if found, err := s.users.GetByEmail(ctx, req.Email); err == nil && found.ID != id {
+            return dto.AdminUserResponse{}, ErrConflict
+        } else if err != nil && !errors.Is(err, repository.ErrNotFound) {
+            return dto.AdminUserResponse{}, err
+        }
+    }
+    if req.Phone != "" {
+        if found, err := s.users.GetByPhone(ctx, req.Phone); err == nil && found.ID != id {
+            return dto.AdminUserResponse{}, ErrConflict
+        } else if err != nil && !errors.Is(err, repository.ErrNotFound) {
+            return dto.AdminUserResponse{}, err
+        }
     }
     if req.Email != "" {
         user.Email = req.Email
@@ -136,6 +181,12 @@ func (s *Service) UpdateUser(ctx context.Context, id string, req dto.AdminUserUp
 }
 
 func (s *Service) DeleteUser(ctx context.Context, id string) error {
+    if _, err := s.users.GetByID(ctx, id); err != nil {
+        if errors.Is(err, repository.ErrNotFound) {
+            return ErrNotFound
+        }
+        return err
+    }
     return s.users.Delete(ctx, id)
 }
 
@@ -162,6 +213,11 @@ func (s *Service) ListPolicies(ctx context.Context, req dto.PageRequest) ([]dto.
 }
 
 func (s *Service) CreatePolicy(ctx context.Context, req dto.AdminPolicyCreateRequest) (dto.AdminPolicyDTO, error) {
+    if _, err := s.policies.GetByName(ctx, req.Name); err == nil {
+        return dto.AdminPolicyDTO{}, ErrConflict
+    } else if !errors.Is(err, repository.ErrNotFound) {
+        return dto.AdminPolicyDTO{}, err
+    }
     now := time.Now()
     policy := &models.Policy{
         ID:       uuid.NewString(),
@@ -198,7 +254,17 @@ func (s *Service) UpdatePolicy(ctx context.Context, id string, req dto.AdminPoli
     now := time.Now()
     policy, err := s.policies.GetByID(ctx, id)
     if err != nil {
+        if errors.Is(err, repository.ErrNotFound) {
+            return dto.AdminPolicyDTO{}, ErrNotFound
+        }
         return dto.AdminPolicyDTO{}, err
+    }
+    if req.Name != "" && req.Name != policy.Name {
+        if _, err := s.policies.GetByName(ctx, req.Name); err == nil {
+            return dto.AdminPolicyDTO{}, ErrConflict
+        } else if !errors.Is(err, repository.ErrNotFound) {
+            return dto.AdminPolicyDTO{}, err
+        }
     }
     if req.Name != "" {
         policy.Name = req.Name
@@ -237,6 +303,12 @@ func (s *Service) UpdatePolicy(ctx context.Context, id string, req dto.AdminPoli
 }
 
 func (s *Service) DeletePolicy(ctx context.Context, id string) error {
+    if _, err := s.policies.GetByID(ctx, id); err != nil {
+        if errors.Is(err, repository.ErrNotFound) {
+            return ErrNotFound
+        }
+        return err
+    }
     if err := s.policyRules.DeleteByPolicy(ctx, id); err != nil {
         return err
     }
@@ -261,6 +333,11 @@ func (s *Service) ListRadiusClients(ctx context.Context, req dto.PageRequest) ([
 }
 
 func (s *Service) CreateRadiusClient(ctx context.Context, req dto.AdminRadiusClientCreateRequest) (dto.AdminRadiusClientDTO, error) {
+    if _, err := s.radiusClients.GetByIP(ctx, req.IP); err == nil {
+        return dto.AdminRadiusClientDTO{}, ErrConflict
+    } else if !errors.Is(err, repository.ErrNotFound) {
+        return dto.AdminRadiusClientDTO{}, err
+    }
     now := time.Now()
     client := &models.RadiusClient{
         ID:      uuid.NewString(),
@@ -284,7 +361,13 @@ func (s *Service) CreateRadiusClient(ctx context.Context, req dto.AdminRadiusCli
 func (s *Service) UpdateRadiusClient(ctx context.Context, id string, req dto.AdminRadiusClientUpdateRequest) (dto.AdminRadiusClientDTO, error) {
     client, err := s.radiusClients.GetByID(ctx, id)
     if err != nil {
+        if errors.Is(err, repository.ErrNotFound) {
+            return dto.AdminRadiusClientDTO{}, ErrNotFound
+        }
         return dto.AdminRadiusClientDTO{}, err
+    }
+    if req.Name == "" && req.Secret == "" && req.Enabled == client.Enabled {
+        // noop
     }
     if req.Name != "" {
         client.Name = req.Name
@@ -305,6 +388,12 @@ func (s *Service) UpdateRadiusClient(ctx context.Context, id string, req dto.Adm
 }
 
 func (s *Service) DeleteRadiusClient(ctx context.Context, id string) error {
+    if _, err := s.radiusClients.GetByID(ctx, id); err != nil {
+        if errors.Is(err, repository.ErrNotFound) {
+            return ErrNotFound
+        }
+        return err
+    }
     return s.radiusClients.Delete(ctx, id)
 }
 
@@ -333,6 +422,125 @@ func (s *Service) SetRolePermissions(ctx context.Context, role string, req dto.R
         Role:        models.UserRole(role),
         Permissions: req.Permissions,
     }, nil
+}
+
+func (s *Service) ListGroups(ctx context.Context, req dto.PageRequest) (dto.AdminGroupListResponse, error) {
+    items, total, err := s.groups.List(ctx, req.Limit, req.Offset)
+    if err != nil {
+        return dto.AdminGroupListResponse{}, err
+    }
+    out := make([]dto.AdminGroupResponse, 0, len(items))
+    for _, g := range items {
+        out = append(out, dto.AdminGroupResponse{
+            ID:          g.ID,
+            Name:        g.Name,
+            Description: g.Description,
+        })
+    }
+    return dto.AdminGroupListResponse{
+        Items: out,
+        Page:  dto.PageResponse{Total: total, Limit: req.Limit, Offset: req.Offset},
+    }, nil
+}
+
+func (s *Service) CreateGroup(ctx context.Context, req dto.AdminGroupCreateRequest) (dto.AdminGroupResponse, error) {
+    if _, err := s.groups.GetByName(ctx, req.Name); err == nil {
+        return dto.AdminGroupResponse{}, ErrConflict
+    } else if !errors.Is(err, repository.ErrNotFound) {
+        return dto.AdminGroupResponse{}, err
+    }
+    g := &models.Group{
+        ID:          uuid.NewString(),
+        Name:        req.Name,
+        Description: req.Description,
+        CreatedAt:   time.Now(),
+    }
+    if err := s.groups.Create(ctx, g); err != nil {
+        return dto.AdminGroupResponse{}, err
+    }
+    return dto.AdminGroupResponse{
+        ID:          g.ID,
+        Name:        g.Name,
+        Description: g.Description,
+    }, nil
+}
+
+func (s *Service) UpdateGroup(ctx context.Context, id string, req dto.AdminGroupUpdateRequest) (dto.AdminGroupResponse, error) {
+    g, err := s.groups.GetByID(ctx, id)
+    if err != nil {
+        if errors.Is(err, repository.ErrNotFound) {
+            return dto.AdminGroupResponse{}, ErrNotFound
+        }
+        return dto.AdminGroupResponse{}, err
+    }
+    if req.Name != "" && req.Name != g.Name {
+        if _, err := s.groups.GetByName(ctx, req.Name); err == nil {
+            return dto.AdminGroupResponse{}, ErrConflict
+        } else if !errors.Is(err, repository.ErrNotFound) {
+            return dto.AdminGroupResponse{}, err
+        }
+        g.Name = req.Name
+    }
+    if req.Description != "" {
+        g.Description = req.Description
+    }
+    if err := s.groups.Update(ctx, g); err != nil {
+        return dto.AdminGroupResponse{}, err
+    }
+    return dto.AdminGroupResponse{
+        ID:          g.ID,
+        Name:        g.Name,
+        Description: g.Description,
+    }, nil
+}
+
+func (s *Service) DeleteGroup(ctx context.Context, id string) error {
+    if _, err := s.groups.GetByID(ctx, id); err != nil {
+        if errors.Is(err, repository.ErrNotFound) {
+            return ErrNotFound
+        }
+        return err
+    }
+    _ = s.groupPolicies.ClearPolicy(ctx, id)
+    return s.groups.Delete(ctx, id)
+}
+
+func (s *Service) AddGroupMember(ctx context.Context, groupID string, req dto.AdminGroupMemberRequest) error {
+    return s.userGroups.AddUser(ctx, groupID, req.UserID)
+}
+
+func (s *Service) RemoveGroupMember(ctx context.Context, groupID string, req dto.AdminGroupMemberRequest) error {
+    return s.userGroups.RemoveUser(ctx, groupID, req.UserID)
+}
+
+func (s *Service) ListGroupMembers(ctx context.Context, groupID string, page dto.PageRequest) (dto.AdminGroupMembersResponse, error) {
+    users, total, err := s.userGroups.ListUsers(ctx, groupID, page.Limit, page.Offset)
+    if err != nil {
+        return dto.AdminGroupMembersResponse{}, err
+    }
+    items := make([]dto.AdminUserListItem, 0, len(users))
+    for _, u := range users {
+        items = append(items, dto.AdminUserListItem{
+            ID:       u.ID,
+            Username: u.Username,
+            Email:    u.Email,
+            Phone:    u.Phone,
+            Status:   u.Status,
+            Role:     u.Role,
+        })
+    }
+    return dto.AdminGroupMembersResponse{
+        Items: items,
+        Page:  dto.PageResponse{Total: total, Limit: page.Limit, Offset: page.Offset},
+    }, nil
+}
+
+func (s *Service) SetGroupPolicy(ctx context.Context, groupID string, req dto.AdminGroupPolicyRequest) error {
+    return s.groupPolicies.SetPolicy(ctx, groupID, req.PolicyID)
+}
+
+func (s *Service) ClearGroupPolicy(ctx context.Context, groupID string) error {
+    return s.groupPolicies.ClearPolicy(ctx, groupID)
 }
 
 func (s *Service) ListAuditEvents(ctx context.Context, req dto.AdminAuditListRequest) (dto.AdminAuditListResponse, error) {

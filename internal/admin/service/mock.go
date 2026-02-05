@@ -21,6 +21,15 @@ type MockAdminService struct {
     DeleteRadiusClientFunc func(ctx context.Context, id string) error
     GetRolePermissionsFunc func(ctx context.Context, role string) (dto.RolePermissionsResponse, error)
     SetRolePermissionsFunc func(ctx context.Context, role string, req dto.RolePermissionsUpdateRequest) (dto.RolePermissionsResponse, error)
+    ListGroupsFunc         func(ctx context.Context, req dto.PageRequest) (dto.AdminGroupListResponse, error)
+    CreateGroupFunc        func(ctx context.Context, req dto.AdminGroupCreateRequest) (dto.AdminGroupResponse, error)
+    UpdateGroupFunc        func(ctx context.Context, id string, req dto.AdminGroupUpdateRequest) (dto.AdminGroupResponse, error)
+    DeleteGroupFunc        func(ctx context.Context, id string) error
+    AddGroupMemberFunc     func(ctx context.Context, groupID string, req dto.AdminGroupMemberRequest) error
+    RemoveGroupMemberFunc  func(ctx context.Context, groupID string, req dto.AdminGroupMemberRequest) error
+    ListGroupMembersFunc   func(ctx context.Context, groupID string, page dto.PageRequest) (dto.AdminGroupMembersResponse, error)
+    SetGroupPolicyFunc     func(ctx context.Context, groupID string, req dto.AdminGroupPolicyRequest) error
+    ClearGroupPolicyFunc   func(ctx context.Context, groupID string) error
     ListAuditEventsFunc    func(ctx context.Context, req dto.AdminAuditListRequest) (dto.AdminAuditListResponse, error)
     ListLoginHistoryFunc   func(ctx context.Context, req dto.AdminLoginHistoryListRequest) (dto.AdminLoginHistoryListResponse, error)
     ListRadiusRequestsFunc func(ctx context.Context, req dto.AdminRadiusRequestListRequest) (dto.AdminRadiusRequestListResponse, error)
@@ -80,6 +89,42 @@ func (m *MockAdminService) GetRolePermissions(ctx context.Context, role string) 
 
 func (m *MockAdminService) SetRolePermissions(ctx context.Context, role string, req dto.RolePermissionsUpdateRequest) (dto.RolePermissionsResponse, error) {
     return m.SetRolePermissionsFunc(ctx, role, req)
+}
+
+func (m *MockAdminService) ListGroups(ctx context.Context, req dto.PageRequest) (dto.AdminGroupListResponse, error) {
+    return m.ListGroupsFunc(ctx, req)
+}
+
+func (m *MockAdminService) CreateGroup(ctx context.Context, req dto.AdminGroupCreateRequest) (dto.AdminGroupResponse, error) {
+    return m.CreateGroupFunc(ctx, req)
+}
+
+func (m *MockAdminService) UpdateGroup(ctx context.Context, id string, req dto.AdminGroupUpdateRequest) (dto.AdminGroupResponse, error) {
+    return m.UpdateGroupFunc(ctx, id, req)
+}
+
+func (m *MockAdminService) DeleteGroup(ctx context.Context, id string) error {
+    return m.DeleteGroupFunc(ctx, id)
+}
+
+func (m *MockAdminService) AddGroupMember(ctx context.Context, groupID string, req dto.AdminGroupMemberRequest) error {
+    return m.AddGroupMemberFunc(ctx, groupID, req)
+}
+
+func (m *MockAdminService) RemoveGroupMember(ctx context.Context, groupID string, req dto.AdminGroupMemberRequest) error {
+    return m.RemoveGroupMemberFunc(ctx, groupID, req)
+}
+
+func (m *MockAdminService) ListGroupMembers(ctx context.Context, groupID string, page dto.PageRequest) (dto.AdminGroupMembersResponse, error) {
+    return m.ListGroupMembersFunc(ctx, groupID, page)
+}
+
+func (m *MockAdminService) SetGroupPolicy(ctx context.Context, groupID string, req dto.AdminGroupPolicyRequest) error {
+    return m.SetGroupPolicyFunc(ctx, groupID, req)
+}
+
+func (m *MockAdminService) ClearGroupPolicy(ctx context.Context, groupID string) error {
+    return m.ClearGroupPolicyFunc(ctx, groupID)
 }
 
 func (m *MockAdminService) ListAuditEvents(ctx context.Context, req dto.AdminAuditListRequest) (dto.AdminAuditListResponse, error) {

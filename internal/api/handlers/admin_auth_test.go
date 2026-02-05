@@ -57,6 +57,12 @@ func (f fakeUserRepo) GetByID(ctx context.Context, id string) (*models.User, err
 func (f fakeUserRepo) GetByUsername(ctx context.Context, username string) (*models.User, error) {
     return nil, auth.ErrInvalidCredentials
 }
+func (f fakeUserRepo) GetByEmail(ctx context.Context, email string) (*models.User, error) {
+    return nil, auth.ErrInvalidCredentials
+}
+func (f fakeUserRepo) GetByPhone(ctx context.Context, phone string) (*models.User, error) {
+    return nil, auth.ErrInvalidCredentials
+}
 func (f fakeUserRepo) List(ctx context.Context, filter repository.UserListFilter, limit, offset int) ([]models.User, int, error) {
     return nil, 0, auth.ErrInvalidCredentials
 }

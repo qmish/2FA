@@ -81,3 +81,15 @@ func TestRolePermissionsUpdateJSON(t *testing.T) {
         t.Fatalf("missing permissions in json: %s", got)
     }
 }
+
+func TestAdminGroupCreateJSON(t *testing.T) {
+    req := AdminGroupCreateRequest{Name: "ops", Description: "ops team"}
+    data, err := json.Marshal(req)
+    if err != nil {
+        t.Fatalf("marshal error: %v", err)
+    }
+    got := string(data)
+    if !strings.Contains(got, "\"name\":\"ops\"") {
+        t.Fatalf("missing name in json: %s", got)
+    }
+}

@@ -99,6 +99,65 @@ func (s StubService) SetRolePermissions(ctx context.Context, role string, req dt
     return dto.RolePermissionsResponse{}, ErrNotImplemented
 }
 
+func (s StubService) ListGroups(ctx context.Context, req dto.PageRequest) (dto.AdminGroupListResponse, error) {
+    _ = ctx
+    _ = req
+    return dto.AdminGroupListResponse{}, ErrNotImplemented
+}
+
+func (s StubService) CreateGroup(ctx context.Context, req dto.AdminGroupCreateRequest) (dto.AdminGroupResponse, error) {
+    _ = ctx
+    _ = req
+    return dto.AdminGroupResponse{}, ErrNotImplemented
+}
+
+func (s StubService) UpdateGroup(ctx context.Context, id string, req dto.AdminGroupUpdateRequest) (dto.AdminGroupResponse, error) {
+    _ = ctx
+    _ = id
+    _ = req
+    return dto.AdminGroupResponse{}, ErrNotImplemented
+}
+
+func (s StubService) DeleteGroup(ctx context.Context, id string) error {
+    _ = ctx
+    _ = id
+    return ErrNotImplemented
+}
+
+func (s StubService) AddGroupMember(ctx context.Context, groupID string, req dto.AdminGroupMemberRequest) error {
+    _ = ctx
+    _ = groupID
+    _ = req
+    return ErrNotImplemented
+}
+
+func (s StubService) RemoveGroupMember(ctx context.Context, groupID string, req dto.AdminGroupMemberRequest) error {
+    _ = ctx
+    _ = groupID
+    _ = req
+    return ErrNotImplemented
+}
+
+func (s StubService) ListGroupMembers(ctx context.Context, groupID string, page dto.PageRequest) (dto.AdminGroupMembersResponse, error) {
+    _ = ctx
+    _ = groupID
+    _ = page
+    return dto.AdminGroupMembersResponse{}, ErrNotImplemented
+}
+
+func (s StubService) SetGroupPolicy(ctx context.Context, groupID string, req dto.AdminGroupPolicyRequest) error {
+    _ = ctx
+    _ = groupID
+    _ = req
+    return ErrNotImplemented
+}
+
+func (s StubService) ClearGroupPolicy(ctx context.Context, groupID string) error {
+    _ = ctx
+    _ = groupID
+    return ErrNotImplemented
+}
+
 func (s StubService) ListAuditEvents(ctx context.Context, req dto.AdminAuditListRequest) (dto.AdminAuditListResponse, error) {
     _ = ctx
     _ = req

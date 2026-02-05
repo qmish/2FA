@@ -2,7 +2,10 @@ package postgres
 
 import (
     "database/sql"
+    "errors"
     "time"
+
+    "github.com/qmish/2FA/internal/repository"
 )
 
 func nullString(s string) sql.NullString {
@@ -32,4 +35,11 @@ func fromNullTime(nt sql.NullTime) *time.Time {
         return &t
     }
     return nil
+}
+
+func mapNotFound(err error) error {
+    if errors.Is(err, sql.ErrNoRows) {
+        return repository.ErrNotFound
+    }
+    return err
 }

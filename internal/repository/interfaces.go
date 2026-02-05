@@ -41,6 +41,8 @@ type UserRepository interface {
     GetByID(ctx context.Context, id string) (*models.User, error)
     GetByUsername(ctx context.Context, username string) (*models.User, error)
     GetByUsernameAndRole(ctx context.Context, username string, role models.UserRole) (*models.User, error)
+    GetByEmail(ctx context.Context, email string) (*models.User, error)
+    GetByPhone(ctx context.Context, phone string) (*models.User, error)
     List(ctx context.Context, filter UserListFilter, limit, offset int) ([]models.User, int, error)
     Create(ctx context.Context, u *models.User) error
     Update(ctx context.Context, u *models.User) error
@@ -62,6 +64,7 @@ type DeviceRepository interface {
 
 type PolicyRepository interface {
     GetByID(ctx context.Context, id string) (*models.Policy, error)
+    GetByName(ctx context.Context, name string) (*models.Policy, error)
     List(ctx context.Context, limit, offset int) ([]models.Policy, int, error)
     Create(ctx context.Context, p *models.Policy) error
     Update(ctx context.Context, p *models.Policy) error
@@ -105,4 +108,25 @@ type RadiusRequestRepository interface {
 type RolePermissionRepository interface {
     ListByRole(ctx context.Context, role models.UserRole) ([]models.Permission, error)
     SetRolePermissions(ctx context.Context, role models.UserRole, perms []models.Permission) error
+}
+
+type GroupRepository interface {
+    GetByID(ctx context.Context, id string) (*models.Group, error)
+    GetByName(ctx context.Context, name string) (*models.Group, error)
+    List(ctx context.Context, limit, offset int) ([]models.Group, int, error)
+    Create(ctx context.Context, g *models.Group) error
+    Update(ctx context.Context, g *models.Group) error
+    Delete(ctx context.Context, id string) error
+}
+
+type UserGroupRepository interface {
+    AddUser(ctx context.Context, groupID, userID string) error
+    RemoveUser(ctx context.Context, groupID, userID string) error
+    ListUsers(ctx context.Context, groupID string, limit, offset int) ([]models.User, int, error)
+}
+
+type GroupPolicyRepository interface {
+    SetPolicy(ctx context.Context, groupID, policyID string) error
+    GetPolicy(ctx context.Context, groupID string) (string, error)
+    ClearPolicy(ctx context.Context, groupID string) error
 }
