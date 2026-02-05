@@ -11,6 +11,8 @@ func TestEnumValues(t *testing.T) {
         {string(UserDisabled), "disabled"},
         {string(UserLocked), "locked"},
         {string(UserPending), "pending"},
+        {string(RoleUser), "user"},
+        {string(RoleAdmin), "admin"},
         {string(DeviceMobile), "mobile"},
         {string(DeviceHardware), "hardware"},
         {string(DeviceEmail), "email"},

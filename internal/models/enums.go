@@ -9,6 +9,13 @@ const (
     UserPending  UserStatus = "pending"
 )
 
+type UserRole string
+
+const (
+    RoleUser  UserRole = "user"
+    RoleAdmin UserRole = "admin"
+)
+
 type DeviceType string
 
 const (

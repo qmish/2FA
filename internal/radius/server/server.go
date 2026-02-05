@@ -4,9 +4,11 @@ import (
     "context"
     "encoding/binary"
     "net"
+    "strings"
 
     "layeh.com/radius"
     "layeh.com/radius/rfc2865"
+    "layeh.com/radius/vendors/mikrotik"
 
     "github.com/qmish/2FA/internal/radius/protocol"
     "github.com/qmish/2FA/internal/radius/service"
@@ -28,12 +30,12 @@ func (h *Handler) ServeRADIUS(w radius.ResponseWriter, r *radius.Request) {
     w.Write(packet)
 }
 
-func ListenAndServe(addr string, svc *service.RadiusService) error {
+func ListenAndServe(addr string, secret string, svc *service.RadiusService) error {
     server := &radius.PacketServer{
         Addr:         addr,
         Network:      "udp",
         Handler:      &Handler{Service: svc},
-        SecretSource: radius.StaticSecretSource([]byte("secret")),
+        SecretSource: radius.StaticSecretSource([]byte(secret)),
     }
     conn, err := net.ListenPacket(server.Network, server.Addr)
     if err != nil {
@@ -58,6 +60,8 @@ func buildAccessRequest(packet *radius.Packet) protocol.AccessRequest {
         attrs["NAS-Identifier"] = val
     }
 
+    applyMikrotikAttributes(packet, attrs)
+    applyCiscoAVPair(packet, attrs)
     vendor := detectVendorFromVSA(packet)
     if vendor != "" {
         attrs["Vendor-Id"] = vendor
@@ -82,4 +86,40 @@ func detectVendorFromVSA(packet *radius.Packet) string {
         }
     }
     return ""
+}
+
+func applyMikrotikAttributes(packet *radius.Packet, attrs protocol.AttributeMap) {
+    if ip := mikrotik.MikrotikHostIP_Get(packet); ip != nil {
+        attrs["Mikrotik-Host-IP"] = ip.String()
+    }
+    if realm := mikrotik.MikrotikRealm_GetString(packet); realm != "" {
+        attrs["Mikrotik-Realm"] = realm
+    }
+}
+
+func applyCiscoAVPair(packet *radius.Packet, attrs protocol.AttributeMap) {
+    for _, attr := range packet.Attributes {
+        if attr.Type != rfc2865.VendorSpecific_Type {
+            continue
+        }
+        vendorID, vsa, err := radius.VendorSpecific(attr.Attribute)
+        if err != nil || vendorID != 9 {
+            continue
+        }
+        for len(vsa) >= 3 {
+            vsaType, vsaLen := vsa[0], vsa[1]
+            if int(vsaLen) > len(vsa) || vsaLen < 3 {
+                break
+            }
+            if vsaType == 1 {
+                value := string(vsa[2:int(vsaLen)])
+                attrs["Cisco-AVPair"] = value
+                if parts := strings.SplitN(value, "=", 2); len(parts) == 2 {
+                    key := "Cisco-AVPair-" + parts[0]
+                    attrs[key] = parts[1]
+                }
+            }
+            vsa = vsa[int(vsaLen):]
+        }
+    }
 }

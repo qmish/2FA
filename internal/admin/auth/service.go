@@ -9,6 +9,8 @@ import (
     "golang.org/x/crypto/bcrypt"
 
     "github.com/qmish/2FA/internal/dto"
+    "github.com/qmish/2FA/internal/models"
+    "github.com/qmish/2FA/internal/repository"
 )
 
 var ErrInvalidCredentials = errors.New("invalid credentials")
@@ -21,27 +23,28 @@ type AdminClaims struct {
 type Service struct {
     issuer       string
     secret       []byte
-    username     string
-    passwordHash []byte
     ttl          time.Duration
+    users        repository.UserRepository
 }
 
-func NewService(issuer, username, passwordHash string, secret []byte, ttl time.Duration) *Service {
+func NewService(issuer string, secret []byte, ttl time.Duration, users repository.UserRepository) *Service {
     return &Service{
         issuer:       issuer,
-        username:     username,
-        passwordHash: []byte(passwordHash),
         secret:       secret,
         ttl:          ttl,
+        users:        users,
     }
 }
 
 func (s *Service) Login(ctx context.Context, req dto.AdminLoginRequest) (dto.TokenPair, error) {
-    _ = ctx
-    if req.Username != s.username {
+    user, err := s.users.GetByUsernameAndRole(ctx, req.Username, models.RoleAdmin)
+    if err != nil {
         return dto.TokenPair{}, ErrInvalidCredentials
     }
-    if err := bcrypt.CompareHashAndPassword(s.passwordHash, []byte(req.Password)); err != nil {
+    if user.Status != models.UserActive {
+        return dto.TokenPair{}, ErrInvalidCredentials
+    }
+    if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
         return dto.TokenPair{}, ErrInvalidCredentials
     }
     now := time.Now()
@@ -49,7 +52,7 @@ func (s *Service) Login(ctx context.Context, req dto.AdminLoginRequest) (dto.Tok
         Role: "admin",
         RegisteredClaims: jwt.RegisteredClaims{
             Issuer:    s.issuer,
-            Subject:   s.username,
+            Subject:   user.Username,
             ExpiresAt: jwt.NewNumericDate(now.Add(s.ttl)),
             IssuedAt:  jwt.NewNumericDate(now),
         },

@@ -12,6 +12,7 @@ type AdminUserListItem struct {
     Email    string            `json:"email"`
     Phone    string            `json:"phone"`
     Status   models.UserStatus `json:"status"`
+    Role     models.UserRole   `json:"role"`
 }
 
 type AdminPolicyDTO struct {

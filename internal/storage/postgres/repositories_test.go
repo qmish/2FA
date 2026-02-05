@@ -20,8 +20,8 @@ func TestUserRepositoryGetByID(t *testing.T) {
     repo := NewUserRepository(db)
     now := time.Now()
     rows := sqlmock.NewRows([]string{
-        "id", "username", "email", "phone", "status", "password_hash", "ad_dn", "created_at", "updated_at",
-    }).AddRow("u1", "alice", "a@example.com", "+79990000000", "active", "hash", "cn=alice", now, now)
+        "id", "username", "email", "phone", "status", "role", "password_hash", "ad_dn", "created_at", "updated_at",
+    }).AddRow("u1", "alice", "a@example.com", "+79990000000", "active", "admin", "hash", "cn=alice", now, now)
 
     mock.ExpectQuery("FROM users WHERE id = \\$1").WithArgs("u1").WillReturnRows(rows)
 
@@ -29,7 +29,7 @@ func TestUserRepositoryGetByID(t *testing.T) {
     if err != nil {
         t.Fatalf("GetByID error: %v", err)
     }
-    if got.Username != "alice" || got.Status != models.UserActive {
+    if got.Username != "alice" || got.Status != models.UserActive || got.Role != models.RoleAdmin {
         t.Fatalf("unexpected user: %+v", got)
     }
     if err := mock.ExpectationsWereMet(); err != nil {

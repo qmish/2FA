@@ -10,6 +10,7 @@ import (
 type UserRepository interface {
     GetByID(ctx context.Context, id string) (*models.User, error)
     GetByUsername(ctx context.Context, username string) (*models.User, error)
+    GetByUsernameAndRole(ctx context.Context, username string, role models.UserRole) (*models.User, error)
     Create(ctx context.Context, u *models.User) error
     Update(ctx context.Context, u *models.User) error
     SetStatus(ctx context.Context, id string, status models.UserStatus) error

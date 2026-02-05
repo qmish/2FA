@@ -19,3 +19,7 @@ go test ./...
 
 ## OpenAPI
 - `docs/openapi.yaml`
+
+## Конфигурация
+- env: `configs/config.example.env`
+- файл: `configs/config.example.yaml` (используется при `CONFIG_PATH`)

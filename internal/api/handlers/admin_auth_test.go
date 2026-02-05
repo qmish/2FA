@@ -2,6 +2,7 @@ package handlers
 
 import (
     "bytes"
+    "context"
     "encoding/json"
     "net/http"
     "net/http/httptest"
@@ -12,11 +13,20 @@ import (
 
     "github.com/qmish/2FA/internal/admin/auth"
     "github.com/qmish/2FA/internal/dto"
+    "github.com/qmish/2FA/internal/models"
 )
 
 func TestAdminAuthLogin(t *testing.T) {
     hash, _ := bcrypt.GenerateFromPassword([]byte("pass"), bcrypt.DefaultCost)
-    svc := auth.NewService("2fa", "admin", string(hash), []byte("secret"), time.Minute)
+    repo := fakeUserRepo{
+        user: &models.User{
+            Username:     "admin",
+            Status:       models.UserActive,
+            Role:         models.RoleAdmin,
+            PasswordHash: string(hash),
+        },
+    }
+    svc := auth.NewService("2fa", []byte("secret"), time.Minute, repo)
     handler := NewAdminAuthHandler(svc)
 
     body, _ := json.Marshal(dto.AdminLoginRequest{Username: "admin", Password: "pass"})
@@ -27,4 +37,31 @@ func TestAdminAuthLogin(t *testing.T) {
     if rec.Code != http.StatusOK {
         t.Fatalf("status=%d", rec.Code)
     }
+}
+
+type fakeUserRepo struct {
+    user *models.User
+}
+
+func (f fakeUserRepo) GetByUsernameAndRole(ctx context.Context, username string, role models.UserRole) (*models.User, error) {
+    if f.user != nil && f.user.Username == username && f.user.Role == role {
+        return f.user, nil
+    }
+    return nil, auth.ErrInvalidCredentials
+}
+
+func (f fakeUserRepo) GetByID(ctx context.Context, id string) (*models.User, error) {
+    return nil, auth.ErrInvalidCredentials
+}
+func (f fakeUserRepo) GetByUsername(ctx context.Context, username string) (*models.User, error) {
+    return nil, auth.ErrInvalidCredentials
+}
+func (f fakeUserRepo) Create(ctx context.Context, u *models.User) error {
+    return nil
+}
+func (f fakeUserRepo) Update(ctx context.Context, u *models.User) error {
+    return nil
+}
+func (f fakeUserRepo) SetStatus(ctx context.Context, id string, status models.UserStatus) error {
+    return nil
 }

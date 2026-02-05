@@ -18,12 +18,12 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 
 func (r *UserRepository) GetByID(ctx context.Context, id string) (*models.User, error) {
     row := r.db.QueryRowContext(ctx, `
-        SELECT id, username, email, phone, status, password_hash, ad_dn, created_at, updated_at
+        SELECT id, username, email, phone, status, role, password_hash, ad_dn, created_at, updated_at
         FROM users WHERE id = $1`, id)
 
     var (
         email, phone, passwordHash, adDN sql.NullString
-        status                            string
+        status, role                      string
         createdAt, updatedAt              time.Time
         user                              models.User
     )
@@ -33,6 +33,7 @@ func (r *UserRepository) GetByID(ctx context.Context, id string) (*models.User, 
         &email,
         &phone,
         &status,
+        &role,
         &passwordHash,
         &adDN,
         &createdAt,
@@ -44,6 +45,7 @@ func (r *UserRepository) GetByID(ctx context.Context, id string) (*models.User, 
     user.Email = fromNullString(email)
     user.Phone = fromNullString(phone)
     user.Status = models.UserStatus(status)
+    user.Role = models.UserRole(role)
     user.PasswordHash = fromNullString(passwordHash)
     user.AdDN = fromNullString(adDN)
     user.CreatedAt = createdAt
@@ -53,12 +55,12 @@ func (r *UserRepository) GetByID(ctx context.Context, id string) (*models.User, 
 
 func (r *UserRepository) GetByUsername(ctx context.Context, username string) (*models.User, error) {
     row := r.db.QueryRowContext(ctx, `
-        SELECT id, username, email, phone, status, password_hash, ad_dn, created_at, updated_at
+        SELECT id, username, email, phone, status, role, password_hash, ad_dn, created_at, updated_at
         FROM users WHERE username = $1`, username)
 
     var (
         email, phone, passwordHash, adDN sql.NullString
-        status                            string
+        status, role                      string
         createdAt, updatedAt              time.Time
         user                              models.User
     )
@@ -68,6 +70,7 @@ func (r *UserRepository) GetByUsername(ctx context.Context, username string) (*m
         &email,
         &phone,
         &status,
+        &role,
         &passwordHash,
         &adDN,
         &createdAt,
@@ -78,6 +81,44 @@ func (r *UserRepository) GetByUsername(ctx context.Context, username string) (*m
     user.Email = fromNullString(email)
     user.Phone = fromNullString(phone)
     user.Status = models.UserStatus(status)
+    user.Role = models.UserRole(role)
+    user.PasswordHash = fromNullString(passwordHash)
+    user.AdDN = fromNullString(adDN)
+    user.CreatedAt = createdAt
+    user.UpdatedAt = updatedAt
+    return &user, nil
+}
+
+func (r *UserRepository) GetByUsernameAndRole(ctx context.Context, username string, role models.UserRole) (*models.User, error) {
+    row := r.db.QueryRowContext(ctx, `
+        SELECT id, username, email, phone, status, role, password_hash, ad_dn, created_at, updated_at
+        FROM users WHERE username = $1 AND role = $2`, username, string(role))
+
+    var (
+        email, phone, passwordHash, adDN sql.NullString
+        status, roleValue                string
+        createdAt, updatedAt             time.Time
+        user                             models.User
+    )
+    if err := row.Scan(
+        &user.ID,
+        &user.Username,
+        &email,
+        &phone,
+        &status,
+        &roleValue,
+        &passwordHash,
+        &adDN,
+        &createdAt,
+        &updatedAt,
+    ); err != nil {
+        return nil, err
+    }
+
+    user.Email = fromNullString(email)
+    user.Phone = fromNullString(phone)
+    user.Status = models.UserStatus(status)
+    user.Role = models.UserRole(roleValue)
     user.PasswordHash = fromNullString(passwordHash)
     user.AdDN = fromNullString(adDN)
     user.CreatedAt = createdAt
@@ -87,13 +128,14 @@ func (r *UserRepository) GetByUsername(ctx context.Context, username string) (*m
 
 func (r *UserRepository) Create(ctx context.Context, u *models.User) error {
     _, err := r.db.ExecContext(ctx, `
-        INSERT INTO users (id, username, email, phone, status, password_hash, ad_dn, created_at, updated_at)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+        INSERT INTO users (id, username, email, phone, status, role, password_hash, ad_dn, created_at, updated_at)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
         u.ID,
         u.Username,
         nullString(u.Email),
         nullString(u.Phone),
         string(u.Status),
+        string(u.Role),
         nullString(u.PasswordHash),
         nullString(u.AdDN),
         u.CreatedAt,
@@ -105,12 +147,13 @@ func (r *UserRepository) Create(ctx context.Context, u *models.User) error {
 func (r *UserRepository) Update(ctx context.Context, u *models.User) error {
     _, err := r.db.ExecContext(ctx, `
         UPDATE users
-        SET email = $2, phone = $3, status = $4, password_hash = $5, ad_dn = $6, updated_at = $7
+        SET email = $2, phone = $3, status = $4, role = $5, password_hash = $6, ad_dn = $7, updated_at = $8
         WHERE id = $1`,
         u.ID,
         nullString(u.Email),
         nullString(u.Phone),
         string(u.Status),
+        string(u.Role),
         nullString(u.PasswordHash),
         nullString(u.AdDN),
         u.UpdatedAt,
