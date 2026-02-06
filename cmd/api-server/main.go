@@ -41,6 +41,7 @@ func main() {
 	defer db.Close()
 
 	userRepo := postgres.NewUserRepository(db)
+	inviteRepo := postgres.NewInviteRepository(db)
 	policyRepo := postgres.NewPolicyRepository(db)
 	policyRuleRepo := postgres.NewPolicyRuleRepository(db)
 	radiusClientRepo := postgres.NewRadiusClientRepository(db)
@@ -63,6 +64,7 @@ func main() {
 
 	adminService := adminsvc.NewService(
 		userRepo,
+		inviteRepo,
 		policyRepo,
 		policyRuleRepo,
 		radiusClientRepo,
@@ -105,6 +107,7 @@ func main() {
 	authService.WithPolicies(policyRepo, policyRuleRepo, userGroupRepo, groupPolicyRepo)
 	authService.WithOTPSecrets(otpSecretRepo)
 	authService.WithTOTPConfig(cfg.JWTIssuer, 6, 30)
+	authService.WithInvites(inviteRepo)
 	if cfg.LDAPURL != "" {
 		authService.WithLDAPAuth(ldap.NewClient(cfg.LDAPURL, cfg.LDAPTimeout))
 	}

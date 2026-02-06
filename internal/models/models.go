@@ -60,6 +60,19 @@ type OTPSecret struct {
 	CreatedAt time.Time
 }
 
+type Invite struct {
+	ID        string
+	TokenHash string
+	Email     string
+	Phone     string
+	Role      UserRole
+	Status    InviteStatus
+	ExpiresAt time.Time
+	CreatedAt time.Time
+	UsedAt    *time.Time
+	UsedBy    string
+}
+
 type Policy struct {
 	ID        string
 	Name      string

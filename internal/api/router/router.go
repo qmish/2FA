@@ -43,6 +43,7 @@ func New(r Routes) http.Handler {
 		verifyHandler = r.VerifyRateLimit(verifyHandler)
 	}
 	mux.Handle("/api/v1/auth/login", loginHandler)
+	mux.Handle("/api/v1/auth/register", http.HandlerFunc(r.Auth.Register))
 	mux.Handle("/api/v1/auth/verify", verifyHandler)
 	mux.HandleFunc("/api/v1/auth/refresh", r.Auth.Refresh)
 	var logoutHandler http.Handler = http.HandlerFunc(r.Auth.Logout)
@@ -107,6 +108,7 @@ func New(r Routes) http.Handler {
 	mux.Handle("/api/v1/admin/groups/members/remove", adminAuth(http.HandlerFunc(r.Admin.RemoveGroupMember)))
 	mux.Handle("/api/v1/admin/groups/policy", adminAuth(http.HandlerFunc(r.Admin.SetGroupPolicy)))
 	mux.Handle("/api/v1/admin/groups/policy/clear", adminAuth(http.HandlerFunc(r.Admin.ClearGroupPolicy)))
+	mux.Handle("/api/v1/admin/invites/create", adminAuth(http.HandlerFunc(r.Admin.CreateInvite)))
 	mux.Handle("/api/v1/admin/audit/events", adminAuth(http.HandlerFunc(r.Admin.ListAuditEvents)))
 	mux.Handle("/api/v1/admin/audit/export", adminAuth(http.HandlerFunc(r.Admin.ExportAuditEvents)))
 	mux.Handle("/api/v1/admin/logins", adminAuth(http.HandlerFunc(r.Admin.ListLoginHistory)))

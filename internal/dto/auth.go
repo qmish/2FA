@@ -84,6 +84,18 @@ type UserDeviceListResponse struct {
 	Items []UserDeviceDTO `json:"items"`
 }
 
+type RegisterRequest struct {
+	Token    string `json:"token"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Email    string `json:"email"`
+	Phone    string `json:"phone"`
+}
+
+type RegisterResponse struct {
+	UserID string `json:"user_id"`
+}
+
 type SessionDTO struct {
 	ID         string `json:"id"`
 	IP         string `json:"ip"`

@@ -90,6 +90,37 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, resp)
 }
 
+func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
+	var req dto.RegisterRequest
+	dec := json.NewDecoder(r.Body)
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_json")
+		return
+	}
+	req.Username = strings.TrimSpace(req.Username)
+	req.Token = strings.TrimSpace(req.Token)
+	if req.Username == "" || req.Password == "" || req.Token == "" {
+		writeError(w, http.StatusBadRequest, "invalid_input")
+		return
+	}
+	resp, err := h.service.Register(r.Context(), req)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrInviteInvalid):
+			writeError(w, http.StatusForbidden, "invite_invalid")
+		case errors.Is(err, service.ErrConflict):
+			writeError(w, http.StatusConflict, "user_conflict")
+		case errors.Is(err, service.ErrNotConfigured):
+			writeError(w, http.StatusBadRequest, "invite_not_configured")
+		default:
+			writeError(w, http.StatusBadRequest, "register_failed")
+		}
+		return
+	}
+	writeJSON(w, http.StatusCreated, resp)
+}
+
 func (h *AuthHandler) Verify(w http.ResponseWriter, r *http.Request) {
 	var req dto.VerifyRequest
 	dec := json.NewDecoder(r.Body)

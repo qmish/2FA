@@ -104,6 +104,13 @@ type OTPSecretRepository interface {
 	Disable(ctx context.Context, id string) error
 }
 
+type InviteRepository interface {
+	Create(ctx context.Context, invite *models.Invite) error
+	GetByTokenHash(ctx context.Context, tokenHash string) (*models.Invite, error)
+	MarkUsed(ctx context.Context, id string, userID string, usedAt time.Time) error
+	MarkExpired(ctx context.Context, now time.Time) (int64, error)
+}
+
 type DeviceRepository interface {
 	ListByUser(ctx context.Context, userID string) ([]models.Device, error)
 	Upsert(ctx context.Context, d *models.Device) error

@@ -43,6 +43,30 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/ServerError"
+  /api/v1/auth/register:
+    post:
+      summary: Register via invite
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegisterResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/ServerError"
   /api/v1/auth/verify:
     post:
       summary: Verify second factor
@@ -293,6 +317,32 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "409":
           $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /api/v1/admin/invites/create:
+    post:
+      summary: Admin create invite
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminInviteCreateRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminInviteResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/ServerError"
   /api/v1/admin/users/update:
@@ -1215,6 +1265,26 @@ components:
         method: "otp"
         expires_at: 1738732800
         status: "created"
+    RegisterRequest:
+      type: object
+      properties:
+        token: { type: string }
+        username: { type: string }
+        password: { type: string }
+        email: { type: string }
+        phone: { type: string }
+      required: [token, username, password]
+      example:
+        token: "invite-token"
+        username: "alice"
+        password: "secret"
+        email: "a@example.com"
+    RegisterResponse:
+      type: object
+      properties:
+        user_id: { type: string }
+      example:
+        user_id: "u1"
     VerifyRequest:
       type: object
       properties:
@@ -1374,6 +1444,32 @@ components:
         phone: "+70000000000"
         status: "active"
         role: "user"
+    AdminInviteCreateRequest:
+      type: object
+      properties:
+        email: { type: string }
+        phone: { type: string }
+        role: { type: string }
+        ttl_minutes: { type: integer }
+      example:
+        email: "a@example.com"
+        role: "user"
+        ttl_minutes: 1440
+    AdminInviteResponse:
+      type: object
+      properties:
+        id: { type: string }
+        token: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        role: { type: string }
+        expires_at: { type: integer }
+      example:
+        id: "i1"
+        token: "invite-token"
+        email: "a@example.com"
+        role: "user"
+        expires_at: 1710000000
     AdminPolicyListResponse:
       type: object
       properties:

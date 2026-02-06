@@ -812,3 +812,51 @@ func TestOTPSecretRepositoryDisable(t *testing.T) {
 		t.Fatalf("expectations: %v", err)
 	}
 }
+
+func TestInviteRepositoryCreateGetMarkUsed(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock: %v", err)
+	}
+	defer db.Close()
+
+	repo := NewInviteRepository(db)
+	now := time.Now()
+	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO invites (id, token_hash, email, phone, role, status, expires_at, created_at, used_at, used_by)")).
+		WithArgs("i1", "hash", sql.NullString{String: "a@example.com", Valid: true}, sql.NullString{String: "", Valid: false}, "user", "pending", now.Add(time.Hour), now, sql.NullTime{}, sql.NullString{}).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	if err := repo.Create(context.Background(), &models.Invite{
+		ID:        "i1",
+		TokenHash: "hash",
+		Email:     "a@example.com",
+		Role:      models.RoleUser,
+		Status:    models.InvitePending,
+		ExpiresAt: now.Add(time.Hour),
+		CreatedAt: now,
+	}); err != nil {
+		t.Fatalf("Create error: %v", err)
+	}
+
+	rows := sqlmock.NewRows([]string{"id", "token_hash", "email", "phone", "role", "status", "expires_at", "created_at", "used_at", "used_by"}).
+		AddRow("i1", "hash", "a@example.com", nil, "user", "pending", now.Add(time.Hour), now, nil, nil)
+	mock.ExpectQuery("FROM invites WHERE token_hash = \\$1").
+		WithArgs("hash").WillReturnRows(rows)
+
+	invite, err := repo.GetByTokenHash(context.Background(), "hash")
+	if err != nil || invite.ID != "i1" {
+		t.Fatalf("unexpected invite: %+v err=%v", invite, err)
+	}
+
+	mock.ExpectExec("UPDATE invites SET status = 'used', used_at = \\$2, used_by = \\$3 WHERE id = \\$1").
+		WithArgs("i1", now, sql.NullString{String: "u1", Valid: true}).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	if err := repo.MarkUsed(context.Background(), "i1", "u1", now); err != nil {
+		t.Fatalf("MarkUsed error: %v", err)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("expectations: %v", err)
+	}
+}

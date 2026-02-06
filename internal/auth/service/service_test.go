@@ -415,6 +415,92 @@ func TestAuthLoginLDAPFailure(t *testing.T) {
 	}
 }
 
+func TestAuthRegisterSuccess(t *testing.T) {
+	invites := &fakeInviteRepo{
+		items: map[string]*models.Invite{},
+	}
+	token := "invite-token"
+	now := time.Now()
+	invite := &models.Invite{
+		ID:        "i1",
+		TokenHash: hash(token),
+		Email:     "a@example.com",
+		Role:      models.RoleUser,
+		Status:    models.InvitePending,
+		ExpiresAt: now.Add(time.Hour),
+		CreatedAt: now,
+	}
+	invites.items[invite.TokenHash] = invite
+	repo := &recordUserRepo{}
+	svc := NewService(repo, &fakeChallengeRepo{}, &fakeSessionRepo{}, nil, &fakeLockoutRepo{}, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwt.NewService("2fa", []byte("secret"), time.Minute), time.Minute, time.Hour)
+	svc.WithInvites(invites)
+	svc.now = func() time.Time { return now }
+
+	resp, err := svc.Register(context.Background(), dto.RegisterRequest{
+		Token:    token,
+		Username: "alice",
+		Password: "pass",
+	})
+	if err != nil {
+		t.Fatalf("register error: %v", err)
+	}
+	if resp.UserID == "" || repo.created == nil || repo.created.Username != "alice" || repo.created.Email != "a@example.com" {
+		t.Fatalf("unexpected user: %+v resp=%+v", repo.created, resp)
+	}
+	if invites.usedID != "i1" || invites.usedBy != repo.created.ID {
+		t.Fatalf("invite not marked used: %+v", invites)
+	}
+}
+
+func TestAuthRegisterInvalidInvite(t *testing.T) {
+	invites := &fakeInviteRepo{
+		items: map[string]*models.Invite{},
+	}
+	svc := NewService(fakeUserRepo{}, &fakeChallengeRepo{}, &fakeSessionRepo{}, nil, &fakeLockoutRepo{}, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwt.NewService("2fa", []byte("secret"), time.Minute), time.Minute, time.Hour)
+	svc.WithInvites(invites)
+
+	_, err := svc.Register(context.Background(), dto.RegisterRequest{
+		Token:    "missing",
+		Username: "alice",
+		Password: "pass",
+	})
+	if !errors.Is(err, ErrInviteInvalid) {
+		t.Fatalf("expected ErrInviteInvalid, got %v", err)
+	}
+}
+
+func TestAuthRegisterExpiredInvite(t *testing.T) {
+	invites := &fakeInviteRepo{
+		items: map[string]*models.Invite{},
+	}
+	token := "expired-token"
+	now := time.Now()
+	invite := &models.Invite{
+		ID:        "i1",
+		TokenHash: hash(token),
+		Role:      models.RoleUser,
+		Status:    models.InvitePending,
+		ExpiresAt: now.Add(-time.Minute),
+		CreatedAt: now.Add(-time.Hour),
+	}
+	invites.items[invite.TokenHash] = invite
+	svc := NewService(fakeUserRepo{}, &fakeChallengeRepo{}, &fakeSessionRepo{}, nil, &fakeLockoutRepo{}, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwt.NewService("2fa", []byte("secret"), time.Minute), time.Minute, time.Hour)
+	svc.WithInvites(invites)
+	svc.now = func() time.Time { return now }
+
+	_, err := svc.Register(context.Background(), dto.RegisterRequest{
+		Token:    token,
+		Username: "alice",
+		Password: "pass",
+	})
+	if !errors.Is(err, ErrInviteInvalid) {
+		t.Fatalf("expected ErrInviteInvalid, got %v", err)
+	}
+	if invites.expiredCount == 0 {
+		t.Fatalf("expected invite expiration update")
+	}
+}
+
 func TestAuthLogoutOK(t *testing.T) {
 	sessions := &fakeSessionRepo{
 		items: map[string]models.UserSession{
@@ -813,6 +899,69 @@ type fakeLDAPAuth struct {
 
 func (f fakeLDAPAuth) Authenticate(ctx context.Context, userDN string, password string) error {
 	return f.err
+}
+
+type recordUserRepo struct {
+	created *models.User
+}
+
+func (r *recordUserRepo) GetByID(ctx context.Context, id string) (*models.User, error) {
+	return nil, repository.ErrNotFound
+}
+func (r *recordUserRepo) GetByUsername(ctx context.Context, username string) (*models.User, error) {
+	return nil, repository.ErrNotFound
+}
+func (r *recordUserRepo) GetByUsernameAndRole(ctx context.Context, username string, role models.UserRole) (*models.User, error) {
+	return nil, repository.ErrNotFound
+}
+func (r *recordUserRepo) GetByEmail(ctx context.Context, email string) (*models.User, error) {
+	return nil, repository.ErrNotFound
+}
+func (r *recordUserRepo) GetByPhone(ctx context.Context, phone string) (*models.User, error) {
+	return nil, repository.ErrNotFound
+}
+func (r *recordUserRepo) List(ctx context.Context, filter repository.UserListFilter, limit, offset int) ([]models.User, int, error) {
+	return nil, 0, nil
+}
+func (r *recordUserRepo) Create(ctx context.Context, u *models.User) error {
+	r.created = u
+	return nil
+}
+func (r *recordUserRepo) Update(ctx context.Context, u *models.User) error { return nil }
+func (r *recordUserRepo) Delete(ctx context.Context, id string) error      { return nil }
+func (r *recordUserRepo) SetStatus(ctx context.Context, id string, status models.UserStatus) error {
+	return nil
+}
+
+type fakeInviteRepo struct {
+	items        map[string]*models.Invite
+	usedID       string
+	usedBy       string
+	expiredCount int64
+}
+
+func (f *fakeInviteRepo) Create(ctx context.Context, invite *models.Invite) error {
+	if f.items == nil {
+		f.items = map[string]*models.Invite{}
+	}
+	f.items[invite.TokenHash] = invite
+	return nil
+}
+func (f *fakeInviteRepo) GetByTokenHash(ctx context.Context, tokenHash string) (*models.Invite, error) {
+	item, ok := f.items[tokenHash]
+	if !ok {
+		return nil, repository.ErrNotFound
+	}
+	return item, nil
+}
+func (f *fakeInviteRepo) MarkUsed(ctx context.Context, id string, userID string, usedAt time.Time) error {
+	f.usedID = id
+	f.usedBy = userID
+	return nil
+}
+func (f *fakeInviteRepo) MarkExpired(ctx context.Context, now time.Time) (int64, error) {
+	f.expiredCount++
+	return f.expiredCount, nil
 }
 
 func (f *fakeSessionRepo) Create(ctx context.Context, s *models.UserSession) error {

@@ -400,3 +400,35 @@ func TestAuthLoginServiceError(t *testing.T) {
 		t.Fatalf("status=%d", rec.Code)
 	}
 }
+
+func TestAuthRegisterOK(t *testing.T) {
+	svc := newMockAuthService()
+	svc.RegisterFunc = func(ctx context.Context, req dto.RegisterRequest) (dto.RegisterResponse, error) {
+		return dto.RegisterResponse{UserID: "u1"}, nil
+	}
+	handler := NewAuthHandler(svc)
+	body := bytes.NewBufferString(`{"token":"t1","username":"alice","password":"pass"}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/register", body)
+	rec := httptest.NewRecorder()
+
+	handler.Register(rec, req)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status=%d", rec.Code)
+	}
+}
+
+func TestAuthRegisterInvalid(t *testing.T) {
+	svc := newMockAuthService()
+	svc.RegisterFunc = func(ctx context.Context, req dto.RegisterRequest) (dto.RegisterResponse, error) {
+		return dto.RegisterResponse{}, service.ErrInviteInvalid
+	}
+	handler := NewAuthHandler(svc)
+	body := bytes.NewBufferString(`{"token":"t1","username":"alice","password":"pass"}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/register", body)
+	rec := httptest.NewRecorder()
+
+	handler.Register(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status=%d", rec.Code)
+	}
+}

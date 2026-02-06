@@ -122,6 +122,14 @@ const (
 	AuditLockoutClear        AuditAction = "lockout_clear"
 )
 
+type InviteStatus string
+
+const (
+	InvitePending InviteStatus = "pending"
+	InviteUsed    InviteStatus = "used"
+	InviteExpired InviteStatus = "expired"
+)
+
 type Permission string
 
 const (

@@ -8,6 +8,7 @@ import (
 
 type MockAuthService struct {
 	LoginFunc       func(ctx context.Context, req dto.LoginRequest) (dto.LoginResponse, error)
+	RegisterFunc    func(ctx context.Context, req dto.RegisterRequest) (dto.RegisterResponse, error)
 	VerifyFunc      func(ctx context.Context, req dto.VerifyRequest) (dto.TokenPair, error)
 	RefreshFunc     func(ctx context.Context, req dto.RefreshRequest, ip string) (dto.TokenPair, error)
 	LogoutFunc      func(ctx context.Context, userID string, sessionID string, ip string) error
@@ -17,6 +18,10 @@ type MockAuthService struct {
 
 func (m *MockAuthService) Login(ctx context.Context, req dto.LoginRequest) (dto.LoginResponse, error) {
 	return m.LoginFunc(ctx, req)
+}
+
+func (m *MockAuthService) Register(ctx context.Context, req dto.RegisterRequest) (dto.RegisterResponse, error) {
+	return m.RegisterFunc(ctx, req)
 }
 
 func (m *MockAuthService) VerifySecondFactor(ctx context.Context, req dto.VerifyRequest) (dto.TokenPair, error) {

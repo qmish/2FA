@@ -632,6 +632,83 @@ func (r *OTPSecretRepository) Disable(ctx context.Context, id string) error {
 	return err
 }
 
+type InviteRepository struct {
+	db *sql.DB
+}
+
+func NewInviteRepository(db *sql.DB) *InviteRepository {
+	return &InviteRepository{db: db}
+}
+
+func (r *InviteRepository) Create(ctx context.Context, invite *models.Invite) error {
+	_, err := r.db.ExecContext(ctx, `
+        INSERT INTO invites (id, token_hash, email, phone, role, status, expires_at, created_at, used_at, used_by)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+		invite.ID,
+		invite.TokenHash,
+		nullString(invite.Email),
+		nullString(invite.Phone),
+		string(invite.Role),
+		string(invite.Status),
+		invite.ExpiresAt,
+		invite.CreatedAt,
+		nullTime(invite.UsedAt),
+		nullString(invite.UsedBy),
+	)
+	return err
+}
+
+func (r *InviteRepository) GetByTokenHash(ctx context.Context, tokenHash string) (*models.Invite, error) {
+	row := r.db.QueryRowContext(ctx, `
+        SELECT id, token_hash, email, phone, role, status, expires_at, created_at, used_at, used_by
+        FROM invites WHERE token_hash = $1`, tokenHash)
+	var (
+		email, phone, usedBy sql.NullString
+		status, role         string
+		usedAt               sql.NullTime
+		item                 models.Invite
+	)
+	if err := row.Scan(
+		&item.ID,
+		&item.TokenHash,
+		&email,
+		&phone,
+		&role,
+		&status,
+		&item.ExpiresAt,
+		&item.CreatedAt,
+		&usedAt,
+		&usedBy,
+	); err != nil {
+		return nil, mapNotFound(err)
+	}
+	item.Email = fromNullString(email)
+	item.Phone = fromNullString(phone)
+	item.Role = models.UserRole(role)
+	item.Status = models.InviteStatus(status)
+	item.UsedBy = fromNullString(usedBy)
+	if usedAt.Valid {
+		item.UsedAt = &usedAt.Time
+	}
+	return &item, nil
+}
+
+func (r *InviteRepository) MarkUsed(ctx context.Context, id string, userID string, usedAt time.Time) error {
+	_, err := r.db.ExecContext(ctx, `
+        UPDATE invites SET status = 'used', used_at = $2, used_by = $3 WHERE id = $1`,
+		id, usedAt, nullString(userID))
+	return err
+}
+
+func (r *InviteRepository) MarkExpired(ctx context.Context, now time.Time) (int64, error) {
+	res, err := r.db.ExecContext(ctx, `
+        UPDATE invites SET status = 'expired' WHERE status = 'pending' AND expires_at < $1`, now)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
+}
+
 type DeviceRepository struct {
 	db *sql.DB
 }

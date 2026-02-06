@@ -17,6 +17,12 @@ func (s StubAuthService) Login(ctx context.Context, req dto.LoginRequest) (dto.L
 	return dto.LoginResponse{}, ErrNotImplemented
 }
 
+func (s StubAuthService) Register(ctx context.Context, req dto.RegisterRequest) (dto.RegisterResponse, error) {
+	_ = ctx
+	_ = req
+	return dto.RegisterResponse{}, ErrNotImplemented
+}
+
 func (s StubAuthService) VerifySecondFactor(ctx context.Context, req dto.VerifyRequest) (dto.TokenPair, error) {
 	_ = ctx
 	_ = req

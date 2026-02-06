@@ -32,6 +32,8 @@ var (
 	ErrRateLimited        = errors.New("rate limited")
 	ErrNotFound           = errors.New("not found")
 	ErrNotConfigured      = errors.New("not configured")
+	ErrConflict           = errors.New("conflict")
+	ErrInviteInvalid      = errors.New("invite invalid")
 )
 
 type Service struct {
@@ -48,6 +50,7 @@ type Service struct {
 	userGroups    repository.UserGroupRepository
 	groupPolicies repository.GroupPolicyRepository
 	otpSecrets    repository.OTPSecretRepository
+	invites       repository.InviteRepository
 	totpIssuer    string
 	totpDigits    int
 	totpPeriod    int
@@ -115,6 +118,11 @@ func (s *Service) WithTOTPConfig(issuer string, digits int, period int) *Service
 
 func (s *Service) WithLDAPAuth(auth ldap.Authenticator) *Service {
 	s.ldapAuth = auth
+	return s
+}
+
+func (s *Service) WithInvites(invites repository.InviteRepository) *Service {
+	s.invites = invites
 	return s
 }
 
