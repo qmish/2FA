@@ -141,95 +141,6 @@
       </section>
 
       <section class="card">
-        <h2>Admin audit</h2>
-        <p class="hint">Время отображается в ISO времени.</p>
-        <div class="grid">
-          <label>Admin token
-            <textarea id="admin-token" rows="2" placeholder="admin JWT"></textarea>
-          </label>
-          <label>Action
-            <input id="audit-action" placeholder="logout / login / lockout_create" />
-          </label>
-          <label>Entity type
-            <input id="audit-entity" placeholder="session / user / lockout" />
-          </label>
-          <label>Actor user
-            <input id="audit-actor" placeholder="actor_user_id" />
-          </label>
-        </div>
-        <div class="row">
-          <button id="audit-btn">Load audit events</button>
-          <button id="audit-export-btn" class="secondary">Export audit CSV</button>
-          <span id="audit-status" class="badge error hidden">Ошибка</span>
-        </div>
-        <div id="audit-list" class="table"></div>
-        <pre id="audit-result" class="result"></pre>
-      </section>
-
-      <section class="card">
-        <h2>Admin sessions</h2>
-        <p class="hint">Время отображается в ISO времени.</p>
-        <div class="grid">
-          <label>Admin token
-            <textarea id="admin-sessions-token" rows="2" placeholder="admin JWT"></textarea>
-          </label>
-          <label>User ID
-            <input id="admin-sessions-user" placeholder="user_id" />
-          </label>
-          <label>Active only
-            <select id="admin-sessions-active">
-              <option value="true">true</option>
-              <option value="false">false</option>
-            </select>
-          </label>
-          <label>IP
-            <input id="admin-sessions-ip" placeholder="127.0.0.1" />
-          </label>
-          <label>User-Agent
-            <input id="admin-sessions-ua" placeholder="user_agent" />
-          </label>
-        </div>
-        <div class="row">
-          <button id="admin-sessions-btn">Load sessions</button>
-          <span id="admin-sessions-status" class="badge error hidden">Ошибка</span>
-        </div>
-        <div id="admin-sessions-list" class="table"></div>
-        <pre id="admin-sessions-result" class="result"></pre>
-      </section>
-
-      <section class="card">
-        <h2>Admin lockouts</h2>
-        <p class="hint">Время отображается в ISO времени.</p>
-        <div class="grid">
-          <label>Admin token
-            <textarea id="admin-lockouts-token" rows="2" placeholder="admin JWT"></textarea>
-          </label>
-          <label>User ID
-            <input id="admin-lockouts-user" placeholder="user_id" />
-          </label>
-          <label>IP
-            <input id="admin-lockouts-ip" placeholder="127.0.0.1" />
-          </label>
-          <label>Reason
-            <input id="admin-lockouts-reason" placeholder="too_many_attempts" />
-          </label>
-          <label>Active only
-            <select id="admin-lockouts-active">
-              <option value="true">true</option>
-              <option value="false">false</option>
-            </select>
-          </label>
-        </div>
-        <div class="row">
-          <button id="admin-lockouts-btn">Load lockouts</button>
-          <button id="admin-lockouts-clear" class="secondary">Clear lockouts</button>
-          <span id="admin-lockouts-status" class="badge error hidden">Ошибка</span>
-        </div>
-        <div id="admin-lockouts-list" class="table"></div>
-        <pre id="admin-lockouts-result" class="result"></pre>
-      </section>
-
-      <section class="card">
         <h2>Admin login</h2>
         <div class="grid">
           <label>Username
@@ -246,6 +157,102 @@
         </div>
         <pre id="admin-login-result" class="result"></pre>
       </section>
+
+      <section id="admin-locked" class="card">
+        <h2>Admin</h2>
+        <p class="hint">Админские настройки скрыты. Войдите как admin, чтобы открыть разделы.</p>
+      </section>
+
+      <div id="admin-sections" class="hidden">
+        <section class="card">
+          <h2>Admin audit</h2>
+          <p class="hint">Время отображается в ISO времени.</p>
+          <div class="grid">
+            <label>Admin token
+              <textarea id="admin-token" rows="2" placeholder="admin JWT"></textarea>
+            </label>
+            <label>Action
+              <input id="audit-action" placeholder="logout / login / lockout_create" />
+            </label>
+            <label>Entity type
+              <input id="audit-entity" placeholder="session / user / lockout" />
+            </label>
+            <label>Actor user
+              <input id="audit-actor" placeholder="actor_user_id" />
+            </label>
+          </div>
+          <div class="row">
+            <button id="audit-btn">Load audit events</button>
+            <button id="audit-export-btn" class="secondary">Export audit CSV</button>
+            <span id="audit-status" class="badge error hidden">Ошибка</span>
+          </div>
+          <div id="audit-list" class="table"></div>
+          <pre id="audit-result" class="result"></pre>
+        </section>
+
+        <section class="card">
+          <h2>Admin sessions</h2>
+          <p class="hint">Время отображается в ISO времени.</p>
+          <div class="grid">
+            <label>Admin token
+              <textarea id="admin-sessions-token" rows="2" placeholder="admin JWT"></textarea>
+            </label>
+            <label>User ID
+              <input id="admin-sessions-user" placeholder="user_id" />
+            </label>
+            <label>Active only
+              <select id="admin-sessions-active">
+                <option value="true">true</option>
+                <option value="false">false</option>
+              </select>
+            </label>
+            <label>IP
+              <input id="admin-sessions-ip" placeholder="127.0.0.1" />
+            </label>
+            <label>User-Agent
+              <input id="admin-sessions-ua" placeholder="user_agent" />
+            </label>
+          </div>
+          <div class="row">
+            <button id="admin-sessions-btn">Load sessions</button>
+            <span id="admin-sessions-status" class="badge error hidden">Ошибка</span>
+          </div>
+          <div id="admin-sessions-list" class="table"></div>
+          <pre id="admin-sessions-result" class="result"></pre>
+        </section>
+
+        <section class="card">
+          <h2>Admin lockouts</h2>
+          <p class="hint">Время отображается в ISO времени.</p>
+          <div class="grid">
+            <label>Admin token
+              <textarea id="admin-lockouts-token" rows="2" placeholder="admin JWT"></textarea>
+            </label>
+            <label>User ID
+              <input id="admin-lockouts-user" placeholder="user_id" />
+            </label>
+            <label>IP
+              <input id="admin-lockouts-ip" placeholder="127.0.0.1" />
+            </label>
+            <label>Reason
+              <input id="admin-lockouts-reason" placeholder="too_many_attempts" />
+            </label>
+            <label>Active only
+              <select id="admin-lockouts-active">
+                <option value="true">true</option>
+                <option value="false">false</option>
+              </select>
+            </label>
+          </div>
+          <div class="row">
+            <button id="admin-lockouts-btn">Load lockouts</button>
+            <button id="admin-lockouts-clear" class="secondary">Clear lockouts</button>
+            <span id="admin-lockouts-status" class="badge error hidden">Ошибка</span>
+          </div>
+          <div id="admin-lockouts-list" class="table"></div>
+          <pre id="admin-lockouts-result" class="result"></pre>
+        </section>
+      </div>
     </main>
 
     <script src="app.js"></script>

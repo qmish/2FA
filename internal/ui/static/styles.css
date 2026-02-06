@@ -197,3 +197,7 @@ button:hover {
 .badge.hidden {
   display: none;
 }
+
+.hidden {
+  display: none !important;
+}

@@ -83,6 +83,22 @@ function clearAdminToken() {
   window.localStorage.removeItem("admin_token");
 }
 
+function isAdminAuthorized() {
+  return Boolean(getAdminToken());
+}
+
+function updateAdminVisibility() {
+  const adminSections = document.getElementById("admin-sections");
+  const adminLocked = document.getElementById("admin-locked");
+  const isAuthorized = isAdminAuthorized();
+  if (adminSections) {
+    adminSections.classList.toggle("hidden", !isAuthorized);
+  }
+  if (adminLocked) {
+    adminLocked.classList.toggle("hidden", isAuthorized);
+  }
+}
+
 async function api(path, options) {
   const opts = options || {};
   const headers = opts.headers || {};
@@ -656,6 +672,7 @@ async function handleAdminLogin() {
     document.getElementById("admin-token").value = getAdminToken();
     document.getElementById("admin-sessions-token").value = getAdminToken();
     document.getElementById("admin-lockouts-token").value = getAdminToken();
+    updateAdminVisibility();
     setResult("admin-login-result", payload);
   } catch (err) {
     setResult("admin-login-result", err);
@@ -668,6 +685,7 @@ function handleAdminTokenClear() {
   document.getElementById("admin-token").value = "";
   document.getElementById("admin-sessions-token").value = "";
   document.getElementById("admin-lockouts-token").value = "";
+  updateAdminVisibility();
   setResult("admin-login-result", { ok: true });
   setStatus("admin-login-status", true);
 }
@@ -739,6 +757,7 @@ function initUI() {
   document.getElementById("health-btn").addEventListener("click", handleHealth);
   document.getElementById("metrics-btn").addEventListener("click", handleMetrics);
   syncTokenFields();
+  updateAdminVisibility();
 }
 
 window.addEventListener("DOMContentLoaded", initUI);
