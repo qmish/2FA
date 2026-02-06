@@ -15,6 +15,7 @@ type Routes struct {
 	UI              http.Handler
 	Admin           *handlers.AdminHandler
 	AdminAuth       *handlers.AdminAuthHandler
+	Profile         *handlers.ProfileHandler
 	AdminToken      middlewares.AdminTokenValidator
 	AuthRateLimit   func(http.Handler) http.Handler
 	VerifyRateLimit func(http.Handler) http.Handler
@@ -52,6 +53,10 @@ func New(r Routes) http.Handler {
 	if r.AuthMiddleware != nil {
 		mux.Handle("/api/v1/auth/totp/setup", r.AuthMiddleware(http.HandlerFunc(r.Auth.SetupTOTP)))
 		mux.Handle("/api/v1/auth/totp/disable", r.AuthMiddleware(http.HandlerFunc(r.Auth.DisableTOTP)))
+	}
+	if r.Profile != nil && r.AuthMiddleware != nil {
+		mux.Handle("/api/v1/profile/devices", r.AuthMiddleware(http.HandlerFunc(r.Profile.ListDevices)))
+		mux.Handle("/api/v1/profile/logins", r.AuthMiddleware(http.HandlerFunc(r.Profile.ListLoginHistory)))
 	}
 	if r.Sessions != nil {
 		var sessionsList http.Handler = http.HandlerFunc(r.Sessions.List)

@@ -20,6 +20,7 @@ import (
 	"github.com/qmish/2FA/internal/authz"
 	"github.com/qmish/2FA/internal/config"
 	lockoutsvc "github.com/qmish/2FA/internal/lockout/service"
+	profilesvc "github.com/qmish/2FA/internal/profile/service"
 	"github.com/qmish/2FA/internal/ratelimit"
 	sessionsvc "github.com/qmish/2FA/internal/session/service"
 	"github.com/qmish/2FA/internal/storage/postgres"
@@ -53,6 +54,7 @@ func main() {
 	challengeRepo := postgres.NewChallengeRepository(db)
 	otpSecretRepo := postgres.NewOTPSecretRepository(db)
 	sessionRepo := postgres.NewSessionRepository(db)
+	deviceRepo := postgres.NewDeviceRepository(db)
 	lockoutRepo := postgres.NewLockoutRepository(db)
 	authorizer := authz.NewAuthorizer(auditRepo, rolePermRepo)
 
@@ -120,6 +122,8 @@ func main() {
 	sessionHandler := handlers.NewSessionHandler(sessionService)
 	lockoutService := lockoutsvc.NewService(lockoutRepo)
 	lockoutHandler := handlers.NewLockoutHandler(lockoutService)
+	profileService := profilesvc.NewService(deviceRepo, loginRepo)
+	profileHandler := handlers.NewProfileHandler(profileService)
 	uiHandler := ui.Handler()
 	loginLimiter := middlewares.RateLimit(rateClient, "auth_login", cfg.AuthLoginLimit, time.Minute)
 	verifyLimiter := middlewares.RateLimit(rateClient, "auth_verify", cfg.AuthVerifyLimit, time.Minute)
@@ -130,6 +134,7 @@ func main() {
 		Health:          healthHandler,
 		Sessions:        sessionHandler,
 		Lockouts:        lockoutHandler,
+		Profile:         profileHandler,
 		UI:              uiHandler,
 		Admin:           adminHandler,
 		AdminAuth:       adminAuthHandler,
