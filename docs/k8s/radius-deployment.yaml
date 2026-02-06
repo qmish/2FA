@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: radius-server
+  labels:
+    app: radius-server
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: radius-server
+  template:
+    metadata:
+      labels:
+        app: radius-server
+    spec:
+      containers:
+        - name: radius-server
+          image: 2fa/radius-server:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 1812
+              protocol: UDP
+          envFrom:
+            - configMapRef:
+                name: api-config
+            - secretRef:
+                name: api-secrets

@@ -2,6 +2,7 @@ package service
 
 import (
     "context"
+    "encoding/json"
     "errors"
     "time"
 
@@ -27,6 +28,8 @@ type Service struct {
     audit         repository.AuditRepository
     logins        repository.LoginHistoryRepository
     radiusReqs    repository.RadiusRequestRepository
+    sessions      repository.SessionRepository
+    lockouts      repository.LockoutRepository
 }
 
 func NewService(
@@ -41,6 +44,8 @@ func NewService(
     audit repository.AuditRepository,
     logins repository.LoginHistoryRepository,
     radiusReqs repository.RadiusRequestRepository,
+    sessions repository.SessionRepository,
+    lockouts repository.LockoutRepository,
 ) *Service {
     return &Service{
         users:         users,
@@ -54,6 +59,8 @@ func NewService(
         audit:         audit,
         logins:        logins,
         radiusReqs:    radiusReqs,
+        sessions:      sessions,
+        lockouts:      lockouts,
     }
 }
 
@@ -548,6 +555,9 @@ func (s *Service) ListAuditEvents(ctx context.Context, req dto.AdminAuditListReq
         ActorUserID: req.Filter.ActorUserID,
         EntityType:  req.Filter.EntityType,
         Action:      req.Filter.Action,
+        EntityID:    req.Filter.EntityID,
+        IP:          req.Filter.IP,
+        Payload:     req.Filter.Payload,
         From:        req.Filter.From,
         To:          req.Filter.To,
     }, req.Page.Limit, req.Page.Offset)
@@ -562,6 +572,7 @@ func (s *Service) ListAuditEvents(ctx context.Context, req dto.AdminAuditListReq
             Action:      e.Action,
             EntityType:  e.EntityType,
             EntityID:    e.EntityID,
+            Payload:     e.Payload,
             IP:          e.IP,
             CreatedAt:   e.CreatedAt,
         })
@@ -577,6 +588,8 @@ func (s *Service) ListLoginHistory(ctx context.Context, req dto.AdminLoginHistor
         UserID:  req.Filter.UserID,
         Channel: req.Filter.Channel,
         Result:  req.Filter.Result,
+        IP:      req.Filter.IP,
+        DeviceID: req.Filter.DeviceID,
         From:    req.Filter.From,
         To:      req.Filter.To,
     }, req.Page.Limit, req.Page.Offset)
@@ -627,6 +640,122 @@ func (s *Service) ListRadiusRequests(ctx context.Context, req dto.AdminRadiusReq
         Items: out,
         Page:  dto.PageResponse{Total: total, Limit: req.Page.Limit, Offset: req.Page.Offset},
     }, nil
+}
+
+func (s *Service) ListSessions(ctx context.Context, req dto.AdminSessionListRequest) (dto.AdminSessionListResponse, error) {
+    items, total, err := s.sessions.List(ctx, repository.SessionListFilter{
+        UserID: req.Filter.UserID,
+        ActiveOnly: req.Filter.ActiveOnly,
+        IP: req.Filter.IP,
+        UserAgent: req.Filter.UserAgent,
+    }, req.Page.Limit, req.Page.Offset)
+    if err != nil {
+        return dto.AdminSessionListResponse{}, err
+    }
+    out := make([]dto.AdminSessionDTO, 0, len(items))
+    for _, item := range items {
+        out = append(out, dto.AdminSessionDTO{
+            ID:        item.ID,
+            UserID:    item.UserID,
+            IP:        item.IP,
+            UserAgent: item.UserAgent,
+            CreatedAt: item.CreatedAt,
+            ExpiresAt: item.ExpiresAt,
+            LastSeenAt: item.LastSeenAt,
+            RevokedAt: item.RevokedAt,
+        })
+    }
+    return dto.AdminSessionListResponse{
+        Items: out,
+        Page:  dto.PageResponse{Total: total, Limit: req.Page.Limit, Offset: req.Page.Offset},
+    }, nil
+}
+
+func (s *Service) RevokeSession(ctx context.Context, actorUserID string, sessionID string, ip string) error {
+    if err := s.sessions.Revoke(ctx, sessionID, time.Now()); err != nil {
+        return err
+    }
+    s.auditEvent(ctx, actorUserID, models.AuditSessionRevoke, models.AuditEntitySession, sessionID, ip)
+    return nil
+}
+
+func (s *Service) RevokeUserSessions(ctx context.Context, actorUserID string, userID string, exceptSessionID string, ip string) error {
+    if err := s.sessions.RevokeAllByUser(ctx, userID, exceptSessionID, time.Now()); err != nil {
+        return err
+    }
+    s.auditEvent(ctx, actorUserID, models.AuditSessionRevokeAll, models.AuditEntityUser, userID, ip)
+    return nil
+}
+
+func (s *Service) auditEvent(ctx context.Context, actorUserID string, action models.AuditAction, entityType models.AuditEntityType, entityID string, ip string) {
+    if s.audit == nil || actorUserID == "" {
+        return
+    }
+    _ = s.audit.Create(ctx, &models.AuditEvent{
+        ID:          uuid.NewString(),
+        ActorUserID: actorUserID,
+        Action:      action,
+        EntityType:  entityType,
+        EntityID:    entityID,
+        IP:          ip,
+        CreatedAt:   time.Now(),
+    })
+}
+
+func (s *Service) ListLockouts(ctx context.Context, req dto.AdminLockoutListRequest) (dto.AdminLockoutListResponse, error) {
+    items, total, err := s.lockouts.List(ctx, repository.LockoutFilter{
+        UserID:     req.Filter.UserID,
+        IP:         req.Filter.IP,
+        Reason:     req.Filter.Reason,
+        ActiveOnly: req.Filter.ActiveOnly,
+        Now:        time.Now(),
+    }, req.Page.Limit, req.Page.Offset)
+    if err != nil {
+        return dto.AdminLockoutListResponse{}, err
+    }
+    out := make([]dto.AdminLockoutDTO, 0, len(items))
+    for _, item := range items {
+        out = append(out, dto.AdminLockoutDTO{
+            ID:        item.ID,
+            UserID:    item.UserID,
+            IP:        item.IP,
+            Reason:    item.Reason,
+            ExpiresAt: item.ExpiresAt,
+            CreatedAt: item.CreatedAt,
+        })
+    }
+    return dto.AdminLockoutListResponse{
+        Items: out,
+        Page:  dto.PageResponse{Total: total, Limit: req.Page.Limit, Offset: req.Page.Offset},
+    }, nil
+}
+
+func (s *Service) ClearLockouts(ctx context.Context, actorUserID string, req dto.AdminLockoutClearRequest) error {
+    filter := repository.LockoutFilter{
+        UserID: req.UserID,
+        IP:     req.IP,
+        Reason: req.Reason,
+    }
+    if err := s.lockouts.ClearByFilter(ctx, filter); err != nil {
+        return err
+    }
+    if s.audit != nil && actorUserID != "" {
+        payload, _ := json.Marshal(map[string]string{
+            "user_id": req.UserID,
+            "ip":      req.IP,
+            "reason":  req.Reason,
+        })
+        _ = s.audit.Create(ctx, &models.AuditEvent{
+            ID:          uuid.NewString(),
+            ActorUserID: actorUserID,
+            Action:      models.AuditLockoutClear,
+            EntityType:  models.AuditEntityLockout,
+            EntityID:    req.UserID,
+            Payload:     string(payload),
+            CreatedAt:   time.Now(),
+        })
+    }
+    return nil
 }
 
 func mapPolicyRules(rules []models.PolicyRule) []dto.PolicyRuleDTO {

@@ -4,6 +4,8 @@ import (
     "context"
     "net/http"
     "strings"
+
+    "github.com/qmish/2FA/internal/models"
 )
 
 type AdminClaims struct {
@@ -27,6 +29,11 @@ func AdminAuth(validator AdminTokenValidator) func(http.Handler) http.Handler {
             claims, err := validator.ParseClaims(token)
             if err != nil {
                 w.WriteHeader(http.StatusUnauthorized)
+                return
+            }
+            // Проверяем, что роль пользователя - admin
+            if claims.Role != string(models.RoleAdmin) {
+                w.WriteHeader(http.StatusForbidden)
                 return
             }
             ctx := context.WithValue(r.Context(), adminClaimsKey{}, claims)

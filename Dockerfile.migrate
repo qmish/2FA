@@ -1,0 +1,24 @@
+FROM golang:1.22-alpine AS builder
+
+WORKDIR /build
+
+# Копируем go.mod и go.sum
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Копируем исходный код
+COPY . .
+
+# Обновляем зависимости и собираем бинарник
+RUN go mod tidy && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o migrate ./cmd/migrate
+
+# Финальный образ
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates tzdata postgresql-client
+WORKDIR /root/
+
+COPY --from=builder /build/migrate .
+COPY --from=builder /build/migrations ./migrations
+
+CMD ["./migrate"]

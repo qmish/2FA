@@ -1,19 +1,29 @@
 package main
 
 import (
+    "context"
     "log"
+    "log/slog"
     "net/http"
+    "time"
 
     "github.com/qmish/2FA/internal/admin/auth"
     adminsvc "github.com/qmish/2FA/internal/admin/service"
     "github.com/qmish/2FA/internal/api/handlers"
     "github.com/qmish/2FA/internal/api/middlewares"
     "github.com/qmish/2FA/internal/api/router"
+    authjwt "github.com/qmish/2FA/internal/auth/jwt"
     "github.com/qmish/2FA/internal/auth/providers"
     "github.com/qmish/2FA/internal/auth/service"
     "github.com/qmish/2FA/internal/authz"
     "github.com/qmish/2FA/internal/config"
+    "github.com/qmish/2FA/internal/api/metrics"
+    lockoutsvc "github.com/qmish/2FA/internal/lockout/service"
+    sessionsvc "github.com/qmish/2FA/internal/session/service"
+    "github.com/qmish/2FA/internal/ratelimit"
     "github.com/qmish/2FA/internal/storage/postgres"
+	"github.com/qmish/2FA/internal/ui"
+    "github.com/qmish/2FA/pkg/logger"
 )
 
 func main() {
@@ -21,6 +31,7 @@ func main() {
     if err != nil {
         log.Fatal(err)
     }
+    slog.SetDefault(logger.New())
     db, err := postgres.Open(cfg.DBURL)
     if err != nil {
         log.Fatal(err)
@@ -40,6 +51,7 @@ func main() {
     rolePermRepo := postgres.NewRolePermissionRepository(db)
     challengeRepo := postgres.NewChallengeRepository(db)
     sessionRepo := postgres.NewSessionRepository(db)
+    lockoutRepo := postgres.NewLockoutRepository(db)
     authorizer := authz.NewAuthorizer(auditRepo, rolePermRepo)
 
     adminAuthService := auth.NewService(cfg.AdminJWTIssuer, []byte(cfg.AdminJWTSecret), cfg.AdminJWTTTL, userRepo)
@@ -57,6 +69,8 @@ func main() {
         auditRepo,
         loginRepo,
         radiusReqRepo,
+        sessionRepo,
+        lockoutRepo,
     )
     adminHandler := handlers.NewAdminHandler(adminService, authorizer)
 
@@ -71,23 +85,74 @@ func main() {
         registry.RegisterPush(providers.DefaultPushProvider, fcm)
     }
 
+    jwtService := authjwt.NewService(cfg.JWTIssuer, []byte(cfg.JWTSecret), cfg.JWTTTL)
     authService := service.NewService(
         userRepo,
         challengeRepo,
         sessionRepo,
         registry,
+        lockoutRepo,
+        loginRepo,
+        auditRepo,
+        jwtService,
         cfg.AuthChallengeTTL,
         cfg.SessionTTL,
     )
+    var rateClient *ratelimit.RedisClient
+    if cfg.RedisURL != "" {
+        if client, err := ratelimit.NewRedisClient(cfg.RedisURL); err == nil {
+            rateClient = client
+        } else {
+            log.Printf("redis disabled: %v", err)
+        }
+    }
     authHandler := handlers.NewAuthHandler(authService)
+    healthHandler := handlers.NewHealthHandler(db, rateClient)
+    sessionService := sessionsvc.NewServiceWithAudit(sessionRepo, auditRepo)
+    sessionHandler := handlers.NewSessionHandler(sessionService)
+    lockoutService := lockoutsvc.NewService(lockoutRepo)
+    lockoutHandler := handlers.NewLockoutHandler(lockoutService)
+	uiHandler := ui.Handler()
+    loginLimiter := middlewares.RateLimit(rateClient, "auth_login", cfg.AuthLoginLimit, time.Minute)
+    verifyLimiter := middlewares.RateLimit(rateClient, "auth_verify", cfg.AuthVerifyLimit, time.Minute)
 
     adapter := adminTokenAdapter{svc: adminAuthService}
     routes := router.Routes{
         Auth:       authHandler,
+        Health:     healthHandler,
+        Sessions:   sessionHandler,
+        Lockouts:   lockoutHandler,
+		UI:         uiHandler,
         Admin:      adminHandler,
         AdminAuth:  adminAuthHandler,
         AdminToken: adapter,
+        AuthRateLimit:  loginLimiter,
+        VerifyRateLimit: verifyLimiter,
+        AuthMiddleware: middlewares.Auth(jwtService, sessionRepo, nil),
     }
+
+    go func() {
+        ticker := time.NewTicker(time.Minute)
+        defer ticker.Stop()
+        for range ticker.C {
+            if _, err := challengeRepo.MarkExpired(context.Background(), time.Now()); err != nil {
+                log.Printf("challenge cleanup failed: %v", err)
+            }
+        }
+    }()
+    go func() {
+        ticker := time.NewTicker(time.Minute)
+        defer ticker.Stop()
+        for range ticker.C {
+            cleared, err := lockoutRepo.ClearExpired(context.Background(), time.Now())
+            if err != nil {
+                metrics.Default.IncSystemError("db")
+                log.Printf("lockout cleanup failed: %v", err)
+                continue
+            }
+            metrics.Default.AddLockoutCleared(cleared)
+        }
+    }()
 
     addr := ":" + cfg.HTTPPort
     log.Printf("api-server listening on %s", addr)

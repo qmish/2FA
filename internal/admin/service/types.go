@@ -33,4 +33,9 @@ type AdminService interface {
     ListAuditEvents(ctx context.Context, req dto.AdminAuditListRequest) (dto.AdminAuditListResponse, error)
     ListLoginHistory(ctx context.Context, req dto.AdminLoginHistoryListRequest) (dto.AdminLoginHistoryListResponse, error)
     ListRadiusRequests(ctx context.Context, req dto.AdminRadiusRequestListRequest) (dto.AdminRadiusRequestListResponse, error)
+    ListSessions(ctx context.Context, req dto.AdminSessionListRequest) (dto.AdminSessionListResponse, error)
+    RevokeSession(ctx context.Context, actorUserID string, sessionID string, ip string) error
+    RevokeUserSessions(ctx context.Context, actorUserID string, userID string, exceptSessionID string, ip string) error
+    ListLockouts(ctx context.Context, req dto.AdminLockoutListRequest) (dto.AdminLockoutListResponse, error)
+    ClearLockouts(ctx context.Context, actorUserID string, req dto.AdminLockoutClearRequest) error
 }

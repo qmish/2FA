@@ -9,8 +9,8 @@ import (
 type MockAuthService struct {
     LoginFunc  func(ctx context.Context, req dto.LoginRequest) (dto.LoginResponse, error)
     VerifyFunc func(ctx context.Context, req dto.VerifyRequest) (dto.TokenPair, error)
-    RefreshFunc func(ctx context.Context, req dto.RefreshRequest) (dto.TokenPair, error)
-    LogoutFunc func(ctx context.Context, sessionID string) error
+    RefreshFunc func(ctx context.Context, req dto.RefreshRequest, ip string) (dto.TokenPair, error)
+    LogoutFunc func(ctx context.Context, userID string, sessionID string, ip string) error
 }
 
 func (m *MockAuthService) Login(ctx context.Context, req dto.LoginRequest) (dto.LoginResponse, error) {
@@ -21,10 +21,10 @@ func (m *MockAuthService) VerifySecondFactor(ctx context.Context, req dto.Verify
     return m.VerifyFunc(ctx, req)
 }
 
-func (m *MockAuthService) Refresh(ctx context.Context, req dto.RefreshRequest) (dto.TokenPair, error) {
-    return m.RefreshFunc(ctx, req)
+func (m *MockAuthService) Refresh(ctx context.Context, req dto.RefreshRequest, ip string) (dto.TokenPair, error) {
+    return m.RefreshFunc(ctx, req, ip)
 }
 
-func (m *MockAuthService) Logout(ctx context.Context, sessionID string) error {
-    return m.LogoutFunc(ctx, sessionID)
+func (m *MockAuthService) Logout(ctx context.Context, userID string, sessionID string, ip string) error {
+    return m.LogoutFunc(ctx, userID, sessionID, ip)
 }

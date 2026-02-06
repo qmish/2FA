@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-config
+data:
+  HTTP_PORT: {{ .Values.config.HTTP_PORT | quote }}
+  RADIUS_ADDR: {{ .Values.config.RADIUS_ADDR | quote }}
+  JWT_ISSUER: {{ .Values.config.JWT_ISSUER | quote }}
+  JWT_TTL: {{ .Values.config.JWT_TTL | quote }}
+  AUTH_CHALLENGE_TTL: {{ .Values.config.AUTH_CHALLENGE_TTL | quote }}
+  SESSION_TTL: {{ .Values.config.SESSION_TTL | quote }}
+  AUTH_LOGIN_LIMIT: {{ .Values.config.AUTH_LOGIN_LIMIT | quote }}
+  AUTH_VERIFY_LIMIT: {{ .Values.config.AUTH_VERIFY_LIMIT | quote }}

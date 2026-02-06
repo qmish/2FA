@@ -175,3 +175,39 @@ func (s StubService) ListRadiusRequests(ctx context.Context, req dto.AdminRadius
     _ = req
     return dto.AdminRadiusRequestListResponse{}, ErrNotImplemented
 }
+
+func (s StubService) ListSessions(ctx context.Context, req dto.AdminSessionListRequest) (dto.AdminSessionListResponse, error) {
+    _ = ctx
+    _ = req
+    return dto.AdminSessionListResponse{}, ErrNotImplemented
+}
+
+func (s StubService) RevokeSession(ctx context.Context, actorUserID string, sessionID string, ip string) error {
+    _ = ctx
+    _ = actorUserID
+    _ = sessionID
+    _ = ip
+    return ErrNotImplemented
+}
+
+func (s StubService) RevokeUserSessions(ctx context.Context, actorUserID string, userID string, exceptSessionID string, ip string) error {
+    _ = ctx
+    _ = actorUserID
+    _ = userID
+    _ = exceptSessionID
+    _ = ip
+    return ErrNotImplemented
+}
+
+func (s StubService) ListLockouts(ctx context.Context, req dto.AdminLockoutListRequest) (dto.AdminLockoutListResponse, error) {
+    _ = ctx
+    _ = req
+    return dto.AdminLockoutListResponse{}, ErrNotImplemented
+}
+
+func (s StubService) ClearLockouts(ctx context.Context, actorUserID string, req dto.AdminLockoutClearRequest) error {
+    _ = ctx
+    _ = actorUserID
+    _ = req
+    return ErrNotImplemented
+}

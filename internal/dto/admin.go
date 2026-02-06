@@ -42,6 +42,7 @@ type AdminAuditEventDTO struct {
     Action      models.AuditAction  `json:"action"`
     EntityType  models.AuditEntityType `json:"entity_type"`
     EntityID    string              `json:"entity_id"`
+    Payload     string              `json:"payload"`
     IP          string              `json:"ip"`
     CreatedAt   time.Time           `json:"created_at"`
 }
@@ -63,6 +64,17 @@ type RadiusRequestDTO struct {
     NASIP     string             `json:"nas_ip"`
     Result    models.RadiusResult `json:"result"`
     CreatedAt time.Time          `json:"created_at"`
+}
+
+type AdminSessionDTO struct {
+    ID        string     `json:"id"`
+    UserID    string     `json:"user_id"`
+    IP        string     `json:"ip"`
+    UserAgent string     `json:"user_agent"`
+    CreatedAt time.Time  `json:"created_at"`
+    ExpiresAt time.Time  `json:"expires_at"`
+    LastSeenAt *time.Time `json:"last_seen_at,omitempty"`
+    RevokedAt *time.Time `json:"revoked_at,omitempty"`
 }
 
 type PageRequest struct {
@@ -92,6 +104,9 @@ type AdminAuditFilter struct {
     ActorUserID string               `json:"actor_user_id"`
     EntityType  models.AuditEntityType `json:"entity_type"`
     Action      models.AuditAction   `json:"action"`
+    EntityID    string               `json:"entity_id"`
+    IP          string               `json:"ip"`
+    Payload     string               `json:"payload"`
     From        time.Time            `json:"from"`
     To          time.Time            `json:"to"`
 }
@@ -100,6 +115,8 @@ type AdminLoginHistoryFilter struct {
     UserID  string            `json:"user_id"`
     Channel models.AuthChannel `json:"channel"`
     Result  models.AuthResult  `json:"result"`
+    IP      string            `json:"ip"`
+    DeviceID string           `json:"device_id"`
     From    time.Time         `json:"from"`
     To      time.Time         `json:"to"`
 }
@@ -110,6 +127,13 @@ type AdminRadiusRequestFilter struct {
     Result   models.RadiusResult `json:"result"`
     From     time.Time          `json:"from"`
     To       time.Time          `json:"to"`
+}
+
+type AdminSessionFilter struct {
+    UserID string `json:"user_id"`
+    ActiveOnly bool `json:"active_only"`
+    IP string `json:"ip"`
+    UserAgent string `json:"user_agent"`
 }
 
 type AdminUserListRequest struct {
@@ -157,7 +181,58 @@ type AdminRadiusRequestListRequest struct {
     Filter AdminRadiusRequestFilter `json:"filter"`
 }
 
+type AdminSessionListRequest struct {
+    Page   PageRequest       `json:"page"`
+    Filter AdminSessionFilter `json:"filter"`
+}
+
 type AdminRadiusRequestListResponse struct {
     Items []RadiusRequestDTO `json:"items"`
     Page  PageResponse       `json:"page"`
+}
+
+type AdminSessionListResponse struct {
+    Items []AdminSessionDTO `json:"items"`
+    Page  PageResponse      `json:"page"`
+}
+
+type AdminSessionRevokeRequest struct {
+    SessionID string `json:"session_id"`
+}
+
+type AdminUserSessionsRevokeRequest struct {
+    UserID          string `json:"user_id"`
+    ExceptSessionID string `json:"except_session_id"`
+}
+
+type AdminLockoutDTO struct {
+    ID        string     `json:"id"`
+    UserID    string     `json:"user_id"`
+    IP        string     `json:"ip"`
+    Reason    string     `json:"reason"`
+    ExpiresAt time.Time  `json:"expires_at"`
+    CreatedAt time.Time  `json:"created_at"`
+}
+
+type AdminLockoutFilter struct {
+    UserID string `json:"user_id"`
+    IP     string `json:"ip"`
+    Reason string `json:"reason"`
+    ActiveOnly bool `json:"active_only"`
+}
+
+type AdminLockoutListRequest struct {
+    Page   PageRequest      `json:"page"`
+    Filter AdminLockoutFilter `json:"filter"`
+}
+
+type AdminLockoutListResponse struct {
+    Items []AdminLockoutDTO `json:"items"`
+    Page  PageResponse      `json:"page"`
+}
+
+type AdminLockoutClearRequest struct {
+    UserID string `json:"user_id"`
+    IP     string `json:"ip"`
+    Reason string `json:"reason"`
 }

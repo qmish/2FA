@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-config
+data:
+  HTTP_PORT: "8080"
+  RADIUS_ADDR: ":1812"
+  JWT_ISSUER: "2fa"
+  JWT_TTL: "15m"
+  AUTH_CHALLENGE_TTL: "5m"
+  SESSION_TTL: "24h"
+  AUTH_LOGIN_LIMIT: "10"
+  AUTH_VERIFY_LIMIT: "10"

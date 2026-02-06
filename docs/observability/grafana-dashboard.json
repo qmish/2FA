@@ -1,0 +1,35 @@
+{
+  "title": "2FA Overview",
+  "timezone": "browser",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "HTTP Requests",
+      "targets": [
+        {
+          "expr": "http_requests_total"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Auth Failures",
+      "targets": [
+        {
+          "expr": "auth_failures_total"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Auth Challenges",
+      "targets": [
+        {
+          "expr": "auth_challenges_total"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 36,
+  "version": 1
+}

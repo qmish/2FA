@@ -33,6 +33,7 @@ type UserSession struct {
     UserAgent        string
     ExpiresAt        time.Time
     CreatedAt        time.Time
+    LastSeenAt       *time.Time
     RevokedAt        *time.Time
 }
 
@@ -91,6 +92,15 @@ type LoginHistory struct {
     Result    AuthResult
     IP        string
     DeviceID  string
+    CreatedAt time.Time
+}
+
+type Lockout struct {
+    ID        string
+    UserID    string
+    IP        string
+    Reason    string
+    ExpiresAt time.Time
     CreatedAt time.Time
 }
 

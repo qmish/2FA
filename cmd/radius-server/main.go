@@ -1,9 +1,9 @@
 package main
 
 import (
-    "context"
     "log"
 
+    "github.com/qmish/2FA/internal/auth/providers"
     "github.com/qmish/2FA/internal/config"
     "github.com/qmish/2FA/internal/radius/server"
     "github.com/qmish/2FA/internal/radius/service"
@@ -20,13 +20,28 @@ func main() {
         log.Fatal(err)
     }
     defer db.Close()
+
+    userRepo := postgres.NewUserRepository(db)
+    challengeRepo := postgres.NewChallengeRepository(db)
+    loginRepo := postgres.NewLoginHistoryRepository(db)
+    auditRepo := postgres.NewAuditRepository(db)
+
+    registry := providers.NewRegistry()
+    if cfg.ExpressMobileURL != "" && cfg.ExpressMobileKey != "" {
+        express := providers.NewExpressMobileClient(cfg.ExpressMobileURL, cfg.ExpressMobileKey)
+        registry.RegisterSMS(providers.DefaultSMSProvider, express)
+    }
     secret := cfg.RadiusSecret
     if secret == "" {
         secret = "secret"
     }
     svc := service.NewRadiusService(
-        func(_ context.Context, username, password string) bool { return true },
-        func(_ context.Context, username string) bool { return true },
+        userRepo,
+        challengeRepo,
+        registry,
+        loginRepo,
+        auditRepo,
+        cfg.AuthChallengeTTL,
     )
     if err := server.ListenAndServe(cfg.RadiusAddr, secret, svc); err != nil {
         log.Fatal(err)

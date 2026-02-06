@@ -3,6 +3,7 @@ package handlers
 import (
     "context"
     "encoding/json"
+    "encoding/csv"
     "errors"
     "net/http"
     "strconv"
@@ -340,6 +341,9 @@ func (h *AdminHandler) ListAuditEvents(w http.ResponseWriter, r *http.Request) {
             ActorUserID: r.URL.Query().Get("actor_user_id"),
             EntityType:  models.AuditEntityType(r.URL.Query().Get("entity_type")),
             Action:      models.AuditAction(r.URL.Query().Get("action")),
+            EntityID:    r.URL.Query().Get("entity_id"),
+            IP:          r.URL.Query().Get("ip"),
+            Payload:     r.URL.Query().Get("payload"),
             From:        parseTime(r.URL.Query().Get("from")),
             To:          parseTime(r.URL.Query().Get("to")),
         },
@@ -347,6 +351,52 @@ func (h *AdminHandler) ListAuditEvents(w http.ResponseWriter, r *http.Request) {
     resp, err := h.service.ListAuditEvents(r.Context(), req)
     if err != nil {
         writeError(w, http.StatusBadRequest, "list_audit_failed")
+        return
+    }
+    writeJSON(w, http.StatusOK, resp)
+}
+
+func (h *AdminHandler) ExportAuditEvents(w http.ResponseWriter, r *http.Request) {
+    if !h.requirePermission(w, r, models.PermissionAdminAuditRead) {
+        return
+    }
+    req := dto.AdminAuditListRequest{
+        Page: parsePage(r),
+        Filter: dto.AdminAuditFilter{
+            ActorUserID: r.URL.Query().Get("actor_user_id"),
+            EntityType:  models.AuditEntityType(r.URL.Query().Get("entity_type")),
+            Action:      models.AuditAction(r.URL.Query().Get("action")),
+            EntityID:    r.URL.Query().Get("entity_id"),
+            IP:          r.URL.Query().Get("ip"),
+            Payload:     r.URL.Query().Get("payload"),
+            From:        parseTime(r.URL.Query().Get("from")),
+            To:          parseTime(r.URL.Query().Get("to")),
+        },
+    }
+    resp, err := h.service.ListAuditEvents(r.Context(), req)
+    if err != nil {
+        writeError(w, http.StatusBadRequest, "export_audit_failed")
+        return
+    }
+    if strings.EqualFold(r.URL.Query().Get("format"), "csv") {
+        w.Header().Set("Content-Type", "text/csv")
+        w.Header().Set("Content-Disposition", "attachment; filename=audit.csv")
+        w.WriteHeader(http.StatusOK)
+        writer := csv.NewWriter(w)
+        _ = writer.Write([]string{"id", "actor_user_id", "action", "entity_type", "entity_id", "payload", "ip", "created_at"})
+        for _, item := range resp.Items {
+            _ = writer.Write([]string{
+                item.ID,
+                item.ActorUserID,
+                string(item.Action),
+                string(item.EntityType),
+                item.EntityID,
+                item.Payload,
+                item.IP,
+                item.CreatedAt.Format(time.RFC3339),
+            })
+        }
+        writer.Flush()
         return
     }
     writeJSON(w, http.StatusOK, resp)
@@ -362,6 +412,8 @@ func (h *AdminHandler) ListLoginHistory(w http.ResponseWriter, r *http.Request) 
             UserID:  r.URL.Query().Get("user_id"),
             Channel: models.AuthChannel(r.URL.Query().Get("channel")),
             Result:  models.AuthResult(r.URL.Query().Get("result")),
+            IP:      r.URL.Query().Get("ip"),
+            DeviceID: r.URL.Query().Get("device_id"),
             From:    parseTime(r.URL.Query().Get("from")),
             To:      parseTime(r.URL.Query().Get("to")),
         },
@@ -394,6 +446,123 @@ func (h *AdminHandler) ListRadiusRequests(w http.ResponseWriter, r *http.Request
         return
     }
     writeJSON(w, http.StatusOK, resp)
+}
+
+func (h *AdminHandler) ListSessions(w http.ResponseWriter, r *http.Request) {
+    if !h.requirePermission(w, r, models.PermissionAdminUsersRead) {
+        return
+    }
+    req := dto.AdminSessionListRequest{
+        Page: parsePage(r),
+        Filter: dto.AdminSessionFilter{
+            UserID: r.URL.Query().Get("user_id"),
+            ActiveOnly: parseBool(r.URL.Query().Get("active_only")),
+            IP: r.URL.Query().Get("ip"),
+            UserAgent: r.URL.Query().Get("user_agent"),
+        },
+    }
+    resp, err := h.service.ListSessions(r.Context(), req)
+    if err != nil {
+        writeError(w, http.StatusBadRequest, "list_sessions_failed")
+        return
+    }
+    writeJSON(w, http.StatusOK, resp)
+}
+
+func (h *AdminHandler) RevokeSession(w http.ResponseWriter, r *http.Request) {
+    if !h.requirePermission(w, r, models.PermissionAdminUsersWrite) {
+        return
+    }
+    claims, ok := middlewares.AdminClaimsFromContext(r.Context())
+    if !ok {
+        w.WriteHeader(http.StatusUnauthorized)
+        return
+    }
+    var req dto.AdminSessionRevokeRequest
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        writeError(w, http.StatusBadRequest, "invalid_json")
+        return
+    }
+    if req.SessionID == "" {
+        writeError(w, http.StatusBadRequest, "invalid_input")
+        return
+    }
+    if err := h.service.RevokeSession(r.Context(), claims.UserID, req.SessionID, clientIP(r)); err != nil {
+        writeError(w, http.StatusBadRequest, "revoke_session_failed")
+        return
+    }
+    w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *AdminHandler) RevokeUserSessions(w http.ResponseWriter, r *http.Request) {
+    if !h.requirePermission(w, r, models.PermissionAdminUsersWrite) {
+        return
+    }
+    claims, ok := middlewares.AdminClaimsFromContext(r.Context())
+    if !ok {
+        w.WriteHeader(http.StatusUnauthorized)
+        return
+    }
+    var req dto.AdminUserSessionsRevokeRequest
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        writeError(w, http.StatusBadRequest, "invalid_json")
+        return
+    }
+    if req.UserID == "" {
+        writeError(w, http.StatusBadRequest, "invalid_input")
+        return
+    }
+    if err := h.service.RevokeUserSessions(r.Context(), claims.UserID, req.UserID, req.ExceptSessionID, clientIP(r)); err != nil {
+        writeError(w, http.StatusBadRequest, "revoke_sessions_failed")
+        return
+    }
+    w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *AdminHandler) ListLockouts(w http.ResponseWriter, r *http.Request) {
+    if !h.requirePermission(w, r, models.PermissionAdminUsersRead) {
+        return
+    }
+    req := dto.AdminLockoutListRequest{
+        Page: parsePage(r),
+        Filter: dto.AdminLockoutFilter{
+            UserID: r.URL.Query().Get("user_id"),
+            IP:     r.URL.Query().Get("ip"),
+            Reason: r.URL.Query().Get("reason"),
+            ActiveOnly: parseBool(r.URL.Query().Get("active_only")),
+        },
+    }
+    resp, err := h.service.ListLockouts(r.Context(), req)
+    if err != nil {
+        writeError(w, http.StatusBadRequest, "list_lockouts_failed")
+        return
+    }
+    writeJSON(w, http.StatusOK, resp)
+}
+
+func (h *AdminHandler) ClearLockouts(w http.ResponseWriter, r *http.Request) {
+    if !h.requirePermission(w, r, models.PermissionAdminUsersWrite) {
+        return
+    }
+    claims, ok := middlewares.AdminClaimsFromContext(r.Context())
+    if !ok {
+        w.WriteHeader(http.StatusUnauthorized)
+        return
+    }
+    var req dto.AdminLockoutClearRequest
+    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+        writeError(w, http.StatusBadRequest, "invalid_json")
+        return
+    }
+    if req.UserID == "" && req.IP == "" && req.Reason == "" {
+        writeError(w, http.StatusBadRequest, "invalid_input")
+        return
+    }
+    if err := h.service.ClearLockouts(r.Context(), claims.UserID, req); err != nil {
+        writeError(w, http.StatusBadRequest, "clear_lockouts_failed")
+        return
+    }
+    w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *AdminHandler) GetRolePermissions(w http.ResponseWriter, r *http.Request) {
@@ -687,4 +856,15 @@ func parseTime(val string) time.Time {
         return time.Time{}
     }
     return t
+}
+
+func parseBool(val string) bool {
+    if val == "" {
+        return false
+    }
+    b, err := strconv.ParseBool(val)
+    if err != nil {
+        return false
+    }
+    return b
 }

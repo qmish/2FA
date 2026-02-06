@@ -37,6 +37,10 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/ServerError"
   /api/v1/auth/verify:
@@ -59,10 +63,14 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/ServerError"
   /api/v1/auth/refresh:
@@ -85,13 +93,19 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/ServerError"
   /api/v1/auth/logout:
     post:
       summary: Logout
+      security:
+        - bearerAuth: []
       requestBody:
-        required: true
+        required: false
         content:
           application/json:
             schema:
@@ -101,6 +115,111 @@ paths:
           description: No Content
         "400":
           $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /api/v1/sessions:
+    get:
+      summary: User sessions list
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/active_only"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/format"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /api/v1/sessions/revoke:
+    post:
+      summary: Revoke session
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SessionRevokeRequest"
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /api/v1/sessions/revoke_all:
+    post:
+      summary: Revoke all sessions
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SessionRevokeAllRequest"
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /api/v1/sessions/current:
+    get:
+      summary: Current session
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionDTO"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /api/v1/lockouts/current:
+    get:
+      summary: Current lockout
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LockoutStatusResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/ServerError"
   /api/v1/admin/auth/login:
@@ -695,6 +814,44 @@ paths:
       security:
         - bearerAuth: []
       parameters:
+        - $ref: "#/components/parameters/actor_user_id"
+        - $ref: "#/components/parameters/entity_type"
+        - $ref: "#/components/parameters/action"
+        - $ref: "#/components/parameters/entity_id"
+        - $ref: "#/components/parameters/ip"
+        - $ref: "#/components/parameters/payload"
+        - $ref: "#/components/parameters/from"
+        - $ref: "#/components/parameters/to"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminAuditListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /api/v1/admin/audit/export:
+    get:
+      summary: Admin audit export
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/actor_user_id"
+        - $ref: "#/components/parameters/entity_type"
+        - $ref: "#/components/parameters/action"
+        - $ref: "#/components/parameters/entity_id"
+        - $ref: "#/components/parameters/ip"
+        - $ref: "#/components/parameters/payload"
+        - $ref: "#/components/parameters/from"
+        - $ref: "#/components/parameters/to"
+        - $ref: "#/components/parameters/format"
         - $ref: "#/components/parameters/limit"
         - $ref: "#/components/parameters/offset"
       responses:
@@ -716,6 +873,13 @@ paths:
       security:
         - bearerAuth: []
       parameters:
+        - $ref: "#/components/parameters/user_id"
+        - $ref: "#/components/parameters/channel"
+        - $ref: "#/components/parameters/result"
+        - $ref: "#/components/parameters/ip"
+        - $ref: "#/components/parameters/device_id"
+        - $ref: "#/components/parameters/from"
+        - $ref: "#/components/parameters/to"
         - $ref: "#/components/parameters/limit"
         - $ref: "#/components/parameters/offset"
       responses:
@@ -746,6 +910,122 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AdminRadiusRequestListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /api/v1/admin/sessions:
+    get:
+      summary: Admin sessions list
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/user_id"
+        - $ref: "#/components/parameters/active_only"
+        - $ref: "#/components/parameters/ip"
+        - $ref: "#/components/parameters/user_agent"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminSessionListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /api/v1/admin/sessions/revoke:
+    post:
+      summary: Admin revoke session
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminSessionRevokeRequest"
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /api/v1/admin/sessions/revoke_user:
+    post:
+      summary: Admin revoke user sessions
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminUserSessionsRevokeRequest"
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /api/v1/admin/lockouts:
+    get:
+      summary: Admin lockouts list
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/user_id"
+        - $ref: "#/components/parameters/ip"
+        - $ref: "#/components/parameters/reason"
+        - $ref: "#/components/parameters/active_only"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminLockoutListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
+  /api/v1/admin/lockouts/clear:
+    post:
+      summary: Admin clear lockouts
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLockoutClearRequest"
+      responses:
+        "204":
+          description: No Content
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -794,6 +1074,113 @@ components:
       in: query
       schema:
         type: string
+    user_id:
+      name: user_id
+      in: query
+      schema:
+        type: string
+    channel:
+      name: channel
+      in: query
+      schema:
+        type: string
+    result:
+      name: result
+      in: query
+      schema:
+        type: string
+    device_id:
+      name: device_id
+      in: query
+      schema:
+        type: string
+    entity_id:
+      name: entity_id
+      in: query
+      schema:
+        type: string
+    payload:
+      name: payload
+      in: query
+      schema:
+        type: string
+    actor_user_id:
+      name: actor_user_id
+      in: query
+      schema:
+        type: string
+    entity_type:
+      name: entity_type
+      in: query
+      schema:
+        type: string
+        enum:
+          - user
+          - device
+          - group
+          - policy
+          - radius_client
+          - challenge
+          - lockout
+          - session
+          - permission
+    action:
+      name: action
+      in: query
+      schema:
+        type: string
+        enum:
+          - create
+          - update
+          - delete
+          - login
+          - logout
+          - refresh
+          - enable
+          - disable
+          - authorize
+          - session_revoke
+          - session_revoke_all
+          - second_factor_approve
+          - second_factor_deny
+          - lockout_create
+    from:
+      name: from
+      in: query
+      schema:
+        type: string
+        format: date-time
+    to:
+      name: to
+      in: query
+      schema:
+        type: string
+        format: date-time
+    ip:
+      name: ip
+      in: query
+      schema:
+        type: string
+    user_agent:
+      name: user_agent
+      in: query
+      schema:
+        type: string
+    active_only:
+      name: active_only
+      in: query
+      schema:
+        type: boolean
+    format:
+      name: format
+      in: query
+      schema:
+        type: string
+    reason:
+      name: reason
+      in: query
+      schema:
+        type: string
   schemas:
     LoginRequest:
       type: object
@@ -806,6 +1193,8 @@ components:
         method:
           type: string
           enum: [otp, call, push]
+        ip: { type: string }
+        user_agent: { type: string }
       required: [username, password]
       example:
         username: "alice"
@@ -819,11 +1208,13 @@ components:
         challenge_id: { type: string }
         method: { type: string }
         expires_at: { type: integer }
+        status: { type: string }
       example:
         user_id: "u1"
         challenge_id: "c1"
         method: "otp"
         expires_at: 1738732800
+        status: "created"
     VerifyRequest:
       type: object
       properties:
@@ -831,6 +1222,8 @@ components:
         challenge_id: { type: string }
         method: { type: string }
         code: { type: string }
+        ip: { type: string }
+        user_agent: { type: string }
       required: [user_id, challenge_id, code]
       example:
         user_id: "u1"
@@ -848,9 +1241,45 @@ components:
       type: object
       properties:
         session_id: { type: string }
-      required: [session_id]
       example:
         session_id: "s1"
+    SessionDTO:
+      type: object
+      properties:
+        id: { type: string }
+        ip: { type: string }
+        user_agent: { type: string }
+        created_at: { type: integer }
+        expires_at: { type: integer }
+        last_seen_at: { type: integer }
+        revoked_at: { type: integer }
+    SessionListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SessionDTO"
+        page:
+          $ref: "#/components/schemas/PageResponse"
+    SessionRevokeRequest:
+      type: object
+      properties:
+        session_id: { type: string }
+      required: [session_id]
+    SessionRevokeAllRequest:
+      type: object
+      properties:
+        except_current: { type: boolean }
+      required: [except_current]
+    LockoutStatusResponse:
+      type: object
+      properties:
+        id: { type: string }
+        user_id: { type: string }
+        ip: { type: string }
+        reason: { type: string }
+        expires_at: { type: integer }
     TokenPair:
       type: object
       properties:
@@ -1085,6 +1514,7 @@ components:
             action: "authorize"
             entity_type: "permission"
             entity_id: "admin.users.read"
+            payload: "success"
             ip: "127.0.0.1"
             created_at: "2026-02-05T15:00:00Z"
         page:
@@ -1096,9 +1526,38 @@ components:
       properties:
         id: { type: string }
         actor_user_id: { type: string }
-        action: { type: string }
-        entity_type: { type: string }
+        action:
+          type: string
+          enum:
+            - create
+            - update
+            - delete
+            - login
+            - logout
+            - refresh
+            - enable
+            - disable
+            - authorize
+            - session_revoke
+            - session_revoke_all
+            - second_factor_approve
+            - second_factor_deny
+            - lockout_create
+            - lockout_clear
+        entity_type:
+          type: string
+          enum:
+            - user
+            - device
+            - group
+            - policy
+            - radius_client
+            - challenge
+            - lockout
+            - session
+            - permission
         entity_id: { type: string }
+        payload: { type: string }
         ip: { type: string }
         created_at: { type: string, format: date-time }
     AdminLoginHistoryListResponse:
@@ -1154,6 +1613,61 @@ components:
           total: 1
           limit: 10
           offset: 0
+    AdminSessionDTO:
+      type: object
+      properties:
+        id: { type: string }
+        user_id: { type: string }
+        ip: { type: string }
+        user_agent: { type: string }
+        created_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        last_seen_at: { type: string, format: date-time }
+        revoked_at: { type: string, format: date-time }
+    AdminSessionListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminSessionDTO"
+        page:
+          $ref: "#/components/schemas/PageResponse"
+    AdminSessionRevokeRequest:
+      type: object
+      properties:
+        session_id: { type: string }
+      required: [session_id]
+    AdminUserSessionsRevokeRequest:
+      type: object
+      properties:
+        user_id: { type: string }
+        except_session_id: { type: string }
+      required: [user_id]
+    AdminLockoutDTO:
+      type: object
+      properties:
+        id: { type: string }
+        user_id: { type: string }
+        ip: { type: string }
+        reason: { type: string }
+        expires_at: { type: string, format: date-time }
+        created_at: { type: string, format: date-time }
+    AdminLockoutListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminLockoutDTO"
+        page:
+          $ref: "#/components/schemas/PageResponse"
+    AdminLockoutClearRequest:
+      type: object
+      properties:
+        user_id: { type: string }
+        ip: { type: string }
+        reason: { type: string }
     RadiusRequest:
       type: object
       properties:
@@ -1296,6 +1810,12 @@ components:
             $ref: "#/components/schemas/ErrorResponse"
     Forbidden:
       description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    TooManyRequests:
+      description: Too Many Requests
       content:
         application/json:
           schema:

@@ -2,11 +2,17 @@ http_port: "8080"
 radius_addr: ":1812"
 radius_secret: "CHANGE_ME"
 db_url: "postgres://user:pass@localhost:5432/2fa?sslmode=disable"
+redis_url: "redis://localhost:6379/0"
 express_mobile_url: "https://api.express-mobile.local"
 express_mobile_key: "CHANGE_ME"
 fcm_server_key: "CHANGE_ME"
+jwt_secret: "CHANGE_ME"
+jwt_issuer: "2fa"
+jwt_ttl: 15m
 admin_jwt_secret: "CHANGE_ME"
 admin_jwt_issuer: "2fa"
 admin_jwt_ttl: 15m
 auth_challenge_ttl: 5m
 session_ttl: 24h
+auth_login_limit: 10
+auth_verify_limit: 10

@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-radius
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-radius
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-radius
+    spec:
+      containers:
+        - name: radius
+          image: {{ .Values.image.radius }}
+          ports:
+            - containerPort: 1812
+              protocol: UDP
+          envFrom:
+            - configMapRef:
+                name: {{ .Release.Name }}-config
+            - secretRef:
+                name: {{ .Release.Name }}-secrets

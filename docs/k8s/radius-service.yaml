@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: radius-server
+spec:
+  type: NodePort
+  selector:
+    app: radius-server
+  ports:
+    - port: 1812
+      targetPort: 1812
+      nodePort: 31812
+      protocol: UDP

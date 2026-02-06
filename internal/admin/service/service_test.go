@@ -4,6 +4,7 @@ import (
     "context"
     "errors"
     "testing"
+    "time"
 
     "github.com/qmish/2FA/internal/dto"
     "github.com/qmish/2FA/internal/models"
@@ -23,6 +24,8 @@ func TestServiceListUsers(t *testing.T) {
         fakeAuditRepo{},
         fakeLoginRepo{},
         fakeRadiusReqRepo{},
+        fakeSessionRepo{},
+        &fakeLockoutRepo{},
     )
 
     resp, err := svc.ListUsers(context.Background(), dto.AdminUserListRequest{
@@ -53,6 +56,8 @@ func TestServiceCreateUser(t *testing.T) {
         fakeAuditRepo{},
         fakeLoginRepo{},
         fakeRadiusReqRepo{},
+        fakeSessionRepo{},
+        &fakeLockoutRepo{},
     )
 
     _, err := svc.CreateUser(context.Background(), dto.AdminUserCreateRequest{
@@ -71,6 +76,121 @@ func TestServiceCreateUser(t *testing.T) {
     }
     if repo.created.PasswordHash == "" {
         t.Fatalf("expected password hash")
+    }
+}
+
+func TestServiceListLockouts(t *testing.T) {
+    lockouts := &fakeLockoutRepo{
+        items: []models.Lockout{{ID: "l1", UserID: "u1", IP: "127.0.0.1", Reason: "too_many_attempts"}},
+    }
+    svc := NewService(
+        fakeUserRepo{},
+        fakePolicyRepo{},
+        fakePolicyRuleRepo{},
+        fakeRadiusClientRepo{},
+        fakeRolePermRepo{},
+        fakeGroupRepo{},
+        fakeUserGroupRepo{},
+        fakeGroupPolicyRepo{},
+        fakeAuditRepo{},
+        fakeLoginRepo{},
+        fakeRadiusReqRepo{},
+        fakeSessionRepo{},
+        lockouts,
+    )
+    resp, err := svc.ListLockouts(context.Background(), dto.AdminLockoutListRequest{
+        Page: dto.PageRequest{Limit: 10, Offset: 0},
+        Filter: dto.AdminLockoutFilter{UserID: "u1", ActiveOnly: true},
+    })
+    if err != nil || len(resp.Items) != 1 || resp.Items[0].ID != "l1" {
+        t.Fatalf("unexpected response: %+v err=%v", resp, err)
+    }
+}
+
+func TestServiceClearLockouts(t *testing.T) {
+    lockouts := &fakeLockoutRepo{}
+    audits := &recordAuditRepo{}
+    svc := NewService(
+        fakeUserRepo{},
+        fakePolicyRepo{},
+        fakePolicyRuleRepo{},
+        fakeRadiusClientRepo{},
+        fakeRolePermRepo{},
+        fakeGroupRepo{},
+        fakeUserGroupRepo{},
+        fakeGroupPolicyRepo{},
+        audits,
+        fakeLoginRepo{},
+        fakeRadiusReqRepo{},
+        fakeSessionRepo{},
+        lockouts,
+    )
+    if err := svc.ClearLockouts(context.Background(), "admin1", dto.AdminLockoutClearRequest{Reason: "too_many_attempts"}); err != nil {
+        t.Fatalf("ClearLockouts error: %v", err)
+    }
+    if lockouts.cleared.Reason != "too_many_attempts" {
+        t.Fatalf("expected cleared reason, got %+v", lockouts.cleared)
+    }
+    if audits.count != 1 || audits.last.Action != models.AuditLockoutClear || audits.last.ActorUserID != "admin1" || audits.last.EntityType != models.AuditEntityLockout {
+        t.Fatalf("unexpected audit event: %+v", audits.last)
+    }
+}
+
+func TestServiceRevokeSessionAudits(t *testing.T) {
+    audits := &recordAuditRepo{}
+    sessions := &recordSessionRepo{}
+    svc := NewService(
+        fakeUserRepo{},
+        fakePolicyRepo{},
+        fakePolicyRuleRepo{},
+        fakeRadiusClientRepo{},
+        fakeRolePermRepo{},
+        fakeGroupRepo{},
+        fakeUserGroupRepo{},
+        fakeGroupPolicyRepo{},
+        audits,
+        fakeLoginRepo{},
+        fakeRadiusReqRepo{},
+        sessions,
+        &fakeLockoutRepo{},
+    )
+    if err := svc.RevokeSession(context.Background(), "admin1", "s1", "127.0.0.1"); err != nil {
+        t.Fatalf("RevokeSession error: %v", err)
+    }
+    if sessions.revokedID != "s1" {
+        t.Fatalf("expected revoke s1, got %s", sessions.revokedID)
+    }
+    if audits.count != 1 || audits.last.Action != models.AuditSessionRevoke || audits.last.ActorUserID != "admin1" || audits.last.EntityType != models.AuditEntitySession || audits.last.EntityID != "s1" || audits.last.IP != "127.0.0.1" {
+        t.Fatalf("unexpected audit event: %+v", audits.last)
+    }
+}
+
+func TestServiceRevokeUserSessionsAudits(t *testing.T) {
+    audits := &recordAuditRepo{}
+    sessions := &recordSessionRepo{}
+    svc := NewService(
+        fakeUserRepo{},
+        fakePolicyRepo{},
+        fakePolicyRuleRepo{},
+        fakeRadiusClientRepo{},
+        fakeRolePermRepo{},
+        fakeGroupRepo{},
+        fakeUserGroupRepo{},
+        fakeGroupPolicyRepo{},
+        audits,
+        fakeLoginRepo{},
+        fakeRadiusReqRepo{},
+        sessions,
+        &fakeLockoutRepo{},
+    )
+    if err := svc.RevokeUserSessions(context.Background(), "admin1", "u2", "s3", "127.0.0.1"); err != nil {
+        t.Fatalf("RevokeUserSessions error: %v", err)
+    }
+    if sessions.revokedUser != "u2" || sessions.exceptID != "s3" {
+        t.Fatalf("unexpected revoke user sessions: %+v", sessions)
+    }
+    if audits.count != 1 || audits.last.Action != models.AuditSessionRevokeAll || audits.last.ActorUserID != "admin1" || audits.last.EntityType != models.AuditEntityUser || audits.last.EntityID != "u2" || audits.last.IP != "127.0.0.1" {
+        t.Fatalf("unexpected audit event: %+v", audits.last)
     }
 }
 
@@ -159,11 +279,28 @@ func (f fakeAuditRepo) List(ctx context.Context, filter repository.AuditFilter, 
     return []models.AuditEvent{}, 0, nil
 }
 
+type recordAuditRepo struct {
+    count int
+    last  *models.AuditEvent
+}
+
+func (r *recordAuditRepo) Create(ctx context.Context, e *models.AuditEvent) error {
+    r.count++
+    r.last = e
+    return nil
+}
+func (r *recordAuditRepo) List(ctx context.Context, filter repository.AuditFilter, limit, offset int) ([]models.AuditEvent, int, error) {
+    return []models.AuditEvent{}, 0, nil
+}
+
 type fakeLoginRepo struct{}
 
 func (f fakeLoginRepo) Create(ctx context.Context, h *models.LoginHistory) error { return nil }
 func (f fakeLoginRepo) List(ctx context.Context, filter repository.LoginHistoryFilter, limit, offset int) ([]models.LoginHistory, int, error) {
     return []models.LoginHistory{}, 0, nil
+}
+func (f fakeLoginRepo) CountFailures(ctx context.Context, userID string, since time.Time) (int, error) {
+    return 0, nil
 }
 
 type fakeRadiusReqRepo struct{}
@@ -173,6 +310,71 @@ func (f fakeRadiusReqRepo) List(ctx context.Context, filter repository.RadiusReq
     return []models.RadiusRequest{}, 0, nil
 }
 func (f fakeRadiusReqRepo) UpdateResult(ctx context.Context, id string, result models.RadiusResult) error { return nil }
+
+type fakeSessionRepo struct{}
+
+func (f fakeSessionRepo) Create(ctx context.Context, s *models.UserSession) error { return nil }
+func (f fakeSessionRepo) Revoke(ctx context.Context, id string, revokedAt time.Time) error { return nil }
+func (f fakeSessionRepo) GetByRefreshHash(ctx context.Context, hash string) (*models.UserSession, error) {
+    return nil, repository.ErrNotFound
+}
+func (f fakeSessionRepo) GetByID(ctx context.Context, id string) (*models.UserSession, error) {
+    return nil, repository.ErrNotFound
+}
+func (f fakeSessionRepo) RotateRefreshHash(ctx context.Context, id string, newHash string) error { return nil }
+func (f fakeSessionRepo) List(ctx context.Context, filter repository.SessionListFilter, limit, offset int) ([]models.UserSession, int, error) {
+    return nil, 0, nil
+}
+func (f fakeSessionRepo) RevokeAllByUser(ctx context.Context, userID string, exceptSessionID string, revokedAt time.Time) error {
+    return nil
+}
+func (f fakeSessionRepo) Touch(ctx context.Context, id string, seenAt time.Time) error { return nil }
+
+type recordSessionRepo struct {
+    revokedID   string
+    revokedUser string
+    exceptID    string
+}
+
+func (r *recordSessionRepo) Create(ctx context.Context, s *models.UserSession) error { return nil }
+func (r *recordSessionRepo) Revoke(ctx context.Context, id string, revokedAt time.Time) error {
+    r.revokedID = id
+    return nil
+}
+func (r *recordSessionRepo) GetByRefreshHash(ctx context.Context, hash string) (*models.UserSession, error) {
+    return nil, repository.ErrNotFound
+}
+func (r *recordSessionRepo) GetByID(ctx context.Context, id string) (*models.UserSession, error) {
+    return nil, repository.ErrNotFound
+}
+func (r *recordSessionRepo) RotateRefreshHash(ctx context.Context, id string, newHash string) error { return nil }
+func (r *recordSessionRepo) List(ctx context.Context, filter repository.SessionListFilter, limit, offset int) ([]models.UserSession, int, error) {
+    return nil, 0, nil
+}
+func (r *recordSessionRepo) RevokeAllByUser(ctx context.Context, userID string, exceptSessionID string, revokedAt time.Time) error {
+    r.revokedUser = userID
+    r.exceptID = exceptSessionID
+    return nil
+}
+func (r *recordSessionRepo) Touch(ctx context.Context, id string, seenAt time.Time) error { return nil }
+
+type fakeLockoutRepo struct{
+    items []models.Lockout
+    cleared repository.LockoutFilter
+}
+
+func (f *fakeLockoutRepo) Create(ctx context.Context, l *models.Lockout) error { return nil }
+func (f *fakeLockoutRepo) GetActive(ctx context.Context, userID string, ip string, now time.Time) (*models.Lockout, error) {
+    return nil, repository.ErrNotFound
+}
+func (f *fakeLockoutRepo) ClearExpired(ctx context.Context, now time.Time) (int64, error) { return 0, nil }
+func (f *fakeLockoutRepo) List(ctx context.Context, filter repository.LockoutFilter, limit, offset int) ([]models.Lockout, int, error) {
+    return f.items, len(f.items), nil
+}
+func (f *fakeLockoutRepo) ClearByFilter(ctx context.Context, filter repository.LockoutFilter) error {
+    f.cleared = filter
+    return nil
+}
 
 type fakeRolePermRepo struct{}
 

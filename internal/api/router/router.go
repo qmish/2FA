@@ -9,19 +9,69 @@ import (
 
 type Routes struct {
     Auth *handlers.AuthHandler
+    Health *handlers.HealthHandler
+    Sessions *handlers.SessionHandler
+    Lockouts *handlers.LockoutHandler
+    UI http.Handler
     Admin *handlers.AdminHandler
     AdminAuth *handlers.AdminAuthHandler
     AdminToken middlewares.AdminTokenValidator
+    AuthRateLimit func(http.Handler) http.Handler
+    VerifyRateLimit func(http.Handler) http.Handler
+    AuthMiddleware func(http.Handler) http.Handler
 }
 
 func New(r Routes) http.Handler {
     mux := http.NewServeMux()
-    mux.HandleFunc("/healthz", handlers.Health)
+    if r.UI != nil {
+        mux.Handle("/ui/", http.StripPrefix("/ui/", r.UI))
+        mux.Handle("/ui", http.RedirectHandler("/ui/", http.StatusMovedPermanently))
+    }
+    if r.Health != nil {
+        mux.HandleFunc("/healthz", r.Health.Health)
+    } else {
+        mux.HandleFunc("/healthz", handlers.Health)
+    }
     mux.HandleFunc("/metrics", handlers.Metrics)
-    mux.HandleFunc("/api/v1/auth/login", r.Auth.Login)
-    mux.HandleFunc("/api/v1/auth/verify", r.Auth.Verify)
+    var loginHandler http.Handler = http.HandlerFunc(r.Auth.Login)
+    if r.AuthRateLimit != nil {
+        loginHandler = r.AuthRateLimit(loginHandler)
+    }
+    var verifyHandler http.Handler = http.HandlerFunc(r.Auth.Verify)
+    if r.VerifyRateLimit != nil {
+        verifyHandler = r.VerifyRateLimit(verifyHandler)
+    }
+    mux.Handle("/api/v1/auth/login", loginHandler)
+    mux.Handle("/api/v1/auth/verify", verifyHandler)
     mux.HandleFunc("/api/v1/auth/refresh", r.Auth.Refresh)
-    mux.HandleFunc("/api/v1/auth/logout", r.Auth.Logout)
+    var logoutHandler http.Handler = http.HandlerFunc(r.Auth.Logout)
+    if r.AuthMiddleware != nil {
+        logoutHandler = r.AuthMiddleware(logoutHandler)
+    }
+    mux.Handle("/api/v1/auth/logout", logoutHandler)
+    if r.Sessions != nil {
+        var sessionsList http.Handler = http.HandlerFunc(r.Sessions.List)
+        var sessionsCurrent http.Handler = http.HandlerFunc(r.Sessions.Current)
+        var sessionsRevoke http.Handler = http.HandlerFunc(r.Sessions.Revoke)
+        var sessionsRevokeAll http.Handler = http.HandlerFunc(r.Sessions.RevokeAll)
+        if r.AuthMiddleware != nil {
+            sessionsList = r.AuthMiddleware(sessionsList)
+            sessionsCurrent = r.AuthMiddleware(sessionsCurrent)
+            sessionsRevoke = r.AuthMiddleware(sessionsRevoke)
+            sessionsRevokeAll = r.AuthMiddleware(sessionsRevokeAll)
+        }
+        mux.Handle("/api/v1/sessions", sessionsList)
+        mux.Handle("/api/v1/sessions/current", sessionsCurrent)
+        mux.Handle("/api/v1/sessions/revoke", sessionsRevoke)
+        mux.Handle("/api/v1/sessions/revoke_all", sessionsRevokeAll)
+    }
+    if r.Lockouts != nil {
+        var lockoutCurrent http.Handler = http.HandlerFunc(r.Lockouts.Current)
+        if r.AuthMiddleware != nil {
+            lockoutCurrent = r.AuthMiddleware(lockoutCurrent)
+        }
+        mux.Handle("/api/v1/lockouts/current", lockoutCurrent)
+    }
     mux.HandleFunc("/api/v1/admin/auth/login", r.AdminAuth.Login)
 
     adminAuth := middlewares.AdminAuth(r.AdminToken)
@@ -49,7 +99,13 @@ func New(r Routes) http.Handler {
     mux.Handle("/api/v1/admin/groups/policy", adminAuth(http.HandlerFunc(r.Admin.SetGroupPolicy)))
     mux.Handle("/api/v1/admin/groups/policy/clear", adminAuth(http.HandlerFunc(r.Admin.ClearGroupPolicy)))
     mux.Handle("/api/v1/admin/audit/events", adminAuth(http.HandlerFunc(r.Admin.ListAuditEvents)))
+    mux.Handle("/api/v1/admin/audit/export", adminAuth(http.HandlerFunc(r.Admin.ExportAuditEvents)))
     mux.Handle("/api/v1/admin/logins", adminAuth(http.HandlerFunc(r.Admin.ListLoginHistory)))
     mux.Handle("/api/v1/admin/radius/requests", adminAuth(http.HandlerFunc(r.Admin.ListRadiusRequests)))
-    return middlewares.RequestID(mux)
+    mux.Handle("/api/v1/admin/sessions", adminAuth(http.HandlerFunc(r.Admin.ListSessions)))
+    mux.Handle("/api/v1/admin/sessions/revoke", adminAuth(http.HandlerFunc(r.Admin.RevokeSession)))
+    mux.Handle("/api/v1/admin/sessions/revoke_user", adminAuth(http.HandlerFunc(r.Admin.RevokeUserSessions)))
+    mux.Handle("/api/v1/admin/lockouts", adminAuth(http.HandlerFunc(r.Admin.ListLockouts)))
+    mux.Handle("/api/v1/admin/lockouts/clear", adminAuth(http.HandlerFunc(r.Admin.ClearLockouts)))
+    return middlewares.RequestID(middlewares.Metrics(middlewares.RequestLogger(mux)))
 }

@@ -33,6 +33,11 @@ type MockAdminService struct {
     ListAuditEventsFunc    func(ctx context.Context, req dto.AdminAuditListRequest) (dto.AdminAuditListResponse, error)
     ListLoginHistoryFunc   func(ctx context.Context, req dto.AdminLoginHistoryListRequest) (dto.AdminLoginHistoryListResponse, error)
     ListRadiusRequestsFunc func(ctx context.Context, req dto.AdminRadiusRequestListRequest) (dto.AdminRadiusRequestListResponse, error)
+    ListSessionsFunc       func(ctx context.Context, req dto.AdminSessionListRequest) (dto.AdminSessionListResponse, error)
+    RevokeSessionFunc      func(ctx context.Context, actorUserID string, sessionID string, ip string) error
+    RevokeUserSessionsFunc func(ctx context.Context, actorUserID string, userID string, exceptSessionID string, ip string) error
+    ListLockoutsFunc       func(ctx context.Context, req dto.AdminLockoutListRequest) (dto.AdminLockoutListResponse, error)
+    ClearLockoutsFunc      func(ctx context.Context, actorUserID string, req dto.AdminLockoutClearRequest) error
 }
 
 func (m *MockAdminService) ListUsers(ctx context.Context, req dto.AdminUserListRequest) (dto.AdminUserListResponse, error) {
@@ -137,4 +142,24 @@ func (m *MockAdminService) ListLoginHistory(ctx context.Context, req dto.AdminLo
 
 func (m *MockAdminService) ListRadiusRequests(ctx context.Context, req dto.AdminRadiusRequestListRequest) (dto.AdminRadiusRequestListResponse, error) {
     return m.ListRadiusRequestsFunc(ctx, req)
+}
+
+func (m *MockAdminService) ListSessions(ctx context.Context, req dto.AdminSessionListRequest) (dto.AdminSessionListResponse, error) {
+    return m.ListSessionsFunc(ctx, req)
+}
+
+func (m *MockAdminService) RevokeSession(ctx context.Context, actorUserID string, sessionID string, ip string) error {
+    return m.RevokeSessionFunc(ctx, actorUserID, sessionID, ip)
+}
+
+func (m *MockAdminService) RevokeUserSessions(ctx context.Context, actorUserID string, userID string, exceptSessionID string, ip string) error {
+    return m.RevokeUserSessionsFunc(ctx, actorUserID, userID, exceptSessionID, ip)
+}
+
+func (m *MockAdminService) ListLockouts(ctx context.Context, req dto.AdminLockoutListRequest) (dto.AdminLockoutListResponse, error) {
+    return m.ListLockoutsFunc(ctx, req)
+}
+
+func (m *MockAdminService) ClearLockouts(ctx context.Context, actorUserID string, req dto.AdminLockoutClearRequest) error {
+    return m.ClearLockoutsFunc(ctx, actorUserID, req)
 }

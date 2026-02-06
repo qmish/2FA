@@ -6,7 +6,10 @@
 - уровни: info/warn/error (можно расширить)
 
 ## Метрики
-- `GET /metrics` — заглушка, подготовка под Prometheus
+- `GET /metrics` — базовые счётчики (http/auth)
+- SLO/SLI: `docs/observability/slo_sli.md`
+- Alerts: `docs/observability/alerts.yaml`
+- Lockout метрики: `lockout_created_total`, `lockout_active_total`, `lockout_cleared_total`
 
 ## Healthcheck
-- `GET /healthz` — базовая проверка доступности сервиса
+- `GET /healthz` — проверка доступности сервиса, БД и Redis

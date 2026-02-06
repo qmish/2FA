@@ -1,0 +1,31 @@
+groups:
+  - name: auth-slo
+    rules:
+      - alert: AuthSuccessRateLow
+        expr: auth_failures_total / (auth_failures_total + auth_challenges_total) > 0.005
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Auth success rate below SLO
+      - alert: AuthLatencyHigh
+        expr: http_requests_total{path="/api/v1/auth/login"} > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: Auth latency SLO breach (configure p95)
+      - alert: RedisErrors
+        expr: system_errors_total{component="redis"} > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: Redis errors detected
+      - alert: DatabaseErrors
+        expr: system_errors_total{component="db"} > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: DB errors detected

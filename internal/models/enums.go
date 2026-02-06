@@ -95,6 +95,8 @@ const (
     AuditEntityGroup        AuditEntityType = "group"
     AuditEntityPolicy       AuditEntityType = "policy"
     AuditEntityRadiusClient AuditEntityType = "radius_client"
+	AuditEntityChallenge    AuditEntityType = "challenge"
+	AuditEntityLockout      AuditEntityType = "lockout"
     AuditEntitySession      AuditEntityType = "session"
     AuditEntityPermission   AuditEntityType = "permission"
 )
@@ -107,9 +109,16 @@ const (
     AuditDelete  AuditAction = "delete"
     AuditLogin   AuditAction = "login"
     AuditLogout  AuditAction = "logout"
+	AuditRefresh AuditAction = "refresh"
     AuditEnable  AuditAction = "enable"
     AuditDisable AuditAction = "disable"
     AuditAuthorize AuditAction = "authorize"
+    AuditSessionRevoke AuditAction = "session_revoke"
+    AuditSessionRevokeAll AuditAction = "session_revoke_all"
+	AuditSecondFactorApprove AuditAction = "second_factor_approve"
+	AuditSecondFactorDeny AuditAction = "second_factor_deny"
+	AuditLockoutCreate AuditAction = "lockout_create"
+	AuditLockoutClear AuditAction = "lockout_clear"
 )
 
 type Permission string

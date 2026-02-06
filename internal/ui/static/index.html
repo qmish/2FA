@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>2FA Console</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header class="header">
+        <h1>2FA Console</h1>
+        <p class="muted">Базовый UI для проверки auth/2FA и сессий.</p>
+      </header>
+
+      <section class="card">
+        <h2>Login</h2>
+        <div class="grid">
+          <label>Username
+            <input id="login-username" placeholder="email/phone/username" />
+          </label>
+          <label>Password
+            <input id="login-password" type="password" />
+          </label>
+          <label>Channel
+            <select id="login-channel">
+              <option value="web">web</option>
+              <option value="mobile">mobile</option>
+              <option value="vpn">vpn</option>
+              <option value="mail">mail</option>
+              <option value="rdp">rdp</option>
+              <option value="ssh">ssh</option>
+            </select>
+          </label>
+          <label>Method
+            <select id="login-method">
+              <option value="otp">otp</option>
+              <option value="push">push</option>
+              <option value="call">call</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <button id="login-btn">Login</button>
+          <span id="login-status" class="badge error hidden">Ошибка</span>
+        </div>
+        <pre id="login-result" class="result"></pre>
+      </section>
+
+      <section class="card">
+        <h2>Healthcheck</h2>
+        <div class="row">
+          <button id="health-btn">Check /healthz</button>
+          <span id="health-badge" class="badge">unknown</span>
+          <span id="health-status" class="badge error hidden">Ошибка</span>
+        </div>
+        <pre id="health-result" class="result"></pre>
+      </section>
+
+      <section class="card">
+        <h2>Metrics</h2>
+        <div class="row">
+          <button id="metrics-btn">Fetch /metrics</button>
+          <span id="metrics-status" class="badge error hidden">Ошибка</span>
+        </div>
+        <pre id="metrics-result" class="result mono"></pre>
+      </section>
+
+      <section class="card">
+        <h2>Verify 2FA</h2>
+        <div class="grid">
+          <label>User ID
+            <input id="verify-user" placeholder="user_id" />
+          </label>
+          <label>Challenge ID
+            <input id="verify-challenge" placeholder="challenge_id" />
+          </label>
+          <label>Method
+            <select id="verify-method">
+              <option value="otp">otp</option>
+              <option value="push">push</option>
+              <option value="call">call</option>
+            </select>
+          </label>
+          <label>Code
+            <input id="verify-code" placeholder="код/answer" />
+          </label>
+        </div>
+        <div class="row">
+          <button id="verify-btn">Verify</button>
+          <span id="verify-status" class="badge error hidden">Ошибка</span>
+        </div>
+        <pre id="verify-result" class="result"></pre>
+      </section>
+
+      <section class="card">
+        <h2>Sessions</h2>
+        <div class="row">
+          <button id="sessions-btn">List active sessions</button>
+          <button id="logout-btn" class="secondary">Logout (current)</button>
+          <span id="sessions-status" class="badge error hidden">Ошибка</span>
+        </div>
+        <p class="hint">Время отображается в ISO времени.</p>
+        <div class="row">
+          <button id="current-session-btn" class="secondary">Current session</button>
+        </div>
+        <div id="current-session" class="details"></div>
+        <div class="grid">
+          <label>Session ID
+            <input id="session-id" placeholder="session_id" />
+          </label>
+          <label>Revoke all
+            <select id="revoke-all">
+              <option value="false">only by id</option>
+              <option value="true">all except current</option>
+            </select>
+          </label>
+        </div>
+        <button id="revoke-btn" class="secondary">Revoke session(s)</button>
+        <h3>Sessions list</h3>
+        <div id="sessions-list" class="table"></div>
+        <pre id="sessions-result" class="result"></pre>
+      </section>
+
+      <section class="card">
+        <h2>Tokens</h2>
+        <div class="grid">
+          <label>Access token
+            <textarea id="access-token" rows="3" readonly></textarea>
+          </label>
+          <label>Refresh token
+            <textarea id="refresh-token" rows="3"></textarea>
+          </label>
+        </div>
+        <div class="row">
+          <button id="refresh-btn">Refresh token</button>
+          <button id="lockout-btn" class="secondary">Lockout status</button>
+          <span id="tokens-status" class="badge error hidden">Ошибка</span>
+        </div>
+        <pre id="tokens-result" class="result"></pre>
+      </section>
+
+      <section class="card">
+        <h2>Admin audit</h2>
+        <p class="hint">Время отображается в ISO времени.</p>
+        <div class="grid">
+          <label>Admin token
+            <textarea id="admin-token" rows="2" placeholder="admin JWT"></textarea>
+          </label>
+          <label>Action
+            <input id="audit-action" placeholder="logout / login / lockout_create" />
+          </label>
+          <label>Entity type
+            <input id="audit-entity" placeholder="session / user / lockout" />
+          </label>
+          <label>Actor user
+            <input id="audit-actor" placeholder="actor_user_id" />
+          </label>
+        </div>
+        <div class="row">
+          <button id="audit-btn">Load audit events</button>
+          <button id="audit-export-btn" class="secondary">Export audit CSV</button>
+          <span id="audit-status" class="badge error hidden">Ошибка</span>
+        </div>
+        <div id="audit-list" class="table"></div>
+        <pre id="audit-result" class="result"></pre>
+      </section>
+
+      <section class="card">
+        <h2>Admin sessions</h2>
+        <p class="hint">Время отображается в ISO времени.</p>
+        <div class="grid">
+          <label>Admin token
+            <textarea id="admin-sessions-token" rows="2" placeholder="admin JWT"></textarea>
+          </label>
+          <label>User ID
+            <input id="admin-sessions-user" placeholder="user_id" />
+          </label>
+          <label>Active only
+            <select id="admin-sessions-active">
+              <option value="true">true</option>
+              <option value="false">false</option>
+            </select>
+          </label>
+          <label>IP
+            <input id="admin-sessions-ip" placeholder="127.0.0.1" />
+          </label>
+          <label>User-Agent
+            <input id="admin-sessions-ua" placeholder="user_agent" />
+          </label>
+        </div>
+        <div class="row">
+          <button id="admin-sessions-btn">Load sessions</button>
+          <span id="admin-sessions-status" class="badge error hidden">Ошибка</span>
+        </div>
+        <div id="admin-sessions-list" class="table"></div>
+        <pre id="admin-sessions-result" class="result"></pre>
+      </section>
+
+      <section class="card">
+        <h2>Admin lockouts</h2>
+        <p class="hint">Время отображается в ISO времени.</p>
+        <div class="grid">
+          <label>Admin token
+            <textarea id="admin-lockouts-token" rows="2" placeholder="admin JWT"></textarea>
+          </label>
+          <label>User ID
+            <input id="admin-lockouts-user" placeholder="user_id" />
+          </label>
+          <label>IP
+            <input id="admin-lockouts-ip" placeholder="127.0.0.1" />
+          </label>
+          <label>Reason
+            <input id="admin-lockouts-reason" placeholder="too_many_attempts" />
+          </label>
+          <label>Active only
+            <select id="admin-lockouts-active">
+              <option value="true">true</option>
+              <option value="false">false</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <button id="admin-lockouts-btn">Load lockouts</button>
+          <button id="admin-lockouts-clear" class="secondary">Clear lockouts</button>
+          <span id="admin-lockouts-status" class="badge error hidden">Ошибка</span>
+        </div>
+        <div id="admin-lockouts-list" class="table"></div>
+        <pre id="admin-lockouts-result" class="result"></pre>
+      </section>
+
+      <section class="card">
+        <h2>Admin login</h2>
+        <div class="grid">
+          <label>Username
+            <input id="admin-login-username" placeholder="admin username" />
+          </label>
+          <label>Password
+            <input id="admin-login-password" type="password" />
+          </label>
+        </div>
+        <div class="row">
+          <button id="admin-login-btn">Login as admin</button>
+          <button id="admin-token-clear" class="secondary">Clear admin token</button>
+          <span id="admin-login-status" class="badge error hidden">Ошибка</span>
+        </div>
+        <pre id="admin-login-result" class="result"></pre>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
