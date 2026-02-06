@@ -1,18 +1,20 @@
 package service
 
 import (
-    "context"
-    "errors"
-    "testing"
-    "time"
+	"context"
+	"errors"
+	"testing"
+	"time"
 
-    "golang.org/x/crypto/bcrypt"
+	"github.com/pquerna/otp"
+	"github.com/pquerna/otp/totp"
+	"golang.org/x/crypto/bcrypt"
 
-    "github.com/qmish/2FA/internal/auth/jwt"
-    "github.com/qmish/2FA/internal/auth/providers"
-    "github.com/qmish/2FA/internal/dto"
-    "github.com/qmish/2FA/internal/models"
-    "github.com/qmish/2FA/internal/repository"
+	"github.com/qmish/2FA/internal/auth/jwt"
+	"github.com/qmish/2FA/internal/auth/providers"
+	"github.com/qmish/2FA/internal/dto"
+	"github.com/qmish/2FA/internal/models"
+	"github.com/qmish/2FA/internal/repository"
 )
 
 func TestAuthLoginVerify(t *testing.T) {
@@ -21,8 +23,8 @@ func TestAuthLoginVerify(t *testing.T) {
 	challenges := &fakeChallengeRepo{}
 	sessions := &fakeSessionRepo{}
 
-    jwtSvc := jwt.NewService("2fa", []byte("secret"), time.Minute)
-    svc := NewService(users, challenges, sessions, nil, &fakeLockoutRepo{}, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwtSvc, time.Minute, time.Hour)
+	jwtSvc := jwt.NewService("2fa", []byte("secret"), time.Minute)
+	svc := NewService(users, challenges, sessions, nil, &fakeLockoutRepo{}, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwtSvc, time.Minute, time.Hour)
 	svc.codeGen = func() string { return "123456" }
 
 	loginResp, err := svc.Login(context.Background(), dto.LoginRequest{Username: "alice", Password: "pass"})
@@ -63,8 +65,8 @@ func TestAuthLoginProviderSuccess(t *testing.T) {
 	registry := providers.NewRegistry()
 	registry.RegisterSMS(providers.DefaultSMSProvider, fakeSMSProvider{providerID: "prov-1"})
 
-    jwtSvc := jwt.NewService("2fa", []byte("secret"), time.Minute)
-    svc := NewService(users, challenges, sessions, registry, &fakeLockoutRepo{}, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwtSvc, time.Minute, time.Hour)
+	jwtSvc := jwt.NewService("2fa", []byte("secret"), time.Minute)
+	svc := NewService(users, challenges, sessions, registry, &fakeLockoutRepo{}, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwtSvc, time.Minute, time.Hour)
 	svc.codeGen = func() string { return "123456" }
 
 	loginResp, err := svc.Login(context.Background(), dto.LoginRequest{Username: "alice", Password: "pass"})
@@ -88,8 +90,8 @@ func TestAuthLoginProviderFailure(t *testing.T) {
 	registry := providers.NewRegistry()
 	registry.RegisterSMS(providers.DefaultSMSProvider, fakeSMSProvider{err: errors.New("fail")})
 
-    jwtSvc := jwt.NewService("2fa", []byte("secret"), time.Minute)
-    svc := NewService(users, challenges, sessions, registry, &fakeLockoutRepo{}, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwtSvc, time.Minute, time.Hour)
+	jwtSvc := jwt.NewService("2fa", []byte("secret"), time.Minute)
+	svc := NewService(users, challenges, sessions, registry, &fakeLockoutRepo{}, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwtSvc, time.Minute, time.Hour)
 	svc.codeGen = func() string { return "123456" }
 
 	_, err := svc.Login(context.Background(), dto.LoginRequest{Username: "alice", Password: "pass"})
@@ -109,8 +111,8 @@ func TestAuthVerifyMethodMismatch(t *testing.T) {
 	challenges := &fakeChallengeRepo{}
 	sessions := &fakeSessionRepo{}
 
-    jwtSvc := jwt.NewService("2fa", []byte("secret"), time.Minute)
-    svc := NewService(users, challenges, sessions, nil, &fakeLockoutRepo{}, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwtSvc, time.Minute, time.Hour)
+	jwtSvc := jwt.NewService("2fa", []byte("secret"), time.Minute)
+	svc := NewService(users, challenges, sessions, nil, &fakeLockoutRepo{}, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwtSvc, time.Minute, time.Hour)
 	svc.codeGen = func() string { return "123456" }
 
 	loginResp, err := svc.Login(context.Background(), dto.LoginRequest{Username: "alice", Password: "pass", Method: models.MethodOTP})
@@ -129,35 +131,288 @@ func TestAuthVerifyMethodMismatch(t *testing.T) {
 }
 
 func TestAuthLoginLocked(t *testing.T) {
-    hash, _ := bcrypt.GenerateFromPassword([]byte("pass"), bcrypt.DefaultCost)
-    users := fakeUserRepo{user: &models.User{ID: "u1", Username: "alice", Status: models.UserActive, PasswordHash: string(hash)}}
-    lockouts := &fakeLockoutRepo{active: &models.Lockout{ID: "l1"}}
-    svc := NewService(users, &fakeChallengeRepo{}, &fakeSessionRepo{}, nil, lockouts, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwt.NewService("2fa", []byte("secret"), time.Minute), time.Minute, time.Hour)
+	hash, _ := bcrypt.GenerateFromPassword([]byte("pass"), bcrypt.DefaultCost)
+	users := fakeUserRepo{user: &models.User{ID: "u1", Username: "alice", Status: models.UserActive, PasswordHash: string(hash)}}
+	lockouts := &fakeLockoutRepo{active: &models.Lockout{ID: "l1"}}
+	svc := NewService(users, &fakeChallengeRepo{}, &fakeSessionRepo{}, nil, lockouts, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwt.NewService("2fa", []byte("secret"), time.Minute), time.Minute, time.Hour)
 
-    _, err := svc.Login(context.Background(), dto.LoginRequest{Username: "alice", Password: "pass", IP: "127.0.0.1"})
-    if !errors.Is(err, ErrForbidden) {
-        t.Fatalf("expected ErrForbidden, got %v", err)
-    }
+	_, err := svc.Login(context.Background(), dto.LoginRequest{Username: "alice", Password: "pass", IP: "127.0.0.1"})
+	if !errors.Is(err, ErrForbidden) {
+		t.Fatalf("expected ErrForbidden, got %v", err)
+	}
 }
 
 func TestAuthLoginCreatesLockout(t *testing.T) {
-    hash, _ := bcrypt.GenerateFromPassword([]byte("pass"), bcrypt.DefaultCost)
-    users := fakeUserRepo{user: &models.User{ID: "u1", Username: "alice", Status: models.UserActive, PasswordHash: string(hash)}}
-    lockouts := &fakeLockoutRepo{}
-    logins := &fakeLoginHistoryRepo{failures: models.MaxAttemptsPerWindow}
-    audits := &recordAuditRepo{}
-    svc := NewService(users, &fakeChallengeRepo{}, &fakeSessionRepo{}, nil, lockouts, logins, audits, jwt.NewService("2fa", []byte("secret"), time.Minute), time.Minute, time.Hour)
+	hash, _ := bcrypt.GenerateFromPassword([]byte("pass"), bcrypt.DefaultCost)
+	users := fakeUserRepo{user: &models.User{ID: "u1", Username: "alice", Status: models.UserActive, PasswordHash: string(hash)}}
+	lockouts := &fakeLockoutRepo{}
+	logins := &fakeLoginHistoryRepo{failures: models.MaxAttemptsPerWindow}
+	audits := &recordAuditRepo{}
+	svc := NewService(users, &fakeChallengeRepo{}, &fakeSessionRepo{}, nil, lockouts, logins, audits, jwt.NewService("2fa", []byte("secret"), time.Minute), time.Minute, time.Hour)
 
-    _, err := svc.Login(context.Background(), dto.LoginRequest{Username: "alice", Password: "bad", IP: "127.0.0.1"})
-    if !errors.Is(err, ErrInvalidCredentials) {
-        t.Fatalf("expected ErrInvalidCredentials, got %v", err)
-    }
-    if lockouts.created == nil {
-        t.Fatalf("expected lockout to be created")
-    }
-    if audits.count != 2 || audits.last.Action != models.AuditLockoutCreate || audits.last.EntityType != models.AuditEntityLockout || audits.last.EntityID != lockouts.created.ID || audits.last.Payload != "too_many_attempts" {
-        t.Fatalf("unexpected audit event: %+v", audits.last)
-    }
+	_, err := svc.Login(context.Background(), dto.LoginRequest{Username: "alice", Password: "bad", IP: "127.0.0.1"})
+	if !errors.Is(err, ErrInvalidCredentials) {
+		t.Fatalf("expected ErrInvalidCredentials, got %v", err)
+	}
+	if lockouts.created == nil {
+		t.Fatalf("expected lockout to be created")
+	}
+	if audits.count != 2 || audits.last.Action != models.AuditLockoutCreate || audits.last.EntityType != models.AuditEntityLockout || audits.last.EntityID != lockouts.created.ID || audits.last.Payload != "too_many_attempts" {
+		t.Fatalf("unexpected audit event: %+v", audits.last)
+	}
+}
+
+func TestAuthLoginPolicyDenied(t *testing.T) {
+	hash, _ := bcrypt.GenerateFromPassword([]byte("pass"), bcrypt.DefaultCost)
+	user := &models.User{ID: "u1", Username: "alice", Status: models.UserActive, PasswordHash: string(hash)}
+	users := fakeUserRepo{user: user}
+	challenges := &fakeChallengeRepo{}
+	sessions := &fakeSessionRepo{}
+	jwtSvc := jwt.NewService("2fa", []byte("secret"), time.Minute)
+	svc := NewService(users, challenges, sessions, nil, &fakeLockoutRepo{}, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwtSvc, time.Minute, time.Hour)
+	svc.WithPolicies(
+		fakePolicyRepo{policies: map[string]models.Policy{
+			"p1": {ID: "p1", Name: "deny", Priority: 0, Status: models.PolicyActive},
+		}},
+		fakePolicyRuleRepo{rules: map[string][]models.PolicyRule{
+			"p1": {
+				{ID: "r1", PolicyID: "p1", RuleType: models.RuleChannel, RuleValue: "vpn"},
+			},
+		}},
+		fakeUserGroupRepo{groups: []models.Group{{ID: "g1", Name: "ops"}}},
+		fakeGroupPolicyRepo{policies: map[string]string{"g1": "p1"}},
+	)
+
+	_, err := svc.Login(context.Background(), dto.LoginRequest{
+		Username: "alice",
+		Password: "pass",
+		Channel:  models.ChannelWeb,
+		IP:       "127.0.0.1",
+	})
+	if !errors.Is(err, ErrForbidden) {
+		t.Fatalf("expected ErrForbidden, got %v", err)
+	}
+}
+
+func TestAuthLoginPolicyAllowed(t *testing.T) {
+	hash, _ := bcrypt.GenerateFromPassword([]byte("pass"), bcrypt.DefaultCost)
+	user := &models.User{ID: "u1", Username: "alice", Status: models.UserActive, PasswordHash: string(hash)}
+	users := fakeUserRepo{user: user}
+	challenges := &fakeChallengeRepo{}
+	sessions := &fakeSessionRepo{}
+	jwtSvc := jwt.NewService("2fa", []byte("secret"), time.Minute)
+	svc := NewService(users, challenges, sessions, nil, &fakeLockoutRepo{}, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwtSvc, time.Minute, time.Hour)
+	svc.WithPolicies(
+		fakePolicyRepo{policies: map[string]models.Policy{
+			"p1": {ID: "p1", Name: "allow", Priority: 0, Status: models.PolicyActive},
+		}},
+		fakePolicyRuleRepo{rules: map[string][]models.PolicyRule{
+			"p1": {
+				{ID: "r1", PolicyID: "p1", RuleType: models.RuleChannel, RuleValue: "web"},
+				{ID: "r2", PolicyID: "p1", RuleType: models.RuleMethod, RuleValue: "otp"},
+			},
+		}},
+		fakeUserGroupRepo{groups: []models.Group{{ID: "g1", Name: "ops"}}},
+		fakeGroupPolicyRepo{policies: map[string]string{"g1": "p1"}},
+	)
+
+	resp, err := svc.Login(context.Background(), dto.LoginRequest{
+		Username: "alice",
+		Password: "pass",
+		Channel:  models.ChannelWeb,
+		IP:       "127.0.0.1",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.ChallengeID == "" {
+		t.Fatalf("expected challenge id")
+	}
+}
+
+func TestAuthVerifySecondFactorTOTP(t *testing.T) {
+	now := time.Date(2026, 2, 6, 10, 0, 0, 0, time.UTC)
+	secret := "JBSWY3DPEHPK3PXP"
+	code, err := totp.GenerateCodeCustom(secret, now, totp.ValidateOpts{
+		Period:    30,
+		Skew:      1,
+		Digits:    otp.DigitsSix,
+		Algorithm: otp.AlgorithmSHA1,
+	})
+	if err != nil {
+		t.Fatalf("generate code error: %v", err)
+	}
+	challenges := &fakeChallengeRepo{items: map[string]challengeItem{}}
+	sessions := &fakeSessionRepo{}
+	otpRepo := &fakeOTPSecretRepo{secret: &models.OTPSecret{
+		ID:        "s1",
+		UserID:    "u1",
+		Secret:    secret,
+		Issuer:    "2FA",
+		Digits:    6,
+		Period:    30,
+		Enabled:   true,
+		CreatedAt: now.Add(-time.Hour),
+	}}
+	jwtSvc := jwt.NewService("2fa", []byte("secret"), time.Minute)
+	svc := NewService(fakeUserRepo{}, challenges, sessions, nil, &fakeLockoutRepo{}, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwtSvc, time.Minute, time.Hour)
+	svc.WithOTPSecrets(otpRepo)
+	svc.now = func() time.Time { return now }
+
+	challenge := &models.Challenge{
+		ID:        "c1",
+		UserID:    "u1",
+		Method:    models.MethodTOTP,
+		Status:    models.ChallengeCreated,
+		ExpiresAt: now.Add(time.Minute),
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+	if err := challenges.Create(context.Background(), challenge); err != nil {
+		t.Fatalf("create challenge error: %v", err)
+	}
+	resp, err := svc.VerifySecondFactor(context.Background(), dto.VerifyRequest{
+		UserID:      "u1",
+		ChallengeID: "c1",
+		Method:      models.MethodTOTP,
+		Code:        code,
+		IP:          "127.0.0.1",
+	})
+	if err != nil {
+		t.Fatalf("verify error: %v", err)
+	}
+	if resp.AccessToken == "" || resp.RefreshToken == "" {
+		t.Fatalf("missing tokens")
+	}
+}
+
+func TestAuthVerifySecondFactorTOTPInvalid(t *testing.T) {
+	now := time.Date(2026, 2, 6, 10, 0, 0, 0, time.UTC)
+	challenges := &fakeChallengeRepo{items: map[string]challengeItem{}}
+	sessions := &fakeSessionRepo{}
+	otpRepo := &fakeOTPSecretRepo{secret: &models.OTPSecret{
+		ID:        "s1",
+		UserID:    "u1",
+		Secret:    "JBSWY3DPEHPK3PXP",
+		Issuer:    "2FA",
+		Digits:    6,
+		Period:    30,
+		Enabled:   true,
+		CreatedAt: now.Add(-time.Hour),
+	}}
+	jwtSvc := jwt.NewService("2fa", []byte("secret"), time.Minute)
+	svc := NewService(fakeUserRepo{}, challenges, sessions, nil, &fakeLockoutRepo{}, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwtSvc, time.Minute, time.Hour)
+	svc.WithOTPSecrets(otpRepo)
+	svc.now = func() time.Time { return now }
+
+	challenge := &models.Challenge{
+		ID:        "c1",
+		UserID:    "u1",
+		Method:    models.MethodTOTP,
+		Status:    models.ChallengeCreated,
+		ExpiresAt: now.Add(time.Minute),
+		CreatedAt: now,
+		UpdatedAt: now,
+	}
+	if err := challenges.Create(context.Background(), challenge); err != nil {
+		t.Fatalf("create challenge error: %v", err)
+	}
+	_, err := svc.VerifySecondFactor(context.Background(), dto.VerifyRequest{
+		UserID:      "u1",
+		ChallengeID: "c1",
+		Method:      models.MethodTOTP,
+		Code:        "000000",
+		IP:          "127.0.0.1",
+	})
+	if !errors.Is(err, ErrSecondFactorFailed) {
+		t.Fatalf("expected ErrSecondFactorFailed, got %v", err)
+	}
+}
+
+func TestAuthSetupTOTP(t *testing.T) {
+	user := &models.User{ID: "u1", Username: "alice", Status: models.UserActive}
+	users := fakeUserRepo{user: user}
+	repo := &fakeOTPSecretRepo{}
+	jwtSvc := jwt.NewService("2fa", []byte("secret"), time.Minute)
+	svc := NewService(users, &fakeChallengeRepo{}, &fakeSessionRepo{}, nil, &fakeLockoutRepo{}, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwtSvc, time.Minute, time.Hour)
+	svc.WithOTPSecrets(repo)
+	svc.WithTOTPConfig("2FA", 6, 30)
+
+	resp, err := svc.SetupTOTP(context.Background(), "u1")
+	if err != nil {
+		t.Fatalf("setup error: %v", err)
+	}
+	if resp.Secret == "" || resp.OTPAuthURL == "" {
+		t.Fatalf("missing setup data: %+v", resp)
+	}
+	if repo.created == nil || repo.created.UserID != "u1" || !repo.created.Enabled {
+		t.Fatalf("secret not created: %+v", repo.created)
+	}
+}
+
+func TestAuthDisableTOTP(t *testing.T) {
+	repo := &fakeOTPSecretRepo{secret: &models.OTPSecret{ID: "s1", UserID: "u1", Enabled: true}}
+	jwtSvc := jwt.NewService("2fa", []byte("secret"), time.Minute)
+	svc := NewService(fakeUserRepo{}, &fakeChallengeRepo{}, &fakeSessionRepo{}, nil, &fakeLockoutRepo{}, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwtSvc, time.Minute, time.Hour)
+	svc.WithOTPSecrets(repo)
+
+	if err := svc.DisableTOTP(context.Background(), "u1"); err != nil {
+		t.Fatalf("disable error: %v", err)
+	}
+	if repo.disabledID != "s1" {
+		t.Fatalf("expected disable s1, got %s", repo.disabledID)
+	}
+}
+
+func TestAuthLoginLDAPSuccess(t *testing.T) {
+	user := &models.User{
+		ID:       "u1",
+		Username: "alice",
+		Status:   models.UserActive,
+		AdDN:     "cn=alice,dc=example,dc=com",
+	}
+	users := fakeUserRepo{user: user}
+	challenges := &fakeChallengeRepo{}
+	sessions := &fakeSessionRepo{}
+	jwtSvc := jwt.NewService("2fa", []byte("secret"), time.Minute)
+	svc := NewService(users, challenges, sessions, nil, &fakeLockoutRepo{}, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwtSvc, time.Minute, time.Hour)
+	svc.WithLDAPAuth(fakeLDAPAuth{})
+
+	resp, err := svc.Login(context.Background(), dto.LoginRequest{
+		Username: "alice",
+		Password: "pass",
+		IP:       "127.0.0.1",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.ChallengeID == "" {
+		t.Fatalf("expected challenge id")
+	}
+}
+
+func TestAuthLoginLDAPFailure(t *testing.T) {
+	user := &models.User{
+		ID:       "u1",
+		Username: "alice",
+		Status:   models.UserActive,
+		AdDN:     "cn=alice,dc=example,dc=com",
+	}
+	users := fakeUserRepo{user: user}
+	challenges := &fakeChallengeRepo{}
+	sessions := &fakeSessionRepo{}
+	jwtSvc := jwt.NewService("2fa", []byte("secret"), time.Minute)
+	svc := NewService(users, challenges, sessions, nil, &fakeLockoutRepo{}, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwtSvc, time.Minute, time.Hour)
+	svc.WithLDAPAuth(fakeLDAPAuth{err: errors.New("bad creds")})
+
+	_, err := svc.Login(context.Background(), dto.LoginRequest{
+		Username: "alice",
+		Password: "bad",
+		IP:       "127.0.0.1",
+	})
+	if !errors.Is(err, ErrInvalidCredentials) {
+		t.Fatalf("expected ErrInvalidCredentials, got %v", err)
+	}
 }
 
 func TestAuthLogoutOK(t *testing.T) {
@@ -300,6 +555,9 @@ type fakeUserRepo struct {
 }
 
 func (f fakeUserRepo) GetByID(ctx context.Context, id string) (*models.User, error) {
+	if f.user != nil && f.user.ID == id {
+		return f.user, nil
+	}
 	return nil, repository.ErrNotFound
 }
 func (f fakeUserRepo) GetByUsername(ctx context.Context, username string) (*models.User, error) {
@@ -347,13 +605,13 @@ func (f *fakeChallengeRepo) GetByID(ctx context.Context, id string) (*models.Cha
 	return &item.Challenge, nil
 }
 func (f *fakeChallengeRepo) GetActiveByUserAndMethod(ctx context.Context, userID string, method models.SecondFactorMethod) (*models.Challenge, error) {
-    for _, item := range f.items {
-        if item.UserID == userID && item.Method == method && (item.Status == models.ChallengeCreated || item.Status == models.ChallengeSent || item.Status == models.ChallengePending) {
-            c := item.Challenge
-            return &c, nil
-        }
-    }
-    return nil, repository.ErrNotFound
+	for _, item := range f.items {
+		if item.UserID == userID && item.Method == method && (item.Status == models.ChallengeCreated || item.Status == models.ChallengeSent || item.Status == models.ChallengePending) {
+			c := item.Challenge
+			return &c, nil
+		}
+	}
+	return nil, repository.ErrNotFound
 }
 func (f *fakeChallengeRepo) Create(ctx context.Context, c *models.Challenge) error {
 	if f.items == nil {
@@ -380,52 +638,52 @@ func (f *fakeChallengeRepo) MarkExpired(ctx context.Context, now time.Time) (int
 }
 
 type fakeSessionRepo struct {
-	items map[string]models.UserSession
-    revokedID string
+	items     map[string]models.UserSession
+	revokedID string
 }
 
 type fakeLockoutRepo struct {
-    active  *models.Lockout
-    created *models.Lockout
+	active  *models.Lockout
+	created *models.Lockout
 }
 
 func (f *fakeLockoutRepo) Create(ctx context.Context, l *models.Lockout) error {
-    f.created = l
-    return nil
+	f.created = l
+	return nil
 }
 func (f *fakeLockoutRepo) GetActive(ctx context.Context, userID string, ip string, now time.Time) (*models.Lockout, error) {
-    if f.active != nil {
-        return f.active, nil
-    }
-    return nil, repository.ErrNotFound
+	if f.active != nil {
+		return f.active, nil
+	}
+	return nil, repository.ErrNotFound
 }
 func (f *fakeLockoutRepo) ClearExpired(ctx context.Context, now time.Time) (int64, error) {
-    return 0, nil
+	return 0, nil
 }
 func (f *fakeLockoutRepo) List(ctx context.Context, filter repository.LockoutFilter, limit, offset int) ([]models.Lockout, int, error) {
-    return nil, 0, nil
+	return nil, 0, nil
 }
 func (f *fakeLockoutRepo) ClearByFilter(ctx context.Context, filter repository.LockoutFilter) error {
-    return nil
+	return nil
 }
 
 type fakeLoginHistoryRepo struct {
-    failures int
+	failures int
 }
 
 func (f *fakeLoginHistoryRepo) Create(ctx context.Context, h *models.LoginHistory) error { return nil }
 func (f *fakeLoginHistoryRepo) List(ctx context.Context, filter repository.LoginHistoryFilter, limit, offset int) ([]models.LoginHistory, int, error) {
-    return nil, 0, nil
+	return nil, 0, nil
 }
 func (f *fakeLoginHistoryRepo) CountFailures(ctx context.Context, userID string, since time.Time) (int, error) {
-    return f.failures, nil
+	return f.failures, nil
 }
 
 type fakeAuditRepo struct{}
 
 func (f *fakeAuditRepo) Create(ctx context.Context, e *models.AuditEvent) error { return nil }
 func (f *fakeAuditRepo) List(ctx context.Context, filter repository.AuditFilter, limit, offset int) ([]models.AuditEvent, int, error) {
-    return nil, 0, nil
+	return nil, 0, nil
 }
 
 type recordAuditRepo struct {
@@ -451,6 +709,112 @@ func (f fakeSMSProvider) SendSMS(ctx context.Context, to, message string) (strin
 	return f.providerID, f.err
 }
 
+type fakePolicyRepo struct {
+	policies map[string]models.Policy
+}
+
+func (f fakePolicyRepo) GetByID(ctx context.Context, id string) (*models.Policy, error) {
+	if p, ok := f.policies[id]; ok {
+		cp := p
+		return &cp, nil
+	}
+	return nil, repository.ErrNotFound
+}
+func (f fakePolicyRepo) GetByName(ctx context.Context, name string) (*models.Policy, error) {
+	for _, p := range f.policies {
+		if p.Name == name {
+			cp := p
+			return &cp, nil
+		}
+	}
+	return nil, repository.ErrNotFound
+}
+func (f fakePolicyRepo) List(ctx context.Context, limit, offset int) ([]models.Policy, int, error) {
+	var items []models.Policy
+	for _, p := range f.policies {
+		items = append(items, p)
+	}
+	return items, len(items), nil
+}
+func (f fakePolicyRepo) Create(ctx context.Context, p *models.Policy) error { return nil }
+func (f fakePolicyRepo) Update(ctx context.Context, p *models.Policy) error { return nil }
+func (f fakePolicyRepo) Delete(ctx context.Context, id string) error        { return nil }
+func (f fakePolicyRepo) SetStatus(ctx context.Context, id string, status models.PolicyStatus) error {
+	return nil
+}
+
+type fakePolicyRuleRepo struct {
+	rules map[string][]models.PolicyRule
+}
+
+func (f fakePolicyRuleRepo) ListByPolicy(ctx context.Context, policyID string) ([]models.PolicyRule, error) {
+	return f.rules[policyID], nil
+}
+func (f fakePolicyRuleRepo) Create(ctx context.Context, rule *models.PolicyRule) error { return nil }
+func (f fakePolicyRuleRepo) Delete(ctx context.Context, id string) error               { return nil }
+func (f fakePolicyRuleRepo) DeleteByPolicy(ctx context.Context, policyID string) error {
+	return nil
+}
+
+type fakeUserGroupRepo struct {
+	groups []models.Group
+}
+
+func (f fakeUserGroupRepo) AddUser(ctx context.Context, groupID, userID string) error { return nil }
+func (f fakeUserGroupRepo) RemoveUser(ctx context.Context, groupID, userID string) error {
+	return nil
+}
+func (f fakeUserGroupRepo) ListUsers(ctx context.Context, groupID string, limit, offset int) ([]models.User, int, error) {
+	return nil, 0, nil
+}
+func (f fakeUserGroupRepo) ListGroups(ctx context.Context, userID string) ([]models.Group, error) {
+	return f.groups, nil
+}
+
+type fakeGroupPolicyRepo struct {
+	policies map[string]string
+}
+
+func (f fakeGroupPolicyRepo) SetPolicy(ctx context.Context, groupID, policyID string) error {
+	return nil
+}
+func (f fakeGroupPolicyRepo) GetPolicy(ctx context.Context, groupID string) (string, error) {
+	if id, ok := f.policies[groupID]; ok {
+		return id, nil
+	}
+	return "", repository.ErrNotFound
+}
+func (f fakeGroupPolicyRepo) ClearPolicy(ctx context.Context, groupID string) error { return nil }
+
+type fakeOTPSecretRepo struct {
+	secret     *models.OTPSecret
+	created    *models.OTPSecret
+	disabledID string
+}
+
+func (f *fakeOTPSecretRepo) GetActiveByUser(ctx context.Context, userID string) (*models.OTPSecret, error) {
+	if f.secret != nil && f.secret.UserID == userID && f.secret.Enabled {
+		return f.secret, nil
+	}
+	return nil, repository.ErrNotFound
+}
+func (f *fakeOTPSecretRepo) Create(ctx context.Context, s *models.OTPSecret) error {
+	f.created = s
+	return nil
+}
+func (f *fakeOTPSecretRepo) Disable(ctx context.Context, id string) error {
+	f.disabledID = id
+	return nil
+}
+
+type fakeLDAPAuth struct {
+	err error
+}
+
+func (f fakeLDAPAuth) Authenticate(ctx context.Context, userDN string, password string) error {
+	return f.err
+}
+
 func (f *fakeSessionRepo) Create(ctx context.Context, s *models.UserSession) error {
 	if f.items == nil {
 		f.items = map[string]models.UserSession{}
@@ -459,7 +823,7 @@ func (f *fakeSessionRepo) Create(ctx context.Context, s *models.UserSession) err
 	return nil
 }
 func (f *fakeSessionRepo) Revoke(ctx context.Context, id string, revokedAt time.Time) error {
-    f.revokedID = id
+	f.revokedID = id
 	return nil
 }
 func (f *fakeSessionRepo) GetByRefreshHash(ctx context.Context, hash string) (*models.UserSession, error) {
@@ -471,47 +835,47 @@ func (f *fakeSessionRepo) GetByRefreshHash(ctx context.Context, hash string) (*m
 }
 
 func (f *fakeSessionRepo) GetByID(ctx context.Context, id string) (*models.UserSession, error) {
-    for _, s := range f.items {
-        if s.ID == id {
-            return &s, nil
-        }
-    }
-    return nil, repository.ErrNotFound
+	for _, s := range f.items {
+		if s.ID == id {
+			return &s, nil
+		}
+	}
+	return nil, repository.ErrNotFound
 }
 
 func (f *fakeSessionRepo) RotateRefreshHash(ctx context.Context, id string, newHash string) error {
-    for key, s := range f.items {
-        if s.ID == id {
-            delete(f.items, key)
-            s.RefreshTokenHash = newHash
-            f.items[newHash] = s
-            return nil
-        }
-    }
-    return repository.ErrNotFound
+	for key, s := range f.items {
+		if s.ID == id {
+			delete(f.items, key)
+			s.RefreshTokenHash = newHash
+			f.items[newHash] = s
+			return nil
+		}
+	}
+	return repository.ErrNotFound
 }
 
 func (f *fakeSessionRepo) List(ctx context.Context, filter repository.SessionListFilter, limit, offset int) ([]models.UserSession, int, error) {
-    var out []models.UserSession
-    for _, s := range f.items {
-        if filter.UserID == "" || s.UserID == filter.UserID {
-            out = append(out, s)
-        }
-    }
-    return out, len(out), nil
+	var out []models.UserSession
+	for _, s := range f.items {
+		if filter.UserID == "" || s.UserID == filter.UserID {
+			out = append(out, s)
+		}
+	}
+	return out, len(out), nil
 }
 
 func (f *fakeSessionRepo) RevokeAllByUser(ctx context.Context, userID string, exceptSessionID string, revokedAt time.Time) error {
-    for key, s := range f.items {
-        if s.UserID != userID || s.ID == exceptSessionID {
-            continue
-        }
-        s.RevokedAt = &revokedAt
-        f.items[key] = s
-    }
-    return nil
+	for key, s := range f.items {
+		if s.UserID != userID || s.ID == exceptSessionID {
+			continue
+		}
+		s.RevokedAt = &revokedAt
+		f.items[key] = s
+	}
+	return nil
 }
 
 func (f *fakeSessionRepo) Touch(ctx context.Context, id string, seenAt time.Time) error {
-    return nil
+	return nil
 }

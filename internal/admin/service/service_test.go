@@ -408,6 +408,10 @@ func (f fakeUserGroupRepo) ListUsers(ctx context.Context, groupID string, limit,
     return []models.User{}, 0, nil
 }
 
+func (f fakeUserGroupRepo) ListGroups(ctx context.Context, userID string) ([]models.Group, error) {
+    return []models.Group{}, nil
+}
+
 type fakeGroupPolicyRepo struct{}
 
 func (f fakeGroupPolicyRepo) SetPolicy(ctx context.Context, groupID, policyID string) error { return nil }

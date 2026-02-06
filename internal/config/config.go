@@ -1,220 +1,237 @@
 package config
 
 import (
-    "errors"
-    "os"
-    "strconv"
-    "time"
+	"errors"
+	"os"
+	"strconv"
+	"time"
 
-    "gopkg.in/yaml.v3"
+	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
-    HTTPPort         string        `yaml:"http_port"`
-    RadiusAddr       string        `yaml:"radius_addr"`
-    RadiusSecret     string        `yaml:"radius_secret"`
-    DBURL            string        `yaml:"db_url"`
-    RedisURL         string        `yaml:"redis_url"`
-    ExpressMobileURL string        `yaml:"express_mobile_url"`
-    ExpressMobileKey string        `yaml:"express_mobile_key"`
-    FCMServerKey     string        `yaml:"fcm_server_key"`
-    JWTSecret        string        `yaml:"jwt_secret"`
-    JWTIssuer        string        `yaml:"jwt_issuer"`
-    JWTTTL           time.Duration `yaml:"jwt_ttl"`
-    AdminJWTSecret   string        `yaml:"admin_jwt_secret"`
-    AdminJWTIssuer   string        `yaml:"admin_jwt_issuer"`
-    AdminJWTTTL      time.Duration `yaml:"admin_jwt_ttl"`
-    AuthChallengeTTL time.Duration `yaml:"auth_challenge_ttl"`
-    SessionTTL       time.Duration `yaml:"session_ttl"`
-    AuthLoginLimit   int           `yaml:"auth_login_limit"`
-    AuthVerifyLimit  int           `yaml:"auth_verify_limit"`
+	HTTPPort         string        `yaml:"http_port"`
+	RadiusAddr       string        `yaml:"radius_addr"`
+	RadiusSecret     string        `yaml:"radius_secret"`
+	DBURL            string        `yaml:"db_url"`
+	RedisURL         string        `yaml:"redis_url"`
+	LDAPURL          string        `yaml:"ldap_url"`
+	LDAPTimeout      time.Duration `yaml:"ldap_timeout"`
+	ExpressMobileURL string        `yaml:"express_mobile_url"`
+	ExpressMobileKey string        `yaml:"express_mobile_key"`
+	FCMServerKey     string        `yaml:"fcm_server_key"`
+	JWTSecret        string        `yaml:"jwt_secret"`
+	JWTIssuer        string        `yaml:"jwt_issuer"`
+	JWTTTL           time.Duration `yaml:"jwt_ttl"`
+	AdminJWTSecret   string        `yaml:"admin_jwt_secret"`
+	AdminJWTIssuer   string        `yaml:"admin_jwt_issuer"`
+	AdminJWTTTL      time.Duration `yaml:"admin_jwt_ttl"`
+	AuthChallengeTTL time.Duration `yaml:"auth_challenge_ttl"`
+	SessionTTL       time.Duration `yaml:"session_ttl"`
+	AuthLoginLimit   int           `yaml:"auth_login_limit"`
+	AuthVerifyLimit  int           `yaml:"auth_verify_limit"`
 }
 
 func Defaults() Config {
-    return Config{
-        HTTPPort:       "8080",
-        RadiusAddr:     ":1812",
-        JWTIssuer:      "2fa",
-        JWTTTL:         15 * time.Minute,
-        AdminJWTIssuer: "2fa",
-        AdminJWTTTL:    15 * time.Minute,
-        AuthChallengeTTL: 5 * time.Minute,
-        SessionTTL:       24 * time.Hour,
-        AuthLoginLimit:  10,
-        AuthVerifyLimit: 10,
-    }
+	return Config{
+		HTTPPort:         "8080",
+		RadiusAddr:       ":1812",
+		JWTIssuer:        "2fa",
+		JWTTTL:           15 * time.Minute,
+		AdminJWTIssuer:   "2fa",
+		AdminJWTTTL:      15 * time.Minute,
+		AuthChallengeTTL: 5 * time.Minute,
+		SessionTTL:       24 * time.Hour,
+		AuthLoginLimit:   10,
+		AuthVerifyLimit:  10,
+		LDAPTimeout:      5 * time.Second,
+	}
 }
 
 func LoadFromEnv() Config {
-    cfg := Defaults()
-    if v := os.Getenv("HTTP_PORT"); v != "" {
-        cfg.HTTPPort = v
-    }
-    if v := os.Getenv("RADIUS_ADDR"); v != "" {
-        cfg.RadiusAddr = v
-    }
-    if v := os.Getenv("RADIUS_SECRET"); v != "" {
-        cfg.RadiusSecret = v
-    }
-    if v := os.Getenv("DB_URL"); v != "" {
-        cfg.DBURL = v
-    }
-    if v := os.Getenv("REDIS_URL"); v != "" {
-        cfg.RedisURL = v
-    }
-    if v := os.Getenv("EXPRESS_MOBILE_URL"); v != "" {
-        cfg.ExpressMobileURL = v
-    }
-    if v := os.Getenv("EXPRESS_MOBILE_KEY"); v != "" {
-        cfg.ExpressMobileKey = v
-    }
-    if v := os.Getenv("FCM_SERVER_KEY"); v != "" {
-        cfg.FCMServerKey = v
-    }
-    if v := os.Getenv("JWT_SECRET"); v != "" {
-        cfg.JWTSecret = v
-    }
-    if v := os.Getenv("JWT_ISSUER"); v != "" {
-        cfg.JWTIssuer = v
-    }
-    if v := os.Getenv("JWT_TTL"); v != "" {
-        if d, err := time.ParseDuration(v); err == nil {
-            cfg.JWTTTL = d
-        }
-    }
-    if v := os.Getenv("ADMIN_JWT_SECRET"); v != "" {
-        cfg.AdminJWTSecret = v
-    }
-    if v := os.Getenv("ADMIN_JWT_ISSUER"); v != "" {
-        cfg.AdminJWTIssuer = v
-    }
-    if v := os.Getenv("ADMIN_JWT_TTL"); v != "" {
-        if d, err := time.ParseDuration(v); err == nil {
-            cfg.AdminJWTTTL = d
-        }
-    }
-    if v := os.Getenv("AUTH_CHALLENGE_TTL"); v != "" {
-        if d, err := time.ParseDuration(v); err == nil {
-            cfg.AuthChallengeTTL = d
-        }
-    }
-    if v := os.Getenv("SESSION_TTL"); v != "" {
-        if d, err := time.ParseDuration(v); err == nil {
-            cfg.SessionTTL = d
-        }
-    }
-    if v := os.Getenv("AUTH_LOGIN_LIMIT"); v != "" {
-        if limit, err := strconv.Atoi(v); err == nil {
-            cfg.AuthLoginLimit = limit
-        }
-    }
-    if v := os.Getenv("AUTH_VERIFY_LIMIT"); v != "" {
-        if limit, err := strconv.Atoi(v); err == nil {
-            cfg.AuthVerifyLimit = limit
-        }
-    }
-    return cfg
+	cfg := Defaults()
+	if v := os.Getenv("HTTP_PORT"); v != "" {
+		cfg.HTTPPort = v
+	}
+	if v := os.Getenv("RADIUS_ADDR"); v != "" {
+		cfg.RadiusAddr = v
+	}
+	if v := os.Getenv("RADIUS_SECRET"); v != "" {
+		cfg.RadiusSecret = v
+	}
+	if v := os.Getenv("DB_URL"); v != "" {
+		cfg.DBURL = v
+	}
+	if v := os.Getenv("REDIS_URL"); v != "" {
+		cfg.RedisURL = v
+	}
+	if v := os.Getenv("LDAP_URL"); v != "" {
+		cfg.LDAPURL = v
+	}
+	if v := os.Getenv("LDAP_TIMEOUT"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			cfg.LDAPTimeout = d
+		}
+	}
+	if v := os.Getenv("EXPRESS_MOBILE_URL"); v != "" {
+		cfg.ExpressMobileURL = v
+	}
+	if v := os.Getenv("EXPRESS_MOBILE_KEY"); v != "" {
+		cfg.ExpressMobileKey = v
+	}
+	if v := os.Getenv("FCM_SERVER_KEY"); v != "" {
+		cfg.FCMServerKey = v
+	}
+	if v := os.Getenv("JWT_SECRET"); v != "" {
+		cfg.JWTSecret = v
+	}
+	if v := os.Getenv("JWT_ISSUER"); v != "" {
+		cfg.JWTIssuer = v
+	}
+	if v := os.Getenv("JWT_TTL"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			cfg.JWTTTL = d
+		}
+	}
+	if v := os.Getenv("ADMIN_JWT_SECRET"); v != "" {
+		cfg.AdminJWTSecret = v
+	}
+	if v := os.Getenv("ADMIN_JWT_ISSUER"); v != "" {
+		cfg.AdminJWTIssuer = v
+	}
+	if v := os.Getenv("ADMIN_JWT_TTL"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			cfg.AdminJWTTTL = d
+		}
+	}
+	if v := os.Getenv("AUTH_CHALLENGE_TTL"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			cfg.AuthChallengeTTL = d
+		}
+	}
+	if v := os.Getenv("SESSION_TTL"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			cfg.SessionTTL = d
+		}
+	}
+	if v := os.Getenv("AUTH_LOGIN_LIMIT"); v != "" {
+		if limit, err := strconv.Atoi(v); err == nil {
+			cfg.AuthLoginLimit = limit
+		}
+	}
+	if v := os.Getenv("AUTH_VERIFY_LIMIT"); v != "" {
+		if limit, err := strconv.Atoi(v); err == nil {
+			cfg.AuthVerifyLimit = limit
+		}
+	}
+	return cfg
 }
 
 func LoadFromFile(path string) (Config, error) {
-    cfg := Defaults()
-    data, err := os.ReadFile(path)
-    if err != nil {
-        return cfg, err
-    }
-    if err := yaml.Unmarshal(data, &cfg); err != nil {
-        return cfg, err
-    }
-    return cfg, nil
+	cfg := Defaults()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return cfg, err
+	}
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return cfg, err
+	}
+	return cfg, nil
 }
 
 func Load() (Config, error) {
-    if path := os.Getenv("CONFIG_PATH"); path != "" {
-        cfg, err := LoadFromFile(path)
-        if err != nil {
-            return cfg, err
-        }
-        env := LoadFromEnv()
-        cfg = merge(env, cfg)
-        return cfg, cfg.Validate()
-    }
-    cfg := LoadFromEnv()
-    return cfg, cfg.Validate()
+	if path := os.Getenv("CONFIG_PATH"); path != "" {
+		cfg, err := LoadFromFile(path)
+		if err != nil {
+			return cfg, err
+		}
+		env := LoadFromEnv()
+		cfg = merge(env, cfg)
+		return cfg, cfg.Validate()
+	}
+	cfg := LoadFromEnv()
+	return cfg, cfg.Validate()
 }
 
 func merge(env Config, file Config) Config {
-    if env.HTTPPort != Defaults().HTTPPort {
-        file.HTTPPort = env.HTTPPort
-    }
-    if env.RadiusAddr != Defaults().RadiusAddr {
-        file.RadiusAddr = env.RadiusAddr
-    }
-    if env.RadiusSecret != "" {
-        file.RadiusSecret = env.RadiusSecret
-    }
-    if env.DBURL != "" {
-        file.DBURL = env.DBURL
-    }
-    if env.RedisURL != "" {
-        file.RedisURL = env.RedisURL
-    }
-    if env.ExpressMobileURL != "" {
-        file.ExpressMobileURL = env.ExpressMobileURL
-    }
-    if env.ExpressMobileKey != "" {
-        file.ExpressMobileKey = env.ExpressMobileKey
-    }
-    if env.FCMServerKey != "" {
-        file.FCMServerKey = env.FCMServerKey
-    }
-    if env.JWTSecret != "" {
-        file.JWTSecret = env.JWTSecret
-    }
-    if env.JWTIssuer != Defaults().JWTIssuer {
-        file.JWTIssuer = env.JWTIssuer
-    }
-    if env.JWTTTL != Defaults().JWTTTL {
-        file.JWTTTL = env.JWTTTL
-    }
-    if env.AdminJWTSecret != "" {
-        file.AdminJWTSecret = env.AdminJWTSecret
-    }
-    if env.AdminJWTIssuer != Defaults().AdminJWTIssuer {
-        file.AdminJWTIssuer = env.AdminJWTIssuer
-    }
-    if env.AdminJWTTTL != Defaults().AdminJWTTTL {
-        file.AdminJWTTTL = env.AdminJWTTTL
-    }
-    if env.AuthChallengeTTL != Defaults().AuthChallengeTTL {
-        file.AuthChallengeTTL = env.AuthChallengeTTL
-    }
-    if env.SessionTTL != Defaults().SessionTTL {
-        file.SessionTTL = env.SessionTTL
-    }
-    if env.AuthLoginLimit != Defaults().AuthLoginLimit {
-        file.AuthLoginLimit = env.AuthLoginLimit
-    }
-    if env.AuthVerifyLimit != Defaults().AuthVerifyLimit {
-        file.AuthVerifyLimit = env.AuthVerifyLimit
-    }
-    return file
+	if env.HTTPPort != Defaults().HTTPPort {
+		file.HTTPPort = env.HTTPPort
+	}
+	if env.RadiusAddr != Defaults().RadiusAddr {
+		file.RadiusAddr = env.RadiusAddr
+	}
+	if env.RadiusSecret != "" {
+		file.RadiusSecret = env.RadiusSecret
+	}
+	if env.DBURL != "" {
+		file.DBURL = env.DBURL
+	}
+	if env.RedisURL != "" {
+		file.RedisURL = env.RedisURL
+	}
+	if env.LDAPURL != "" {
+		file.LDAPURL = env.LDAPURL
+	}
+	if env.LDAPTimeout != Defaults().LDAPTimeout {
+		file.LDAPTimeout = env.LDAPTimeout
+	}
+	if env.ExpressMobileURL != "" {
+		file.ExpressMobileURL = env.ExpressMobileURL
+	}
+	if env.ExpressMobileKey != "" {
+		file.ExpressMobileKey = env.ExpressMobileKey
+	}
+	if env.FCMServerKey != "" {
+		file.FCMServerKey = env.FCMServerKey
+	}
+	if env.JWTSecret != "" {
+		file.JWTSecret = env.JWTSecret
+	}
+	if env.JWTIssuer != Defaults().JWTIssuer {
+		file.JWTIssuer = env.JWTIssuer
+	}
+	if env.JWTTTL != Defaults().JWTTTL {
+		file.JWTTTL = env.JWTTTL
+	}
+	if env.AdminJWTSecret != "" {
+		file.AdminJWTSecret = env.AdminJWTSecret
+	}
+	if env.AdminJWTIssuer != Defaults().AdminJWTIssuer {
+		file.AdminJWTIssuer = env.AdminJWTIssuer
+	}
+	if env.AdminJWTTTL != Defaults().AdminJWTTTL {
+		file.AdminJWTTTL = env.AdminJWTTTL
+	}
+	if env.AuthChallengeTTL != Defaults().AuthChallengeTTL {
+		file.AuthChallengeTTL = env.AuthChallengeTTL
+	}
+	if env.SessionTTL != Defaults().SessionTTL {
+		file.SessionTTL = env.SessionTTL
+	}
+	if env.AuthLoginLimit != Defaults().AuthLoginLimit {
+		file.AuthLoginLimit = env.AuthLoginLimit
+	}
+	if env.AuthVerifyLimit != Defaults().AuthVerifyLimit {
+		file.AuthVerifyLimit = env.AuthVerifyLimit
+	}
+	return file
 }
 
 func (c Config) Validate() error {
-    if c.DBURL == "" {
-        return errors.New("db_url is required")
-    }
-    if c.JWTSecret == "" {
-        return errors.New("jwt_secret is required")
-    }
-    if c.AdminJWTSecret == "" {
-        return errors.New("admin_jwt_secret is required")
-    }
-    if c.RadiusSecret == "" {
-        return errors.New("radius_secret is required")
-    }
-    if c.JWTTTL <= 0 || c.AdminJWTTTL <= 0 || c.AuthChallengeTTL <= 0 || c.SessionTTL <= 0 {
-        return errors.New("ttl values must be positive")
-    }
-    return nil
+	if c.DBURL == "" {
+		return errors.New("db_url is required")
+	}
+	if c.JWTSecret == "" {
+		return errors.New("jwt_secret is required")
+	}
+	if c.AdminJWTSecret == "" {
+		return errors.New("admin_jwt_secret is required")
+	}
+	if c.RadiusSecret == "" {
+		return errors.New("radius_secret is required")
+	}
+	if c.JWTTTL <= 0 || c.AdminJWTTTL <= 0 || c.AuthChallengeTTL <= 0 || c.SessionTTL <= 0 {
+		return errors.New("ttl values must be positive")
+	}
+	return nil
 }

@@ -49,6 +49,14 @@ type LogoutRequest struct {
 	SessionID string `json:"session_id"`
 }
 
+type TOTPSetupResponse struct {
+	Secret     string `json:"secret"`
+	OTPAuthURL string `json:"otpauth_url"`
+	Issuer     string `json:"issuer"`
+	Digits     int    `json:"digits"`
+	Period     int    `json:"period"`
+}
+
 type SessionDTO struct {
     ID        string     `json:"id"`
     IP        string     `json:"ip"`

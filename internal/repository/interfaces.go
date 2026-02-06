@@ -25,13 +25,13 @@ type AuditFilter struct {
 }
 
 type LoginHistoryFilter struct {
-	UserID  string
-	Channel models.AuthChannel
-	Result  models.AuthResult
-	IP      string
+	UserID   string
+	Channel  models.AuthChannel
+	Result   models.AuthResult
+	IP       string
 	DeviceID string
-	From    time.Time
-	To      time.Time
+	From     time.Time
+	To       time.Time
 }
 
 type RadiusRequestFilter struct {
@@ -43,26 +43,26 @@ type RadiusRequestFilter struct {
 }
 
 type LockoutRepository interface {
-    Create(ctx context.Context, l *models.Lockout) error
-    GetActive(ctx context.Context, userID string, ip string, now time.Time) (*models.Lockout, error)
-    ClearExpired(ctx context.Context, now time.Time) (int64, error)
-    List(ctx context.Context, filter LockoutFilter, limit, offset int) ([]models.Lockout, int, error)
-    ClearByFilter(ctx context.Context, filter LockoutFilter) error
+	Create(ctx context.Context, l *models.Lockout) error
+	GetActive(ctx context.Context, userID string, ip string, now time.Time) (*models.Lockout, error)
+	ClearExpired(ctx context.Context, now time.Time) (int64, error)
+	List(ctx context.Context, filter LockoutFilter, limit, offset int) ([]models.Lockout, int, error)
+	ClearByFilter(ctx context.Context, filter LockoutFilter) error
 }
 
 type LockoutFilter struct {
-    UserID string
-    IP     string
-    Reason string
-    ActiveOnly bool
-    Now        time.Time
+	UserID     string
+	IP         string
+	Reason     string
+	ActiveOnly bool
+	Now        time.Time
 }
 
 type SessionListFilter struct {
-    UserID     string
-    ActiveOnly bool
-    IP         string
-    UserAgent  string
+	UserID     string
+	ActiveOnly bool
+	IP         string
+	UserAgent  string
 }
 
 type UserRepository interface {
@@ -82,20 +82,26 @@ type SessionRepository interface {
 	Create(ctx context.Context, s *models.UserSession) error
 	Revoke(ctx context.Context, id string, revokedAt time.Time) error
 	GetByRefreshHash(ctx context.Context, hash string) (*models.UserSession, error)
-    GetByID(ctx context.Context, id string) (*models.UserSession, error)
-    RotateRefreshHash(ctx context.Context, id string, newHash string) error
-    List(ctx context.Context, filter SessionListFilter, limit, offset int) ([]models.UserSession, int, error)
-    RevokeAllByUser(ctx context.Context, userID string, exceptSessionID string, revokedAt time.Time) error
-    Touch(ctx context.Context, id string, seenAt time.Time) error
+	GetByID(ctx context.Context, id string) (*models.UserSession, error)
+	RotateRefreshHash(ctx context.Context, id string, newHash string) error
+	List(ctx context.Context, filter SessionListFilter, limit, offset int) ([]models.UserSession, int, error)
+	RevokeAllByUser(ctx context.Context, userID string, exceptSessionID string, revokedAt time.Time) error
+	Touch(ctx context.Context, id string, seenAt time.Time) error
 }
 
 type ChallengeRepository interface {
 	GetByID(ctx context.Context, id string) (*models.Challenge, error)
-    GetActiveByUserAndMethod(ctx context.Context, userID string, method models.SecondFactorMethod) (*models.Challenge, error)
+	GetActiveByUserAndMethod(ctx context.Context, userID string, method models.SecondFactorMethod) (*models.Challenge, error)
 	Create(ctx context.Context, c *models.Challenge) error
 	UpdateStatus(ctx context.Context, id string, status models.ChallengeStatus) error
 	UpdateDelivery(ctx context.Context, id string, providerID string, status models.ChallengeStatus) error
 	MarkExpired(ctx context.Context, now time.Time) (int64, error)
+}
+
+type OTPSecretRepository interface {
+	GetActiveByUser(ctx context.Context, userID string) (*models.OTPSecret, error)
+	Create(ctx context.Context, s *models.OTPSecret) error
+	Disable(ctx context.Context, id string) error
 }
 
 type DeviceRepository interface {
@@ -139,7 +145,7 @@ type AuditRepository interface {
 type LoginHistoryRepository interface {
 	Create(ctx context.Context, h *models.LoginHistory) error
 	List(ctx context.Context, filter LoginHistoryFilter, limit, offset int) ([]models.LoginHistory, int, error)
-    CountFailures(ctx context.Context, userID string, since time.Time) (int, error)
+	CountFailures(ctx context.Context, userID string, since time.Time) (int, error)
 }
 
 type RadiusRequestRepository interface {
@@ -166,6 +172,7 @@ type UserGroupRepository interface {
 	AddUser(ctx context.Context, groupID, userID string) error
 	RemoveUser(ctx context.Context, groupID, userID string) error
 	ListUsers(ctx context.Context, groupID string, limit, offset int) ([]models.User, int, error)
+	ListGroups(ctx context.Context, userID string) ([]models.Group, error)
 }
 
 type GroupPolicyRepository interface {

@@ -68,25 +68,25 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	resp, err := h.service.Login(r.Context(), req)
 	if err != nil {
 		if errors.Is(err, service.ErrInvalidCredentials) {
-            metrics.Default.IncAuthFailure("login", "invalid_credentials")
+			metrics.Default.IncAuthFailure("login", "invalid_credentials")
 			writeError(w, http.StatusUnauthorized, "invalid_credentials")
 			return
 		}
 		if errors.Is(err, service.ErrForbidden) {
-            metrics.Default.IncAuthFailure("login", "forbidden")
+			metrics.Default.IncAuthFailure("login", "forbidden")
 			writeError(w, http.StatusForbidden, "forbidden")
 			return
 		}
 		if errors.Is(err, service.ErrRateLimited) {
-            metrics.Default.IncAuthFailure("login", "rate_limited")
+			metrics.Default.IncAuthFailure("login", "rate_limited")
 			writeError(w, http.StatusTooManyRequests, "rate_limited")
 			return
 		}
-        metrics.Default.IncAuthFailure("login", "login_failed")
+		metrics.Default.IncAuthFailure("login", "login_failed")
 		writeError(w, http.StatusBadRequest, "login_failed")
 		return
 	}
-    metrics.Default.IncAuthChallenge(string(resp.Method))
+	metrics.Default.IncAuthChallenge(string(resp.Method))
 	writeJSON(w, http.StatusOK, resp)
 }
 
@@ -117,22 +117,22 @@ func (h *AuthHandler) Verify(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrChallengeNotFound):
-            metrics.Default.IncAuthFailure("verify", "challenge_not_found")
+			metrics.Default.IncAuthFailure("verify", "challenge_not_found")
 			writeError(w, http.StatusNotFound, "challenge_not_found")
 		case errors.Is(err, service.ErrChallengeExpired):
-            metrics.Default.IncAuthFailure("verify", "challenge_expired")
+			metrics.Default.IncAuthFailure("verify", "challenge_expired")
 			writeError(w, http.StatusConflict, "challenge_expired")
 		case errors.Is(err, service.ErrSecondFactorFailed):
-            metrics.Default.IncAuthFailure("verify", "second_factor_failed")
+			metrics.Default.IncAuthFailure("verify", "second_factor_failed")
 			writeError(w, http.StatusUnauthorized, "second_factor_failed")
 		case errors.Is(err, service.ErrForbidden):
-            metrics.Default.IncAuthFailure("verify", "forbidden")
+			metrics.Default.IncAuthFailure("verify", "forbidden")
 			writeError(w, http.StatusForbidden, "forbidden")
 		case errors.Is(err, service.ErrRateLimited):
-            metrics.Default.IncAuthFailure("verify", "rate_limited")
+			metrics.Default.IncAuthFailure("verify", "rate_limited")
 			writeError(w, http.StatusTooManyRequests, "rate_limited")
 		default:
-            metrics.Default.IncAuthFailure("verify", "verify_failed")
+			metrics.Default.IncAuthFailure("verify", "verify_failed")
 			writeError(w, http.StatusBadRequest, "verify_failed")
 		}
 		return
@@ -213,9 +213,50 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (h *AuthHandler) SetupTOTP(w http.ResponseWriter, r *http.Request) {
+	claims, ok := middlewares.AuthClaimsFromContext(r.Context())
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	resp, err := h.service.SetupTOTP(r.Context(), claims.UserID)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrNotFound):
+			writeError(w, http.StatusNotFound, "user_not_found")
+		case errors.Is(err, service.ErrNotConfigured):
+			writeError(w, http.StatusBadRequest, "totp_not_configured")
+		default:
+			writeError(w, http.StatusBadRequest, "totp_setup_failed")
+		}
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+func (h *AuthHandler) DisableTOTP(w http.ResponseWriter, r *http.Request) {
+	claims, ok := middlewares.AuthClaimsFromContext(r.Context())
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	if err := h.service.DisableTOTP(r.Context(), claims.UserID); err != nil {
+		switch {
+		case errors.Is(err, service.ErrNotFound):
+			writeError(w, http.StatusNotFound, "totp_not_found")
+		case errors.Is(err, service.ErrNotConfigured):
+			writeError(w, http.StatusBadRequest, "totp_not_configured")
+		default:
+			writeError(w, http.StatusBadRequest, "totp_disable_failed")
+		}
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func isValidSecondFactorMethod(method models.SecondFactorMethod) bool {
 	switch method {
-	case models.MethodOTP, models.MethodCall, models.MethodPush:
+	case models.MethodOTP, models.MethodTOTP, models.MethodCall, models.MethodPush:
 		return true
 	default:
 		return false

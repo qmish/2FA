@@ -321,7 +321,7 @@ func (r *SessionRepository) Create(ctx context.Context, s *models.UserSession) e
 		nullString(s.UserAgent),
 		s.ExpiresAt,
 		s.CreatedAt,
-        nullTime(s.LastSeenAt),
+		nullTime(s.LastSeenAt),
 		nullTime(s.RevokedAt),
 	)
 	return err
@@ -339,8 +339,8 @@ func (r *SessionRepository) GetByRefreshHash(ctx context.Context, hash string) (
 
 	var (
 		ip, userAgent sql.NullString
-        lastSeenAt    sql.NullTime
-        revokedAt     sql.NullTime
+		lastSeenAt    sql.NullTime
+		revokedAt     sql.NullTime
 		s             models.UserSession
 	)
 	if err := row.Scan(
@@ -351,138 +351,138 @@ func (r *SessionRepository) GetByRefreshHash(ctx context.Context, hash string) (
 		&userAgent,
 		&s.ExpiresAt,
 		&s.CreatedAt,
-        &lastSeenAt,
+		&lastSeenAt,
 		&revokedAt,
 	); err != nil {
 		return nil, err
 	}
 	s.IP = fromNullString(ip)
 	s.UserAgent = fromNullString(userAgent)
-    s.LastSeenAt = fromNullTime(lastSeenAt)
+	s.LastSeenAt = fromNullTime(lastSeenAt)
 	s.RevokedAt = fromNullTime(revokedAt)
 	return &s, nil
 }
 
 func (r *SessionRepository) GetByID(ctx context.Context, id string) (*models.UserSession, error) {
-    row := r.db.QueryRowContext(ctx, `
+	row := r.db.QueryRowContext(ctx, `
         SELECT id, user_id, refresh_token_hash, ip, user_agent, expires_at, created_at, last_seen_at, revoked_at
         FROM user_sessions WHERE id = $1`, id)
-    var (
-        ip, userAgent sql.NullString
-        lastSeenAt    sql.NullTime
-        revokedAt     sql.NullTime
-        s             models.UserSession
-    )
-    if err := row.Scan(
-        &s.ID,
-        &s.UserID,
-        &s.RefreshTokenHash,
-        &ip,
-        &userAgent,
-        &s.ExpiresAt,
-        &s.CreatedAt,
-        &lastSeenAt,
-        &revokedAt,
-    ); err != nil {
-        return nil, mapNotFound(err)
-    }
-    s.IP = fromNullString(ip)
-    s.UserAgent = fromNullString(userAgent)
-    s.LastSeenAt = fromNullTime(lastSeenAt)
-    s.RevokedAt = fromNullTime(revokedAt)
-    return &s, nil
+	var (
+		ip, userAgent sql.NullString
+		lastSeenAt    sql.NullTime
+		revokedAt     sql.NullTime
+		s             models.UserSession
+	)
+	if err := row.Scan(
+		&s.ID,
+		&s.UserID,
+		&s.RefreshTokenHash,
+		&ip,
+		&userAgent,
+		&s.ExpiresAt,
+		&s.CreatedAt,
+		&lastSeenAt,
+		&revokedAt,
+	); err != nil {
+		return nil, mapNotFound(err)
+	}
+	s.IP = fromNullString(ip)
+	s.UserAgent = fromNullString(userAgent)
+	s.LastSeenAt = fromNullTime(lastSeenAt)
+	s.RevokedAt = fromNullTime(revokedAt)
+	return &s, nil
 }
 
 func (r *SessionRepository) RotateRefreshHash(ctx context.Context, id string, newHash string) error {
-    _, err := r.db.ExecContext(ctx, `
+	_, err := r.db.ExecContext(ctx, `
         UPDATE user_sessions SET refresh_token_hash = $2 WHERE id = $1`, id, newHash)
-    return err
+	return err
 }
 
 func (r *SessionRepository) List(ctx context.Context, filter repository.SessionListFilter, limit, offset int) ([]models.UserSession, int, error) {
-    where := []string{}
-    args := []any{}
-    if filter.UserID != "" {
-        where = append(where, "user_id = $"+itoa(len(args)+1))
-        args = append(args, filter.UserID)
-    }
-    if filter.IP != "" {
-        where = append(where, "ip = $"+itoa(len(args)+1))
-        args = append(args, filter.IP)
-    }
-    if filter.UserAgent != "" {
-        where = append(where, "user_agent = $"+itoa(len(args)+1))
-        args = append(args, filter.UserAgent)
-    }
-    if filter.ActiveOnly {
-        where = append(where, "revoked_at IS NULL")
-    }
-    base := "FROM user_sessions"
-    if len(where) > 0 {
-        base += " WHERE " + strings.Join(where, " AND ")
-    }
-    var total int
-    if err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) "+base, args...).Scan(&total); err != nil {
-        return nil, 0, err
-    }
-    args = append(args, limit, offset)
-    rows, err := r.db.QueryContext(ctx, `
+	where := []string{}
+	args := []any{}
+	if filter.UserID != "" {
+		where = append(where, "user_id = $"+itoa(len(args)+1))
+		args = append(args, filter.UserID)
+	}
+	if filter.IP != "" {
+		where = append(where, "ip = $"+itoa(len(args)+1))
+		args = append(args, filter.IP)
+	}
+	if filter.UserAgent != "" {
+		where = append(where, "user_agent = $"+itoa(len(args)+1))
+		args = append(args, filter.UserAgent)
+	}
+	if filter.ActiveOnly {
+		where = append(where, "revoked_at IS NULL")
+	}
+	base := "FROM user_sessions"
+	if len(where) > 0 {
+		base += " WHERE " + strings.Join(where, " AND ")
+	}
+	var total int
+	if err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) "+base, args...).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+	args = append(args, limit, offset)
+	rows, err := r.db.QueryContext(ctx, `
         SELECT id, user_id, refresh_token_hash, ip, user_agent, expires_at, created_at, last_seen_at, revoked_at
         `+base+` ORDER BY created_at DESC LIMIT $`+itoa(len(args)-1)+` OFFSET $`+itoa(len(args)), args...)
-    if err != nil {
-        return nil, 0, err
-    }
-    defer rows.Close()
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
 
-    var items []models.UserSession
-    for rows.Next() {
-        var (
-            ip, userAgent sql.NullString
-            lastSeenAt    sql.NullTime
-            revokedAt     sql.NullTime
-            s             models.UserSession
-        )
-        if err := rows.Scan(
-            &s.ID,
-            &s.UserID,
-            &s.RefreshTokenHash,
-            &ip,
-            &userAgent,
-            &s.ExpiresAt,
-            &s.CreatedAt,
-            &lastSeenAt,
-            &revokedAt,
-        ); err != nil {
-            return nil, 0, err
-        }
-        s.IP = fromNullString(ip)
-        s.UserAgent = fromNullString(userAgent)
-        s.LastSeenAt = fromNullTime(lastSeenAt)
-        s.RevokedAt = fromNullTime(revokedAt)
-        items = append(items, s)
-    }
-    if err := rows.Err(); err != nil {
-        return nil, 0, err
-    }
-    return items, total, nil
+	var items []models.UserSession
+	for rows.Next() {
+		var (
+			ip, userAgent sql.NullString
+			lastSeenAt    sql.NullTime
+			revokedAt     sql.NullTime
+			s             models.UserSession
+		)
+		if err := rows.Scan(
+			&s.ID,
+			&s.UserID,
+			&s.RefreshTokenHash,
+			&ip,
+			&userAgent,
+			&s.ExpiresAt,
+			&s.CreatedAt,
+			&lastSeenAt,
+			&revokedAt,
+		); err != nil {
+			return nil, 0, err
+		}
+		s.IP = fromNullString(ip)
+		s.UserAgent = fromNullString(userAgent)
+		s.LastSeenAt = fromNullTime(lastSeenAt)
+		s.RevokedAt = fromNullTime(revokedAt)
+		items = append(items, s)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	return items, total, nil
 }
 
 func (r *SessionRepository) RevokeAllByUser(ctx context.Context, userID string, exceptSessionID string, revokedAt time.Time) error {
-    if exceptSessionID == "" {
-        _, err := r.db.ExecContext(ctx, `
+	if exceptSessionID == "" {
+		_, err := r.db.ExecContext(ctx, `
             UPDATE user_sessions SET revoked_at = $2 WHERE user_id = $1 AND revoked_at IS NULL`, userID, revokedAt)
-        return err
-    }
-    _, err := r.db.ExecContext(ctx, `
+		return err
+	}
+	_, err := r.db.ExecContext(ctx, `
         UPDATE user_sessions SET revoked_at = $3 WHERE user_id = $1 AND id <> $2 AND revoked_at IS NULL`,
-        userID, exceptSessionID, revokedAt)
-    return err
+		userID, exceptSessionID, revokedAt)
+	return err
 }
 
 func (r *SessionRepository) Touch(ctx context.Context, id string, seenAt time.Time) error {
-    _, err := r.db.ExecContext(ctx, `
+	_, err := r.db.ExecContext(ctx, `
         UPDATE user_sessions SET last_seen_at = $2 WHERE id = $1`, id, seenAt)
-    return err
+	return err
 }
 
 type ChallengeRepository struct {
@@ -523,35 +523,35 @@ func (r *ChallengeRepository) GetByID(ctx context.Context, id string) (*models.C
 }
 
 func (r *ChallengeRepository) GetActiveByUserAndMethod(ctx context.Context, userID string, method models.SecondFactorMethod) (*models.Challenge, error) {
-    row := r.db.QueryRowContext(ctx, `
+	row := r.db.QueryRowContext(ctx, `
         SELECT id, user_id, method, status, code_hash, provider_id, expires_at, created_at, updated_at
         FROM challenges
         WHERE user_id = $1 AND method = $2 AND status IN ('created','sent','pending')
         ORDER BY created_at DESC
         LIMIT 1`, userID, string(method))
-    var (
-        methodValue, status     string
-        codeHash, provider      sql.NullString
-        c                       models.Challenge
-    )
-    if err := row.Scan(
-        &c.ID,
-        &c.UserID,
-        &methodValue,
-        &status,
-        &codeHash,
-        &provider,
-        &c.ExpiresAt,
-        &c.CreatedAt,
-        &c.UpdatedAt,
-    ); err != nil {
-        return nil, mapNotFound(err)
-    }
-    c.Method = models.SecondFactorMethod(methodValue)
-    c.Status = models.ChallengeStatus(status)
-    c.CodeHash = fromNullString(codeHash)
-    c.ProviderID = fromNullString(provider)
-    return &c, nil
+	var (
+		methodValue, status string
+		codeHash, provider  sql.NullString
+		c                   models.Challenge
+	)
+	if err := row.Scan(
+		&c.ID,
+		&c.UserID,
+		&methodValue,
+		&status,
+		&codeHash,
+		&provider,
+		&c.ExpiresAt,
+		&c.CreatedAt,
+		&c.UpdatedAt,
+	); err != nil {
+		return nil, mapNotFound(err)
+	}
+	c.Method = models.SecondFactorMethod(methodValue)
+	c.Status = models.ChallengeStatus(status)
+	c.CodeHash = fromNullString(codeHash)
+	c.ProviderID = fromNullString(provider)
+	return &c, nil
 }
 
 func (r *ChallengeRepository) Create(ctx context.Context, c *models.Challenge) error {
@@ -595,6 +595,41 @@ func (r *ChallengeRepository) MarkExpired(ctx context.Context, now time.Time) (i
 		return 0, err
 	}
 	return res.RowsAffected()
+}
+
+type OTPSecretRepository struct {
+	db *sql.DB
+}
+
+func NewOTPSecretRepository(db *sql.DB) *OTPSecretRepository {
+	return &OTPSecretRepository{db: db}
+}
+
+func (r *OTPSecretRepository) GetActiveByUser(ctx context.Context, userID string) (*models.OTPSecret, error) {
+	row := r.db.QueryRowContext(ctx, `
+        SELECT id, user_id, secret, issuer, digits, period, enabled, created_at
+        FROM otp_secrets WHERE user_id = $1 AND enabled = true
+        ORDER BY created_at DESC LIMIT 1`, userID)
+	var issuer sql.NullString
+	var item models.OTPSecret
+	if err := row.Scan(&item.ID, &item.UserID, &item.Secret, &issuer, &item.Digits, &item.Period, &item.Enabled, &item.CreatedAt); err != nil {
+		return nil, mapNotFound(err)
+	}
+	item.Issuer = fromNullString(issuer)
+	return &item, nil
+}
+
+func (r *OTPSecretRepository) Create(ctx context.Context, s *models.OTPSecret) error {
+	_, err := r.db.ExecContext(ctx, `
+        INSERT INTO otp_secrets (id, user_id, secret, issuer, digits, period, enabled, created_at)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+		s.ID, s.UserID, s.Secret, nullString(s.Issuer), s.Digits, s.Period, s.Enabled, s.CreatedAt)
+	return err
+}
+
+func (r *OTPSecretRepository) Disable(ctx context.Context, id string) error {
+	_, err := r.db.ExecContext(ctx, `UPDATE otp_secrets SET enabled = false WHERE id = $1`, id)
+	return err
 }
 
 type DeviceRepository struct {
@@ -1084,161 +1119,161 @@ func (r *LoginHistoryRepository) List(ctx context.Context, filter repository.Log
 }
 
 func (r *LoginHistoryRepository) CountFailures(ctx context.Context, userID string, since time.Time) (int, error) {
-    row := r.db.QueryRowContext(ctx, `
+	row := r.db.QueryRowContext(ctx, `
         SELECT COUNT(*) FROM login_history
         WHERE user_id = $1 AND result = $2 AND created_at >= $3`,
-        userID,
-        string(models.AuthDeny),
-        since,
-    )
-    var count int
-    if err := row.Scan(&count); err != nil {
-        return 0, err
-    }
-    return count, nil
+		userID,
+		string(models.AuthDeny),
+		since,
+	)
+	var count int
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 type LockoutRepository struct {
-    db *sql.DB
+	db *sql.DB
 }
 
 func NewLockoutRepository(db *sql.DB) *LockoutRepository {
-    return &LockoutRepository{db: db}
+	return &LockoutRepository{db: db}
 }
 
 func (r *LockoutRepository) Create(ctx context.Context, l *models.Lockout) error {
-    _, err := r.db.ExecContext(ctx, `
+	_, err := r.db.ExecContext(ctx, `
         INSERT INTO lockouts (id, user_id, ip, reason, expires_at, created_at)
         VALUES ($1,$2,$3,$4,$5,$6)`,
-        l.ID,
-        nullString(l.UserID),
-        l.IP,
-        l.Reason,
-        l.ExpiresAt,
-        l.CreatedAt,
-    )
-    return err
+		l.ID,
+		nullString(l.UserID),
+		l.IP,
+		l.Reason,
+		l.ExpiresAt,
+		l.CreatedAt,
+	)
+	return err
 }
 
 func (r *LockoutRepository) GetActive(ctx context.Context, userID string, ip string, now time.Time) (*models.Lockout, error) {
-    row := r.db.QueryRowContext(ctx, `
+	row := r.db.QueryRowContext(ctx, `
         SELECT id, user_id, ip, reason, expires_at, created_at
         FROM lockouts
         WHERE expires_at > $3 AND (user_id = $1 OR ip = $2)
         ORDER BY expires_at DESC
         LIMIT 1`, userID, ip, now)
-    var (
-        userIDValue sql.NullString
-        lockout     models.Lockout
-    )
-    if err := row.Scan(
-        &lockout.ID,
-        &userIDValue,
-        &lockout.IP,
-        &lockout.Reason,
-        &lockout.ExpiresAt,
-        &lockout.CreatedAt,
-    ); err != nil {
-        return nil, mapNotFound(err)
-    }
-    lockout.UserID = fromNullString(userIDValue)
-    return &lockout, nil
+	var (
+		userIDValue sql.NullString
+		lockout     models.Lockout
+	)
+	if err := row.Scan(
+		&lockout.ID,
+		&userIDValue,
+		&lockout.IP,
+		&lockout.Reason,
+		&lockout.ExpiresAt,
+		&lockout.CreatedAt,
+	); err != nil {
+		return nil, mapNotFound(err)
+	}
+	lockout.UserID = fromNullString(userIDValue)
+	return &lockout, nil
 }
 
 func (r *LockoutRepository) ClearExpired(ctx context.Context, now time.Time) (int64, error) {
-    res, err := r.db.ExecContext(ctx, `DELETE FROM lockouts WHERE expires_at < $1`, now)
-    if err != nil {
-        return 0, err
-    }
-    return res.RowsAffected()
+	res, err := r.db.ExecContext(ctx, `DELETE FROM lockouts WHERE expires_at < $1`, now)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
 }
 
 func (r *LockoutRepository) List(ctx context.Context, filter repository.LockoutFilter, limit, offset int) ([]models.Lockout, int, error) {
-    where := []string{}
-    args := []any{}
-    if filter.UserID != "" {
-        where = append(where, "user_id = $"+itoa(len(args)+1))
-        args = append(args, filter.UserID)
-    }
-    if filter.IP != "" {
-        where = append(where, "ip = $"+itoa(len(args)+1))
-        args = append(args, filter.IP)
-    }
-    if filter.Reason != "" {
-        where = append(where, "reason = $"+itoa(len(args)+1))
-        args = append(args, filter.Reason)
-    }
-    if filter.ActiveOnly {
-        where = append(where, "expires_at > $"+itoa(len(args)+1))
-        args = append(args, filter.Now)
-    }
-    base := "FROM lockouts"
-    if len(where) > 0 {
-        base += " WHERE " + strings.Join(where, " AND ")
-    }
-    var total int
-    if err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) "+base, args...).Scan(&total); err != nil {
-        return nil, 0, err
-    }
-    args = append(args, limit, offset)
-    rows, err := r.db.QueryContext(ctx, `
+	where := []string{}
+	args := []any{}
+	if filter.UserID != "" {
+		where = append(where, "user_id = $"+itoa(len(args)+1))
+		args = append(args, filter.UserID)
+	}
+	if filter.IP != "" {
+		where = append(where, "ip = $"+itoa(len(args)+1))
+		args = append(args, filter.IP)
+	}
+	if filter.Reason != "" {
+		where = append(where, "reason = $"+itoa(len(args)+1))
+		args = append(args, filter.Reason)
+	}
+	if filter.ActiveOnly {
+		where = append(where, "expires_at > $"+itoa(len(args)+1))
+		args = append(args, filter.Now)
+	}
+	base := "FROM lockouts"
+	if len(where) > 0 {
+		base += " WHERE " + strings.Join(where, " AND ")
+	}
+	var total int
+	if err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) "+base, args...).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+	args = append(args, limit, offset)
+	rows, err := r.db.QueryContext(ctx, `
         SELECT id, user_id, ip, reason, expires_at, created_at
         `+base+` ORDER BY created_at DESC LIMIT $`+itoa(len(args)-1)+` OFFSET $`+itoa(len(args)), args...)
-    if err != nil {
-        return nil, 0, err
-    }
-    defer rows.Close()
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
 
-    var items []models.Lockout
-    for rows.Next() {
-        var (
-            userIDValue sql.NullString
-            l           models.Lockout
-        )
-        if err := rows.Scan(
-            &l.ID,
-            &userIDValue,
-            &l.IP,
-            &l.Reason,
-            &l.ExpiresAt,
-            &l.CreatedAt,
-        ); err != nil {
-            return nil, 0, err
-        }
-        l.UserID = fromNullString(userIDValue)
-        items = append(items, l)
-    }
-    if err := rows.Err(); err != nil {
-        return nil, 0, err
-    }
-    return items, total, nil
+	var items []models.Lockout
+	for rows.Next() {
+		var (
+			userIDValue sql.NullString
+			l           models.Lockout
+		)
+		if err := rows.Scan(
+			&l.ID,
+			&userIDValue,
+			&l.IP,
+			&l.Reason,
+			&l.ExpiresAt,
+			&l.CreatedAt,
+		); err != nil {
+			return nil, 0, err
+		}
+		l.UserID = fromNullString(userIDValue)
+		items = append(items, l)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	return items, total, nil
 }
 
 func (r *LockoutRepository) ClearByFilter(ctx context.Context, filter repository.LockoutFilter) error {
-    where := []string{}
-    args := []any{}
-    if filter.UserID != "" {
-        where = append(where, "user_id = $"+itoa(len(args)+1))
-        args = append(args, filter.UserID)
-    }
-    if filter.IP != "" {
-        where = append(where, "ip = $"+itoa(len(args)+1))
-        args = append(args, filter.IP)
-    }
-    if filter.Reason != "" {
-        where = append(where, "reason = $"+itoa(len(args)+1))
-        args = append(args, filter.Reason)
-    }
-    if filter.ActiveOnly {
-        where = append(where, "expires_at > $"+itoa(len(args)+1))
-        args = append(args, filter.Now)
-    }
-    query := "DELETE FROM lockouts"
-    if len(where) > 0 {
-        query += " WHERE " + strings.Join(where, " AND ")
-    }
-    _, err := r.db.ExecContext(ctx, query, args...)
-    return err
+	where := []string{}
+	args := []any{}
+	if filter.UserID != "" {
+		where = append(where, "user_id = $"+itoa(len(args)+1))
+		args = append(args, filter.UserID)
+	}
+	if filter.IP != "" {
+		where = append(where, "ip = $"+itoa(len(args)+1))
+		args = append(args, filter.IP)
+	}
+	if filter.Reason != "" {
+		where = append(where, "reason = $"+itoa(len(args)+1))
+		args = append(args, filter.Reason)
+	}
+	if filter.ActiveOnly {
+		where = append(where, "expires_at > $"+itoa(len(args)+1))
+		args = append(args, filter.Now)
+	}
+	query := "DELETE FROM lockouts"
+	if len(where) > 0 {
+		query += " WHERE " + strings.Join(where, " AND ")
+	}
+	_, err := r.db.ExecContext(ctx, query, args...)
+	return err
 }
 
 type RadiusRequestRepository struct {
@@ -1542,6 +1577,34 @@ func (r *UserGroupRepository) ListUsers(ctx context.Context, groupID string, lim
 		return nil, 0, err
 	}
 	return items, total, nil
+}
+
+func (r *UserGroupRepository) ListGroups(ctx context.Context, userID string) ([]models.Group, error) {
+	rows, err := r.db.QueryContext(ctx, `
+        SELECT g.id, g.name, g.description, g.created_at
+        FROM user_groups ug
+        JOIN groups g ON g.id = ug.group_id
+        WHERE ug.user_id = $1
+        ORDER BY g.created_at DESC`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var items []models.Group
+	for rows.Next() {
+		var group models.Group
+		var description sql.NullString
+		if err := rows.Scan(&group.ID, &group.Name, &description, &group.CreatedAt); err != nil {
+			return nil, err
+		}
+		group.Description = fromNullString(description)
+		items = append(items, group)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 type GroupPolicyRepository struct {

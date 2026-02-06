@@ -35,6 +35,7 @@
           <label>Method
             <select id="login-method">
               <option value="otp">otp</option>
+              <option value="totp">totp</option>
               <option value="push">push</option>
               <option value="call">call</option>
             </select>
@@ -78,6 +79,7 @@
           <label>Method
             <select id="verify-method">
               <option value="otp">otp</option>
+              <option value="totp">totp</option>
               <option value="push">push</option>
               <option value="call">call</option>
             </select>
@@ -138,6 +140,17 @@
           <span id="tokens-status" class="badge error hidden">Ошибка</span>
         </div>
         <pre id="tokens-result" class="result"></pre>
+      </section>
+
+      <section class="card">
+        <h2>TOTP</h2>
+        <p class="hint">Настройка TOTP для текущего пользователя (нужен access token).</p>
+        <div class="row">
+          <button id="totp-setup-btn">Setup TOTP</button>
+          <button id="totp-disable-btn" class="secondary">Disable TOTP</button>
+          <span id="totp-setup-status" class="badge error hidden">Ошибка</span>
+        </div>
+        <pre id="totp-setup-result" class="result"></pre>
       </section>
 
       <section class="card">

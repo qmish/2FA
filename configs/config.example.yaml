@@ -3,6 +3,8 @@ radius_addr: ":1812"
 radius_secret: "CHANGE_ME"
 db_url: "postgres://user:pass@localhost:5432/2fa?sslmode=disable"
 redis_url: "redis://localhost:6379/0"
+ldap_url: ""
+ldap_timeout: 5s
 express_mobile_url: "https://api.express-mobile.local"
 express_mobile_key: "CHANGE_ME"
 fcm_server_key: "CHANGE_ME"

@@ -322,6 +322,28 @@ async function handleLockoutStatus() {
   }
 }
 
+async function handleTotpSetup() {
+  setStatus("totp-setup-status", true);
+  try {
+    const resp = await api("/api/v1/auth/totp/setup", { method: "POST" });
+    setResult("totp-setup-result", resp);
+  } catch (err) {
+    setResult("totp-setup-result", err);
+    setStatus("totp-setup-status", false, err);
+  }
+}
+
+async function handleTotpDisable() {
+  setStatus("totp-setup-status", true);
+  try {
+    await api("/api/v1/auth/totp/disable", { method: "POST" });
+    setResult("totp-setup-result", { ok: true });
+  } catch (err) {
+    setResult("totp-setup-result", err);
+    setStatus("totp-setup-status", false, err);
+  }
+}
+
 async function handleAuditList() {
   setStatus("audit-status", true);
   try {
@@ -744,6 +766,10 @@ function initUI() {
   document.getElementById("revoke-btn").addEventListener("click", handleRevoke);
   document.getElementById("refresh-btn").addEventListener("click", handleRefresh);
   document.getElementById("lockout-btn").addEventListener("click", handleLockoutStatus);
+  const totpSetupBtn = document.getElementById("totp-setup-btn");
+  const totpDisableBtn = document.getElementById("totp-disable-btn");
+  if (totpSetupBtn) totpSetupBtn.addEventListener("click", handleTotpSetup);
+  if (totpDisableBtn) totpDisableBtn.addEventListener("click", handleTotpDisable);
   document.getElementById("audit-btn").addEventListener("click", handleAuditList);
   document.getElementById("audit-export-btn").addEventListener("click", handleAuditExport);
   document.getElementById("admin-token").value = getAdminToken();
