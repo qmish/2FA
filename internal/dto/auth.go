@@ -121,6 +121,16 @@ type PasskeyRegisterFinishRequest struct {
 	Credential json.RawMessage `json:"credential"`
 }
 
+type PasskeyLoginBeginResponse struct {
+	Options   json.RawMessage `json:"public_key_options"`
+	SessionID string          `json:"session_id"`
+}
+
+type PasskeyLoginFinishRequest struct {
+	SessionID  string          `json:"session_id"`
+	Credential json.RawMessage `json:"credential"`
+}
+
 type RegisterRequest struct {
 	Token    string `json:"token"`
 	Username string `json:"username"`

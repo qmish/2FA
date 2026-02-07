@@ -19,4 +19,6 @@ type AuthService interface {
 	ClearRecoveryCodes(ctx context.Context, userID string) error
 	BeginPasskeyRegistration(ctx context.Context, userID string) (dto.PasskeyRegisterBeginResponse, error)
 	FinishPasskeyRegistration(ctx context.Context, userID string, credential json.RawMessage) error
+	BeginPasskeyLogin(ctx context.Context) (dto.PasskeyLoginBeginResponse, error)
+	FinishPasskeyLogin(ctx context.Context, sessionID string, credential json.RawMessage, ip string, userAgent string) (dto.TokenPair, error)
 }

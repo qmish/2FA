@@ -326,6 +326,50 @@ func (h *AuthHandler) ClearRecoveryCodes(w http.ResponseWriter, r *http.Request)
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (h *AuthHandler) BeginPasskeyLogin(w http.ResponseWriter, r *http.Request) {
+	resp, err := h.service.BeginPasskeyLogin(r.Context())
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrNotConfigured):
+			writeError(w, http.StatusBadRequest, "passkeys_not_configured")
+		default:
+			writeError(w, http.StatusBadRequest, "passkey_login_begin_failed")
+		}
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+func (h *AuthHandler) FinishPasskeyLogin(w http.ResponseWriter, r *http.Request) {
+	var req dto.PasskeyLoginFinishRequest
+	dec := json.NewDecoder(r.Body)
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&req); err != nil || len(req.Credential) == 0 || strings.TrimSpace(req.SessionID) == "" {
+		writeError(w, http.StatusBadRequest, "invalid_request")
+		return
+	}
+	ip := clientIP(r)
+	if !validator.IsIPValid(ip) {
+		writeError(w, http.StatusBadRequest, "invalid_ip")
+		return
+	}
+	resp, err := h.service.FinishPasskeyLogin(r.Context(), strings.TrimSpace(req.SessionID), req.Credential, ip, r.UserAgent())
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrChallengeNotFound):
+			writeError(w, http.StatusNotFound, "challenge_not_found")
+		case errors.Is(err, service.ErrChallengeExpired):
+			writeError(w, http.StatusConflict, "challenge_expired")
+		case errors.Is(err, service.ErrNotConfigured):
+			writeError(w, http.StatusBadRequest, "passkeys_not_configured")
+		default:
+			writeError(w, http.StatusBadRequest, "passkey_login_failed")
+		}
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
 func (h *AuthHandler) BeginPasskeyRegistration(w http.ResponseWriter, r *http.Request) {
 	claims, ok := middlewares.AuthClaimsFromContext(r.Context())
 	if !ok {

@@ -19,6 +19,8 @@ import (
 type webauthnAdapter interface {
 	BeginRegistration(user webauthn.User, opts ...webauthn.RegistrationOption) (*protocol.CredentialCreation, *webauthn.SessionData, error)
 	CreateCredential(user webauthn.User, session webauthn.SessionData, parsed *protocol.ParsedCredentialCreationData) (*webauthn.Credential, error)
+	BeginDiscoverableLogin(opts ...webauthn.LoginOption) (*protocol.CredentialAssertion, *webauthn.SessionData, error)
+	ValidatePasskeyLogin(handler webauthn.DiscoverableUserHandler, session webauthn.SessionData, parsed *protocol.ParsedCredentialAssertionData) (webauthn.User, *webauthn.Credential, error)
 }
 
 type realWebAuthnAdapter struct {
@@ -33,6 +35,14 @@ func (r *realWebAuthnAdapter) CreateCredential(user webauthn.User, session webau
 	return r.handler.CreateCredential(user, session, parsed)
 }
 
+func (r *realWebAuthnAdapter) BeginDiscoverableLogin(opts ...webauthn.LoginOption) (*protocol.CredentialAssertion, *webauthn.SessionData, error) {
+	return r.handler.BeginDiscoverableLogin(opts...)
+}
+
+func (r *realWebAuthnAdapter) ValidatePasskeyLogin(handler webauthn.DiscoverableUserHandler, session webauthn.SessionData, parsed *protocol.ParsedCredentialAssertionData) (webauthn.User, *webauthn.Credential, error) {
+	return r.handler.ValidatePasskeyLogin(handler, session, parsed)
+}
+
 type webauthnSessionEntry struct {
 	data      *webauthn.SessionData
 	expiresAt time.Time
@@ -42,6 +52,7 @@ func (s *Service) WithWebAuthn(handler *webauthn.WebAuthn, repo repository.WebAu
 	if handler != nil {
 		s.webauthnAdapter = &realWebAuthnAdapter{handler: handler}
 		s.webauthnParseCreation = protocol.ParseCredentialCreationResponseBytes
+		s.webauthnParseAssertion = protocol.ParseCredentialRequestResponseBytes
 	}
 	s.webauthnCreds = repo
 	if s.webauthnSessions == nil {
@@ -135,6 +146,106 @@ func (s *Service) FinishPasskeyRegistration(ctx context.Context, userID string, 
 		CreatedAt:    now,
 	}
 	return s.webauthnCreds.Create(ctx, item)
+}
+
+func (s *Service) BeginPasskeyLogin(ctx context.Context) (dto.PasskeyLoginBeginResponse, error) {
+	if s.webauthnAdapter == nil || s.webauthnCreds == nil {
+		return dto.PasskeyLoginBeginResponse{}, ErrNotConfigured
+	}
+	assertion, session, err := s.webauthnAdapter.BeginDiscoverableLogin()
+	if err != nil {
+		return dto.PasskeyLoginBeginResponse{}, err
+	}
+	payload, err := json.Marshal(assertion)
+	if err != nil {
+		return dto.PasskeyLoginBeginResponse{}, err
+	}
+	sessionID := uuid.NewString()
+	s.storeWebAuthnSession("login", sessionID, session)
+	return dto.PasskeyLoginBeginResponse{Options: payload, SessionID: sessionID}, nil
+}
+
+func (s *Service) FinishPasskeyLogin(ctx context.Context, sessionID string, credential json.RawMessage, ip string, userAgent string) (dto.TokenPair, error) {
+	if s.webauthnAdapter == nil || s.webauthnCreds == nil || s.webauthnParseAssertion == nil {
+		return dto.TokenPair{}, ErrNotConfigured
+	}
+	if sessionID == "" {
+		return dto.TokenPair{}, ErrChallengeNotFound
+	}
+	entry, ok := s.takeWebAuthnSession("login", sessionID)
+	if !ok {
+		return dto.TokenPair{}, ErrChallengeNotFound
+	}
+	if s.now().After(entry.expiresAt) {
+		return dto.TokenPair{}, ErrChallengeExpired
+	}
+	parsed, err := s.webauthnParseAssertion(credential)
+	if err != nil {
+		return dto.TokenPair{}, err
+	}
+	handler := func(rawID []byte, userHandle []byte) (webauthn.User, error) {
+		credID := base64.RawURLEncoding.EncodeToString(rawID)
+		cred, err := s.webauthnCreds.GetByCredentialID(ctx, credID)
+		if err != nil {
+			return nil, err
+		}
+		user, err := s.users.GetByID(ctx, cred.UserID)
+		if err != nil {
+			return nil, err
+		}
+		items, err := s.webauthnCreds.ListByUser(ctx, user.ID)
+		if err != nil {
+			return nil, err
+		}
+		return newWebAuthnUser(user, items)
+	}
+	user, credentialObj, err := s.webauthnAdapter.ValidatePasskeyLogin(handler, *entry.data, parsed)
+	if err != nil {
+		return dto.TokenPair{}, err
+	}
+	waUser, ok := user.(*webauthnUser)
+	if !ok {
+		return dto.TokenPair{}, ErrNotFound
+	}
+	now := s.now()
+	credID := base64.RawURLEncoding.EncodeToString(credentialObj.ID)
+	cred, err := s.webauthnCreds.GetByCredentialID(ctx, credID)
+	if err == nil {
+		_ = s.webauthnCreds.UpdateSignCount(ctx, cred.ID, int64(credentialObj.Authenticator.SignCount), now)
+	}
+	userModel, err := s.users.GetByID(ctx, waUser.id)
+	if err != nil {
+		return dto.TokenPair{}, ErrNotFound
+	}
+	if s.jwt == nil {
+		return dto.TokenPair{}, ErrSecondFactorFailed
+	}
+	if ip != "" {
+		s.recordLoginResult(ctx, userModel.ID, "", ip, models.AuthSuccess)
+	}
+	s.recordDevice(ctx, userModel.ID, userAgent)
+	refresh := newToken()
+	session := &models.UserSession{
+		ID:               s.tokenGen(),
+		UserID:           userModel.ID,
+		RefreshTokenHash: hash(refresh),
+		IP:               ip,
+		UserAgent:        userAgent,
+		ExpiresAt:        now.Add(s.sessionTTL),
+		CreatedAt:        now,
+	}
+	if err := s.sessions.Create(ctx, session); err != nil {
+		return dto.TokenPair{}, err
+	}
+	accessToken, accessExp, err := s.jwt.Sign(session.UserID, session.ID)
+	if err != nil {
+		return dto.TokenPair{}, err
+	}
+	return dto.TokenPair{
+		AccessToken:  accessToken,
+		RefreshToken: refresh,
+		ExpiresIn:    int64(accessExp.Sub(s.now()).Seconds()),
+	}, nil
 }
 
 func (s *Service) storeWebAuthnSession(kind string, userID string, data *webauthn.SessionData) {

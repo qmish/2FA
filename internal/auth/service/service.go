@@ -42,37 +42,38 @@ var (
 )
 
 type Service struct {
-	users                 repository.UserRepository
-	challenges            repository.ChallengeRepository
-	sessions              repository.SessionRepository
-	providers             *providers.Registry
-	lockouts              repository.LockoutRepository
-	logins                repository.LoginHistoryRepository
-	audits                repository.AuditRepository
-	jwt                   *authjwt.Service
-	policies              repository.PolicyRepository
-	policyRules           repository.PolicyRuleRepository
-	userGroups            repository.UserGroupRepository
-	groupPolicies         repository.GroupPolicyRepository
-	otpSecrets            repository.OTPSecretRepository
-	devices               repository.DeviceRepository
-	invites               repository.InviteRepository
-	recoveryCodes         repository.RecoveryCodeRepository
-	webauthnAdapter       webauthnAdapter
-	webauthnCreds         repository.WebAuthnCredentialRepository
-	webauthnSessions      map[string]webauthnSessionEntry
-	webauthnParseCreation func([]byte) (*protocol.ParsedCredentialCreationData, error)
-	webauthnMu            sync.Mutex
-	totpIssuer            string
-	totpDigits            int
-	totpPeriod            int
-	ldapAuth              ldap.Authenticator
-	now                   func() time.Time
-	ttl                   time.Duration
-	sessionTTL            time.Duration
-	codeGen               func() string
-	pushCodeGen           func() string
-	tokenGen              func() string
+	users                  repository.UserRepository
+	challenges             repository.ChallengeRepository
+	sessions               repository.SessionRepository
+	providers              *providers.Registry
+	lockouts               repository.LockoutRepository
+	logins                 repository.LoginHistoryRepository
+	audits                 repository.AuditRepository
+	jwt                    *authjwt.Service
+	policies               repository.PolicyRepository
+	policyRules            repository.PolicyRuleRepository
+	userGroups             repository.UserGroupRepository
+	groupPolicies          repository.GroupPolicyRepository
+	otpSecrets             repository.OTPSecretRepository
+	devices                repository.DeviceRepository
+	invites                repository.InviteRepository
+	recoveryCodes          repository.RecoveryCodeRepository
+	webauthnAdapter        webauthnAdapter
+	webauthnCreds          repository.WebAuthnCredentialRepository
+	webauthnSessions       map[string]webauthnSessionEntry
+	webauthnParseCreation  func([]byte) (*protocol.ParsedCredentialCreationData, error)
+	webauthnParseAssertion func([]byte) (*protocol.ParsedCredentialAssertionData, error)
+	webauthnMu             sync.Mutex
+	totpIssuer             string
+	totpDigits             int
+	totpPeriod             int
+	ldapAuth               ldap.Authenticator
+	now                    func() time.Time
+	ttl                    time.Duration
+	sessionTTL             time.Duration
+	codeGen                func() string
+	pushCodeGen            func() string
+	tokenGen               func() string
 }
 
 func NewService(

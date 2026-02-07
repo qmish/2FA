@@ -19,6 +19,8 @@ type MockAuthService struct {
 	ClearRecoveryCodesFunc        func(ctx context.Context, userID string) error
 	BeginPasskeyRegistrationFunc  func(ctx context.Context, userID string) (dto.PasskeyRegisterBeginResponse, error)
 	FinishPasskeyRegistrationFunc func(ctx context.Context, userID string, credential json.RawMessage) error
+	BeginPasskeyLoginFunc         func(ctx context.Context) (dto.PasskeyLoginBeginResponse, error)
+	FinishPasskeyLoginFunc        func(ctx context.Context, sessionID string, credential json.RawMessage, ip string, userAgent string) (dto.TokenPair, error)
 }
 
 func (m *MockAuthService) Login(ctx context.Context, req dto.LoginRequest) (dto.LoginResponse, error) {
@@ -63,4 +65,12 @@ func (m *MockAuthService) BeginPasskeyRegistration(ctx context.Context, userID s
 
 func (m *MockAuthService) FinishPasskeyRegistration(ctx context.Context, userID string, credential json.RawMessage) error {
 	return m.FinishPasskeyRegistrationFunc(ctx, userID, credential)
+}
+
+func (m *MockAuthService) BeginPasskeyLogin(ctx context.Context) (dto.PasskeyLoginBeginResponse, error) {
+	return m.BeginPasskeyLoginFunc(ctx)
+}
+
+func (m *MockAuthService) FinishPasskeyLogin(ctx context.Context, sessionID string, credential json.RawMessage, ip string, userAgent string) (dto.TokenPair, error) {
+	return m.FinishPasskeyLoginFunc(ctx, sessionID, credential, ip, userAgent)
 }

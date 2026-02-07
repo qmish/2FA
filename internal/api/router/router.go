@@ -43,6 +43,8 @@ func New(r Routes) http.Handler {
 		verifyHandler = r.VerifyRateLimit(verifyHandler)
 	}
 	mux.Handle("/api/v1/auth/login", loginHandler)
+	mux.Handle("/api/v1/auth/passkeys/login/begin", http.HandlerFunc(r.Auth.BeginPasskeyLogin))
+	mux.Handle("/api/v1/auth/passkeys/login/finish", http.HandlerFunc(r.Auth.FinishPasskeyLogin))
 	mux.Handle("/api/v1/auth/register", http.HandlerFunc(r.Auth.Register))
 	mux.Handle("/api/v1/auth/verify", verifyHandler)
 	mux.HandleFunc("/api/v1/auth/refresh", r.Auth.Refresh)

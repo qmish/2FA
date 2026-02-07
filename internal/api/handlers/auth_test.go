@@ -451,6 +451,76 @@ func TestAuthPasskeyRegisterFinishOK(t *testing.T) {
 	}
 }
 
+func TestAuthPasskeyLoginBeginOK(t *testing.T) {
+	svc := newMockAuthService()
+	svc.BeginPasskeyLoginFunc = func(ctx context.Context) (dto.PasskeyLoginBeginResponse, error) {
+		return dto.PasskeyLoginBeginResponse{Options: json.RawMessage(`{"publicKey":{}}`), SessionID: "s1"}, nil
+	}
+	handler := NewAuthHandler(svc)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/passkeys/login/begin", nil)
+	rec := httptest.NewRecorder()
+
+	handler.BeginPasskeyLogin(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	var resp dto.PasskeyLoginBeginResponse
+	if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
+		t.Fatalf("decode error: %v", err)
+	}
+	if resp.SessionID != "s1" || len(resp.Options) == 0 {
+		t.Fatalf("unexpected response: %+v", resp)
+	}
+}
+
+func TestAuthPasskeyLoginFinishInvalidRequest(t *testing.T) {
+	svc := newMockAuthService()
+	handler := NewAuthHandler(svc)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/passkeys/login/finish", strings.NewReader(`{}`))
+	rec := httptest.NewRecorder()
+
+	handler.FinishPasskeyLogin(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status=%d", rec.Code)
+	}
+}
+
+func TestAuthPasskeyLoginFinishOK(t *testing.T) {
+	svc := newMockAuthService()
+	svc.FinishPasskeyLoginFunc = func(ctx context.Context, sessionID string, credential json.RawMessage, ip string, userAgent string) (dto.TokenPair, error) {
+		if sessionID != "s1" {
+			t.Fatalf("unexpected session id: %s", sessionID)
+		}
+		if len(credential) == 0 {
+			t.Fatalf("expected credential payload")
+		}
+		if ip == "" || userAgent == "" {
+			t.Fatalf("expected ip and user agent")
+		}
+		return dto.TokenPair{AccessToken: "a", RefreshToken: "r", ExpiresIn: 1}, nil
+	}
+	handler := NewAuthHandler(svc)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/passkeys/login/finish", strings.NewReader(`{"session_id":"s1","credential":{"id":"c1"}}`))
+	req.RemoteAddr = "127.0.0.1:1234"
+	req.Header.Set("User-Agent", "ua")
+	rec := httptest.NewRecorder()
+
+	handler.FinishPasskeyLogin(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	var resp dto.TokenPair
+	if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
+		t.Fatalf("decode error: %v", err)
+	}
+	if resp.AccessToken == "" || resp.RefreshToken == "" {
+		t.Fatalf("unexpected response: %+v", resp)
+	}
+}
+
 func TestAuthLoginInvalidIP(t *testing.T) {
 	svc := newMockAuthService()
 	handler := NewAuthHandler(svc)
@@ -491,6 +561,12 @@ func newMockAuthService() *service.MockAuthService {
 		},
 		FinishPasskeyRegistrationFunc: func(ctx context.Context, userID string, credential json.RawMessage) error {
 			return nil
+		},
+		BeginPasskeyLoginFunc: func(ctx context.Context) (dto.PasskeyLoginBeginResponse, error) {
+			return dto.PasskeyLoginBeginResponse{}, nil
+		},
+		FinishPasskeyLoginFunc: func(ctx context.Context, sessionID string, credential json.RawMessage, ip string, userAgent string) (dto.TokenPair, error) {
+			return dto.TokenPair{}, nil
 		},
 	}
 }

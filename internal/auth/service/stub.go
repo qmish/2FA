@@ -81,3 +81,17 @@ func (s StubAuthService) FinishPasskeyRegistration(ctx context.Context, userID s
 	_ = credential
 	return ErrNotImplemented
 }
+
+func (s StubAuthService) BeginPasskeyLogin(ctx context.Context) (dto.PasskeyLoginBeginResponse, error) {
+	_ = ctx
+	return dto.PasskeyLoginBeginResponse{}, ErrNotImplemented
+}
+
+func (s StubAuthService) FinishPasskeyLogin(ctx context.Context, sessionID string, credential json.RawMessage, ip string, userAgent string) (dto.TokenPair, error) {
+	_ = ctx
+	_ = sessionID
+	_ = credential
+	_ = ip
+	_ = userAgent
+	return dto.TokenPair{}, ErrNotImplemented
+}
