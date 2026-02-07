@@ -16,6 +16,7 @@ type ProfileService interface {
 	ListDevices(ctx context.Context, userID string) (dto.UserDeviceListResponse, error)
 	ListLoginHistory(ctx context.Context, userID string, page dto.PageRequest) (dto.UserLoginHistoryResponse, error)
 	DisableDevice(ctx context.Context, userID string, deviceID string) error
+	GetFactors(ctx context.Context, userID string) (dto.UserFactorsResponse, error)
 }
 
 type ProfileHandler struct {
@@ -84,4 +85,25 @@ func (h *ProfileHandler) DisableDevice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *ProfileHandler) GetFactors(w http.ResponseWriter, r *http.Request) {
+	claims, ok := middlewares.AuthClaimsFromContext(r.Context())
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	resp, err := h.service.GetFactors(r.Context(), claims.UserID)
+	if err != nil {
+		switch {
+		case errors.Is(err, profilesvc.ErrNotConfigured):
+			writeError(w, http.StatusBadRequest, "factors_not_configured")
+		case errors.Is(err, profilesvc.ErrInvalidInput):
+			writeError(w, http.StatusBadRequest, "invalid_input")
+		default:
+			writeError(w, http.StatusBadRequest, "factors_failed")
+		}
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
 }

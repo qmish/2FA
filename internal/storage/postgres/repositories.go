@@ -682,6 +682,16 @@ func (r *RecoveryCodeRepository) Consume(ctx context.Context, userID string, cod
 	return affected > 0, nil
 }
 
+func (r *RecoveryCodeRepository) CountAvailable(ctx context.Context, userID string) (int, error) {
+	row := r.db.QueryRowContext(ctx, `
+        SELECT COUNT(*) FROM recovery_codes WHERE user_id = $1 AND used_at IS NULL`, userID)
+	var count int
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 type InviteRepository struct {
 	db *sql.DB
 }

@@ -64,6 +64,9 @@ func TestUIHandlerIndex(t *testing.T) {
 	if !strings.Contains(rec.Body.String(), "Recovery codes") {
 		t.Fatalf("missing recovery codes section: %s", rec.Body.String())
 	}
+	if !strings.Contains(rec.Body.String(), "Factors") {
+		t.Fatalf("missing factors section: %s", rec.Body.String())
+	}
 	if !strings.Contains(rec.Body.String(), "Ошибка") {
 		t.Fatalf("missing error badge label: %s", rec.Body.String())
 	}

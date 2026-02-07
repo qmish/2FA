@@ -121,10 +121,42 @@ func TestProfileDisableDeviceNotFound(t *testing.T) {
 	}
 }
 
+func TestProfileFactorsUnauthorized(t *testing.T) {
+	h := NewProfileHandler(profileMock{})
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/profile/factors", nil)
+	rr := httptest.NewRecorder()
+
+	h.GetFactors(rr, req)
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d", rr.Code)
+	}
+}
+
+func TestProfileFactorsOK(t *testing.T) {
+	mock := profileMock{factorsResp: dto.UserFactorsResponse{TOTPEnabled: true, RecoveryCodesAvailable: 2}}
+	h := NewProfileHandler(mock)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/profile/factors", nil)
+	req = req.WithContext(middlewares.WithAuthClaims(req.Context(), &middlewares.AuthClaims{UserID: "u1"}))
+	rr := httptest.NewRecorder()
+
+	h.GetFactors(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rr.Code)
+	}
+	var resp dto.UserFactorsResponse
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode error: %v", err)
+	}
+	if !resp.TOTPEnabled || resp.RecoveryCodesAvailable != 2 {
+		t.Fatalf("unexpected response: %+v", resp)
+	}
+}
+
 type profileMock struct {
 	devicesResp dto.UserDeviceListResponse
 	loginsResp  dto.UserLoginHistoryResponse
 	disableErr  error
+	factorsResp dto.UserFactorsResponse
 }
 
 func (p profileMock) ListDevices(ctx context.Context, userID string) (dto.UserDeviceListResponse, error) {
@@ -137,4 +169,8 @@ func (p profileMock) ListLoginHistory(ctx context.Context, userID string, page d
 
 func (p profileMock) DisableDevice(ctx context.Context, userID string, deviceID string) error {
 	return p.disableErr
+}
+
+func (p profileMock) GetFactors(ctx context.Context, userID string) (dto.UserFactorsResponse, error) {
+	return p.factorsResp, nil
 }

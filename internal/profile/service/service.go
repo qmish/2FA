@@ -10,17 +10,30 @@ import (
 )
 
 type Service struct {
-	devices repository.DeviceRepository
-	logins  repository.LoginHistoryRepository
+	devices       repository.DeviceRepository
+	logins        repository.LoginHistoryRepository
+	otpSecrets    repository.OTPSecretRepository
+	recoveryCodes repository.RecoveryCodeRepository
 }
 
 var (
-	ErrNotFound     = errors.New("not found")
-	ErrInvalidInput = errors.New("invalid input")
+	ErrNotFound      = errors.New("not found")
+	ErrInvalidInput  = errors.New("invalid input")
+	ErrNotConfigured = errors.New("not configured")
 )
 
-func NewService(devices repository.DeviceRepository, logins repository.LoginHistoryRepository) *Service {
-	return &Service{devices: devices, logins: logins}
+func NewService(
+	devices repository.DeviceRepository,
+	logins repository.LoginHistoryRepository,
+	otpSecrets repository.OTPSecretRepository,
+	recoveryCodes repository.RecoveryCodeRepository,
+) *Service {
+	return &Service{
+		devices:       devices,
+		logins:        logins,
+		otpSecrets:    otpSecrets,
+		recoveryCodes: recoveryCodes,
+	}
 }
 
 func (s *Service) ListDevices(ctx context.Context, userID string) (dto.UserDeviceListResponse, error) {
@@ -73,6 +86,27 @@ func (s *Service) DisableDevice(ctx context.Context, userID string, deviceID str
 		return ErrNotFound
 	}
 	return s.devices.Disable(ctx, deviceID)
+}
+
+func (s *Service) GetFactors(ctx context.Context, userID string) (dto.UserFactorsResponse, error) {
+	if userID == "" {
+		return dto.UserFactorsResponse{}, ErrInvalidInput
+	}
+	if s.otpSecrets == nil || s.recoveryCodes == nil {
+		return dto.UserFactorsResponse{}, ErrNotConfigured
+	}
+	resp := dto.UserFactorsResponse{}
+	if _, err := s.otpSecrets.GetActiveByUser(ctx, userID); err == nil {
+		resp.TOTPEnabled = true
+	} else if !errors.Is(err, repository.ErrNotFound) {
+		return dto.UserFactorsResponse{}, err
+	}
+	count, err := s.recoveryCodes.CountAvailable(ctx, userID)
+	if err != nil {
+		return dto.UserFactorsResponse{}, err
+	}
+	resp.RecoveryCodesAvailable = count
+	return resp, nil
 }
 
 func toUserDeviceDTO(device models.Device) dto.UserDeviceDTO {

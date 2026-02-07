@@ -88,6 +88,11 @@ type UserDeviceDisableRequest struct {
 	DeviceID string `json:"device_id"`
 }
 
+type UserFactorsResponse struct {
+	TOTPEnabled            bool `json:"totp_enabled"`
+	RecoveryCodesAvailable int  `json:"recovery_codes_available"`
+}
+
 type RegisterRequest struct {
 	Token    string `json:"token"`
 	Username string `json:"username"`

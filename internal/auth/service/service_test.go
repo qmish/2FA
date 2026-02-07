@@ -1184,6 +1184,19 @@ func (f *fakeRecoveryCodeRepo) Consume(ctx context.Context, userID string, codeH
 	return true, nil
 }
 
+func (f *fakeRecoveryCodeRepo) CountAvailable(ctx context.Context, userID string) (int, error) {
+	if f.codes == nil {
+		return 0, nil
+	}
+	count := 0
+	for _, used := range f.codes {
+		if !used {
+			count++
+		}
+	}
+	return count, nil
+}
+
 type fakeLDAPAuth struct {
 	err error
 }

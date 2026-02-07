@@ -221,6 +221,22 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/ServerError"
+  /api/v1/profile/factors:
+    get:
+      summary: User factors
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserFactorsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/ServerError"
   /api/v1/profile/logins:
     get:
       summary: User login history
@@ -1471,6 +1487,11 @@ components:
       properties:
         device_id: { type: string }
       required: [device_id]
+    UserFactorsResponse:
+      type: object
+      properties:
+        totp_enabled: { type: boolean }
+        recovery_codes_available: { type: integer }
     UserLoginHistoryDTO:
       type: object
       properties:

@@ -128,7 +128,7 @@ func main() {
 	sessionHandler := handlers.NewSessionHandler(sessionService)
 	lockoutService := lockoutsvc.NewService(lockoutRepo)
 	lockoutHandler := handlers.NewLockoutHandler(lockoutService)
-	profileService := profilesvc.NewService(deviceRepo, loginRepo)
+	profileService := profilesvc.NewService(deviceRepo, loginRepo, otpSecretRepo, recoveryRepo)
 	profileHandler := handlers.NewProfileHandler(profileService)
 	uiHandler := ui.Handler()
 	loginLimiter := middlewares.RateLimit(rateClient, "auth_login", cfg.AuthLoginLimit, time.Minute)

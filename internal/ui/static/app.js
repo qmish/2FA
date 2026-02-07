@@ -270,6 +270,17 @@ async function handleDeviceDisable() {
   }
 }
 
+async function handleFactors() {
+  setStatus("factors-status", true);
+  try {
+    const resp = await api("/api/v1/profile/factors", { method: "GET" });
+    setResult("factors-result", resp);
+  } catch (err) {
+    setResult("factors-result", err);
+    setStatus("factors-status", false, err);
+  }
+}
+
 function renderDevices(resp) {
   const list = document.getElementById("devices-list");
   if (!list) return;
@@ -929,6 +940,7 @@ function initUI() {
   document.getElementById("sessions-btn").addEventListener("click", handleSessions);
   document.getElementById("devices-btn").addEventListener("click", handleDevices);
   document.getElementById("device-disable-btn").addEventListener("click", handleDeviceDisable);
+  document.getElementById("factors-btn").addEventListener("click", handleFactors);
   document.getElementById("logout-btn").addEventListener("click", handleLogout);
   document.getElementById("current-session-btn").addEventListener("click", handleCurrentSession);
   document.getElementById("revoke-btn").addEventListener("click", handleRevoke);

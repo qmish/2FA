@@ -109,6 +109,7 @@ type RecoveryCodeRepository interface {
 	DeleteByUser(ctx context.Context, userID string) error
 	CreateMany(ctx context.Context, codes []models.RecoveryCode) error
 	Consume(ctx context.Context, userID string, codeHash string, usedAt time.Time) (bool, error)
+	CountAvailable(ctx context.Context, userID string) (int, error)
 }
 
 type InviteRepository interface {

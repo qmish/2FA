@@ -27,7 +27,7 @@ func TestListDevices(t *testing.T) {
 			},
 		},
 	}
-	svc := NewService(repo, fakeLoginRepo{})
+	svc := NewService(repo, fakeLoginRepo{}, fakeOTPRepo{}, fakeRecoveryRepo{})
 	resp, err := svc.ListDevices(context.Background(), "u1")
 	if err != nil {
 		t.Fatalf("ListDevices error: %v", err)
@@ -48,7 +48,7 @@ func TestListLoginHistory(t *testing.T) {
 		},
 		total: 1,
 	}
-	svc := NewService(&fakeDeviceRepo{}, repo)
+	svc := NewService(&fakeDeviceRepo{}, repo, fakeOTPRepo{}, fakeRecoveryRepo{})
 	resp, err := svc.ListLoginHistory(context.Background(), "u1", dto.PageRequest{Limit: 10, Offset: 0})
 	if err != nil {
 		t.Fatalf("ListLoginHistory error: %v", err)
@@ -67,7 +67,7 @@ func TestDisableDeviceOK(t *testing.T) {
 			{ID: "d1", UserID: "u1", Status: models.DeviceActive},
 		},
 	}
-	svc := NewService(repo, fakeLoginRepo{})
+	svc := NewService(repo, fakeLoginRepo{}, fakeOTPRepo{}, fakeRecoveryRepo{})
 	if err := svc.DisableDevice(context.Background(), "u1", "d1"); err != nil {
 		t.Fatalf("DisableDevice error: %v", err)
 	}
@@ -82,9 +82,30 @@ func TestDisableDeviceNotFound(t *testing.T) {
 			{ID: "d1", UserID: "u2", Status: models.DeviceActive},
 		},
 	}
-	svc := NewService(repo, fakeLoginRepo{})
+	svc := NewService(repo, fakeLoginRepo{}, fakeOTPRepo{}, fakeRecoveryRepo{})
 	if err := svc.DisableDevice(context.Background(), "u1", "d1"); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("expected ErrNotFound, got %v", err)
+	}
+}
+
+func TestGetFactorsOK(t *testing.T) {
+	otp := fakeOTPRepo{active: &models.OTPSecret{ID: "s1", UserID: "u1", Enabled: true}}
+	recovery := fakeRecoveryRepo{count: 2}
+	svc := NewService(&fakeDeviceRepo{}, fakeLoginRepo{}, otp, recovery)
+
+	resp, err := svc.GetFactors(context.Background(), "u1")
+	if err != nil {
+		t.Fatalf("GetFactors error: %v", err)
+	}
+	if !resp.TOTPEnabled || resp.RecoveryCodesAvailable != 2 {
+		t.Fatalf("unexpected response: %+v", resp)
+	}
+}
+
+func TestGetFactorsNotConfigured(t *testing.T) {
+	svc := NewService(&fakeDeviceRepo{}, fakeLoginRepo{}, nil, nil)
+	if _, err := svc.GetFactors(context.Background(), "u1"); !errors.Is(err, ErrNotConfigured) {
+		t.Fatalf("expected ErrNotConfigured, got %v", err)
 	}
 }
 
@@ -130,4 +151,32 @@ func (f fakeLoginRepo) List(ctx context.Context, filter repository.LoginHistoryF
 }
 func (f fakeLoginRepo) CountFailures(ctx context.Context, userID string, since time.Time) (int, error) {
 	return 0, nil
+}
+
+type fakeOTPRepo struct {
+	active *models.OTPSecret
+}
+
+func (f fakeOTPRepo) GetActiveByUser(ctx context.Context, userID string) (*models.OTPSecret, error) {
+	if f.active != nil && f.active.UserID == userID && f.active.Enabled {
+		return f.active, nil
+	}
+	return nil, repository.ErrNotFound
+}
+func (f fakeOTPRepo) Create(ctx context.Context, s *models.OTPSecret) error { return nil }
+func (f fakeOTPRepo) Disable(ctx context.Context, id string) error          { return nil }
+
+type fakeRecoveryRepo struct {
+	count int
+}
+
+func (f fakeRecoveryRepo) DeleteByUser(ctx context.Context, userID string) error { return nil }
+func (f fakeRecoveryRepo) CreateMany(ctx context.Context, codes []models.RecoveryCode) error {
+	return nil
+}
+func (f fakeRecoveryRepo) Consume(ctx context.Context, userID string, codeHash string, usedAt time.Time) (bool, error) {
+	return false, nil
+}
+func (f fakeRecoveryRepo) CountAvailable(ctx context.Context, userID string) (int, error) {
+	return f.count, nil
 }

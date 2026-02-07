@@ -889,3 +889,28 @@ func TestRecoveryCodeRepositoryConsume(t *testing.T) {
 		t.Fatalf("expectations: %v", err)
 	}
 }
+
+func TestRecoveryCodeRepositoryCountAvailable(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock: %v", err)
+	}
+	defer db.Close()
+
+	repo := NewRecoveryCodeRepository(db)
+	mock.ExpectQuery(regexp.QuoteMeta(`
+        SELECT COUNT(*) FROM recovery_codes WHERE user_id = $1 AND used_at IS NULL`)).
+		WithArgs("u1").
+		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(3))
+
+	got, err := repo.CountAvailable(context.Background(), "u1")
+	if err != nil {
+		t.Fatalf("CountAvailable error: %v", err)
+	}
+	if got != 3 {
+		t.Fatalf("expected 3, got %d", got)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("expectations: %v", err)
+	}
+}
