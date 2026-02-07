@@ -1052,6 +1052,10 @@ func (r *AuditRepository) List(ctx context.Context, filter repository.AuditFilte
 		where = append(where, "payload = $"+itoa(len(args)+1))
 		args = append(args, filter.Payload)
 	}
+	if filter.Query != "" {
+		where = append(where, "(actor_user_id ILIKE $"+itoa(len(args)+1)+" OR entity_id ILIKE $"+itoa(len(args)+1)+" OR payload ILIKE $"+itoa(len(args)+1)+" OR ip ILIKE $"+itoa(len(args)+1)+")")
+		args = append(args, "%"+filter.Query+"%")
+	}
 	if !filter.From.IsZero() {
 		where = append(where, "created_at >= $"+itoa(len(args)+1))
 		args = append(args, filter.From)

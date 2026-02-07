@@ -399,9 +399,11 @@ function buildAuditParams() {
   const action = document.getElementById("audit-action").value.trim();
   const entity = document.getElementById("audit-entity").value.trim();
   const actor = document.getElementById("audit-actor").value.trim();
+  const query = document.getElementById("audit-query").value.trim();
   if (action) params.set("action", action);
   if (entity) params.set("entity_type", entity);
   if (actor) params.set("actor_user_id", actor);
+  if (query) params.set("query", query);
   return params;
 }
 

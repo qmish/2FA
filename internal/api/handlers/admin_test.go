@@ -474,7 +474,7 @@ func TestAdminListAuditEventsFilters(t *testing.T) {
 	expectedTo, _ := time.Parse(time.RFC3339, "2026-02-06T15:00:00Z")
 	svc := &adminsvc.MockAdminService{
 		ListAuditEventsFunc: func(ctx context.Context, req dto.AdminAuditListRequest) (dto.AdminAuditListResponse, error) {
-			if req.Filter.ActorUserID != "u1" || req.Filter.EntityType != models.AuditEntitySession || req.Filter.Action != models.AuditLogout || req.Filter.EntityID != "s1" || req.Filter.IP != "127.0.0.1" || req.Filter.Payload != "payload" {
+			if req.Filter.ActorUserID != "u1" || req.Filter.EntityType != models.AuditEntitySession || req.Filter.Action != models.AuditLogout || req.Filter.EntityID != "s1" || req.Filter.IP != "127.0.0.1" || req.Filter.Payload != "payload" || req.Filter.Query != "search" {
 				t.Fatalf("unexpected filter: %+v", req.Filter)
 			}
 			if !req.Filter.From.Equal(expectedFrom) || !req.Filter.To.Equal(expectedTo) {
@@ -484,7 +484,7 @@ func TestAdminListAuditEventsFilters(t *testing.T) {
 		},
 	}
 	handler := NewAdminHandler(svc, authz)
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/audit/events?actor_user_id=u1&entity_type=session&action=logout&entity_id=s1&ip=127.0.0.1&payload=payload&from=2026-02-05T15:00:00Z&to=2026-02-06T15:00:00Z", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/audit/events?actor_user_id=u1&entity_type=session&action=logout&entity_id=s1&ip=127.0.0.1&payload=payload&query=search&from=2026-02-05T15:00:00Z&to=2026-02-06T15:00:00Z", nil)
 	req = req.WithContext(middlewares.WithAdminClaims(req.Context(), &middlewares.AdminClaims{UserID: "u1", Role: "admin"}))
 	rec := httptest.NewRecorder()
 

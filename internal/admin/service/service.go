@@ -697,6 +697,7 @@ func (s *Service) ListAuditEvents(ctx context.Context, req dto.AdminAuditListReq
 		EntityID:    req.Filter.EntityID,
 		IP:          req.Filter.IP,
 		Payload:     req.Filter.Payload,
+		Query:       req.Filter.Query,
 		From:        req.Filter.From,
 		To:          req.Filter.To,
 	}, req.Page.Limit, req.Page.Offset)

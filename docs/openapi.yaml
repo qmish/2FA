@@ -899,6 +899,7 @@ paths:
         - $ref: "#/components/parameters/entity_id"
         - $ref: "#/components/parameters/ip"
         - $ref: "#/components/parameters/payload"
+        - $ref: "#/components/parameters/query"
         - $ref: "#/components/parameters/from"
         - $ref: "#/components/parameters/to"
         - $ref: "#/components/parameters/limit"
@@ -928,6 +929,7 @@ paths:
         - $ref: "#/components/parameters/entity_id"
         - $ref: "#/components/parameters/ip"
         - $ref: "#/components/parameters/payload"
+        - $ref: "#/components/parameters/query"
         - $ref: "#/components/parameters/from"
         - $ref: "#/components/parameters/to"
         - $ref: "#/components/parameters/format"
@@ -1180,6 +1182,11 @@ components:
         type: string
     payload:
       name: payload
+      in: query
+      schema:
+        type: string
+    query:
+      name: query
       in: query
       schema:
         type: string

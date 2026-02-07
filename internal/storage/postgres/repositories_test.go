@@ -163,21 +163,22 @@ func TestAuditRepositoryListFilters(t *testing.T) {
 		EntityID:    "s1",
 		IP:          "127.0.0.1",
 		Payload:     "payload",
+		Query:       "search",
 		From:        from,
 		To:          to,
 	}
 
-	countQuery := "SELECT COUNT(*) FROM audit_events WHERE actor_user_id = $1 AND entity_type = $2 AND action = $3 AND entity_id = $4 AND ip = $5 AND payload = $6 AND created_at >= $7 AND created_at <= $8"
+	countQuery := "SELECT COUNT(*) FROM audit_events WHERE actor_user_id = $1 AND entity_type = $2 AND action = $3 AND entity_id = $4 AND ip = $5 AND payload = $6 AND (actor_user_id ILIKE $7 OR entity_id ILIKE $7 OR payload ILIKE $7 OR ip ILIKE $7) AND created_at >= $8 AND created_at <= $9"
 	mock.ExpectQuery(regexp.QuoteMeta(countQuery)).
-		WithArgs("u1", "session", "logout", "s1", "127.0.0.1", "payload", from, to).
+		WithArgs("u1", "session", "logout", "s1", "127.0.0.1", "payload", "%search%", from, to).
 		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(1))
 
-	selectQuery := "SELECT id, actor_user_id, action, entity_type, entity_id, payload, ip, created_at FROM audit_events WHERE actor_user_id = $1 AND entity_type = $2 AND action = $3 AND entity_id = $4 AND ip = $5 AND payload = $6 AND created_at >= $7 AND created_at <= $8 ORDER BY created_at DESC LIMIT $9 OFFSET $10"
+	selectQuery := "SELECT id, actor_user_id, action, entity_type, entity_id, payload, ip, created_at FROM audit_events WHERE actor_user_id = $1 AND entity_type = $2 AND action = $3 AND entity_id = $4 AND ip = $5 AND payload = $6 AND (actor_user_id ILIKE $7 OR entity_id ILIKE $7 OR payload ILIKE $7 OR ip ILIKE $7) AND created_at >= $8 AND created_at <= $9 ORDER BY created_at DESC LIMIT $10 OFFSET $11"
 	rows := sqlmock.NewRows([]string{
 		"id", "actor_user_id", "action", "entity_type", "entity_id", "payload", "ip", "created_at",
 	}).AddRow("a1", "u1", "logout", "session", "s1", "p1", "127.0.0.1", from)
 	mock.ExpectQuery(regexp.QuoteMeta(selectQuery)).
-		WithArgs("u1", "session", "logout", "s1", "127.0.0.1", "payload", from, to, 10, 0).
+		WithArgs("u1", "session", "logout", "s1", "127.0.0.1", "payload", "%search%", from, to, 10, 0).
 		WillReturnRows(rows)
 
 	items, total, err := repo.List(context.Background(), filter, 10, 0)

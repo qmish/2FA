@@ -20,6 +20,7 @@ type AuditFilter struct {
 	EntityID    string
 	IP          string
 	Payload     string
+	Query       string
 	From        time.Time
 	To          time.Time
 }
