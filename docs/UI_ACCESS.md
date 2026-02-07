@@ -45,6 +45,7 @@ UI включает следующие разделы:
 
 1. **Аутентификация**
    - Логин пользователя
+   - Логин через passkey (WebAuthn)
    - Подтверждение 2FA
    - Обновление токена
    - Выход
@@ -147,6 +148,7 @@ kubectl describe pod <имя-пода>
 1. Настроить Ingress с TLS
 2. Использовать LoadBalancer или NodePort
 3. Настроить внешний DNS
+4. Для passkeys требуется HTTPS и корректный домен (`webauthn_rp_id`, `webauthn_rp_origin`)
 
 Пример Ingress для UI:
 

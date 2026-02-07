@@ -56,3 +56,50 @@ func TestPasskeyLoginRateLimitMiddleware(t *testing.T) {
 		t.Fatalf("expected verify rate limit middleware")
 	}
 }
+
+func TestPasskeyRegisterRateLimitMiddleware(t *testing.T) {
+	svc := &service.MockAuthService{
+		BeginPasskeyRegistrationFunc: func(ctx context.Context, userID string) (dto.PasskeyRegisterBeginResponse, error) {
+			return dto.PasskeyRegisterBeginResponse{Options: []byte(`{}`)}, nil
+		},
+		FinishPasskeyRegistrationFunc: func(ctx context.Context, userID string, credential json.RawMessage) error {
+			return nil
+		},
+	}
+	authHandler := handlers.NewAuthHandler(svc)
+	routes := Routes{
+		Auth: authHandler,
+		AuthRateLimit: func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("X-RateLimit", "auth")
+				next.ServeHTTP(w, r)
+			})
+		},
+		VerifyRateLimit: func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("X-RateLimit", "verify")
+				next.ServeHTTP(w, r)
+			})
+		},
+		AuthMiddleware: func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				next.ServeHTTP(w, r)
+			})
+		},
+	}
+	handler := New(routes)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/passkeys/register/begin", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Header().Get("X-RateLimit") != "auth" {
+		t.Fatalf("expected auth rate limit middleware")
+	}
+
+	req = httptest.NewRequest(http.MethodPost, "/api/v1/auth/passkeys/register/finish", strings.NewReader(`{"credential":{"id":"c1"}}`))
+	rec = httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Header().Get("X-RateLimit") != "verify" {
+		t.Fatalf("expected verify rate limit middleware")
+	}
+}

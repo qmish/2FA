@@ -66,8 +66,16 @@ func New(r Routes) http.Handler {
 		mux.Handle("/api/v1/auth/totp/disable", r.AuthMiddleware(http.HandlerFunc(r.Auth.DisableTOTP)))
 		mux.Handle("/api/v1/auth/recovery/generate", r.AuthMiddleware(http.HandlerFunc(r.Auth.GenerateRecoveryCodes)))
 		mux.Handle("/api/v1/auth/recovery/clear", r.AuthMiddleware(http.HandlerFunc(r.Auth.ClearRecoveryCodes)))
-		mux.Handle("/api/v1/auth/passkeys/register/begin", r.AuthMiddleware(http.HandlerFunc(r.Auth.BeginPasskeyRegistration)))
-		mux.Handle("/api/v1/auth/passkeys/register/finish", r.AuthMiddleware(http.HandlerFunc(r.Auth.FinishPasskeyRegistration)))
+		var passkeyRegisterBegin http.Handler = http.HandlerFunc(r.Auth.BeginPasskeyRegistration)
+		var passkeyRegisterFinish http.Handler = http.HandlerFunc(r.Auth.FinishPasskeyRegistration)
+		if r.AuthRateLimit != nil {
+			passkeyRegisterBegin = r.AuthRateLimit(passkeyRegisterBegin)
+		}
+		if r.VerifyRateLimit != nil {
+			passkeyRegisterFinish = r.VerifyRateLimit(passkeyRegisterFinish)
+		}
+		mux.Handle("/api/v1/auth/passkeys/register/begin", r.AuthMiddleware(passkeyRegisterBegin))
+		mux.Handle("/api/v1/auth/passkeys/register/finish", r.AuthMiddleware(passkeyRegisterFinish))
 	}
 	if r.Profile != nil && r.AuthMiddleware != nil {
 		mux.Handle("/api/v1/profile/devices", r.AuthMiddleware(http.HandlerFunc(r.Profile.ListDevices)))
