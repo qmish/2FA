@@ -381,6 +381,42 @@ async function handlePasskeys() {
   }
 }
 
+async function handlePasskeyRegister() {
+  setStatus("passkeys-status", true);
+  try {
+    if (!window.PublicKeyCredential || !navigator.credentials) {
+      throw { status: 0, payload: "webauthn_not_supported" };
+    }
+    const begin = await api("/api/v1/auth/passkeys/register/begin", { method: "POST" });
+    const options = begin.public_key_options || begin.publicKey || begin;
+    const publicKey = options.publicKey || options;
+    if (publicKey.challenge) {
+      publicKey.challenge = toArrayBuffer(publicKey.challenge);
+    }
+    if (publicKey.user && publicKey.user.id) {
+      publicKey.user.id = toArrayBuffer(publicKey.user.id);
+    }
+    if (Array.isArray(publicKey.excludeCredentials)) {
+      publicKey.excludeCredentials = publicKey.excludeCredentials.map((item) => ({
+        ...item,
+        id: toArrayBuffer(item.id),
+      }));
+    }
+    const credential = await navigator.credentials.create({ publicKey });
+    await api("/api/v1/auth/passkeys/register/finish", {
+      method: "POST",
+      body: JSON.stringify({
+        credential: publicKeyCredentialToJSON(credential),
+      }),
+    });
+    setResult("passkeys-result", { ok: true });
+    await handlePasskeys();
+  } catch (err) {
+    setResult("passkeys-result", err);
+    setStatus("passkeys-status", false, err);
+  }
+}
+
 async function handlePasskeyDelete() {
   setStatus("passkeys-status", true);
   try {
@@ -1105,6 +1141,7 @@ function initUI() {
   document.getElementById("device-disable-btn").addEventListener("click", handleDeviceDisable);
   document.getElementById("factors-btn").addEventListener("click", handleFactors);
   document.getElementById("passkeys-btn").addEventListener("click", handlePasskeys);
+  document.getElementById("passkey-register-btn").addEventListener("click", handlePasskeyRegister);
   document.getElementById("passkey-delete-btn").addEventListener("click", handlePasskeyDelete);
   document.getElementById("logout-btn").addEventListener("click", handleLogout);
   document.getElementById("current-session-btn").addEventListener("click", handleCurrentSession);

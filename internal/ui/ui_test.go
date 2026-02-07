@@ -70,6 +70,9 @@ func TestUIHandlerIndex(t *testing.T) {
 	if !strings.Contains(rec.Body.String(), "Factors") {
 		t.Fatalf("missing factors section: %s", rec.Body.String())
 	}
+	if !strings.Contains(rec.Body.String(), "Register passkey") {
+		t.Fatalf("missing passkey register button: %s", rec.Body.String())
+	}
 	if !strings.Contains(rec.Body.String(), "Passkeys") {
 		t.Fatalf("missing passkeys section: %s", rec.Body.String())
 	}
