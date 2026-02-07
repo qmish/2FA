@@ -62,7 +62,7 @@ config:
 
 secrets:
   existingSecret: ""
-  DB_URL: "postgres://user:pass@db:5432/2fa?sslmode=disable"
+  DB_URL: "postgres://user:pass@db:5432/2fa?sslmode=require"
   REDIS_URL: "redis://redis:6379/0"
   JWT_SECRET: "CHANGE_ME"
   ADMIN_JWT_SECRET: "CHANGE_ME"

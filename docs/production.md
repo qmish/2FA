@@ -58,6 +58,10 @@
 ## Alertmanager
 - Пример развёртывания Alertmanager: `docs/k8s/alertmanager.yaml`.
 
+## SSL для PostgreSQL
+- Используйте TLS и `sslmode=require` в `DB_URL`.
+- Примеры обновлены в `configs/config.example.yaml`, `docs/k8s/api-secrets.yaml`, `docs/helm/values.yaml`.
+
 ## Резервное копирование
 - PostgreSQL: регулярные `pg_dump` с проверкой восстановления.
 - Хранить бэкапы минимум N дней (настройте политику ретенции).
