@@ -69,24 +69,29 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, service.ErrInvalidCredentials) {
 			metrics.Default.IncAuthFailure("login", "invalid_credentials")
+			metrics.Default.IncAuthLogin("failed")
 			writeError(w, http.StatusUnauthorized, "invalid_credentials")
 			return
 		}
 		if errors.Is(err, service.ErrForbidden) {
 			metrics.Default.IncAuthFailure("login", "forbidden")
+			metrics.Default.IncAuthLogin("failed")
 			writeError(w, http.StatusForbidden, "forbidden")
 			return
 		}
 		if errors.Is(err, service.ErrRateLimited) {
 			metrics.Default.IncAuthFailure("login", "rate_limited")
+			metrics.Default.IncAuthLogin("failed")
 			writeError(w, http.StatusTooManyRequests, "rate_limited")
 			return
 		}
 		metrics.Default.IncAuthFailure("login", "login_failed")
+		metrics.Default.IncAuthLogin("failed")
 		writeError(w, http.StatusBadRequest, "login_failed")
 		return
 	}
 	metrics.Default.IncAuthChallenge(string(resp.Method))
+	metrics.Default.IncAuthLogin("success")
 	writeJSON(w, http.StatusOK, resp)
 }
 
