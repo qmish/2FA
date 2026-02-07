@@ -16,11 +16,14 @@ RUN go mod tidy && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o ap
 FROM alpine:latest
 
 RUN apk --no-cache add ca-certificates tzdata
-WORKDIR /root/
+RUN addgroup -g 10001 app && adduser -D -H -u 10001 -G app app
+WORKDIR /app
 
-COPY --from=builder /build/api-server .
-COPY --from=builder /build/migrations ./migrations
+COPY --from=builder /build/api-server /app/api-server
+COPY --from=builder /build/migrations /app/migrations
+RUN chown -R app:app /app
 
 EXPOSE 8080
 
+USER app
 CMD ["./api-server"]

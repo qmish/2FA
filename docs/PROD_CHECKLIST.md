@@ -18,7 +18,7 @@
 ## P2 (желательно)
 - [x] NetworkPolicy для изоляции компонентов.
 - [x] RBAC/ServiceAccount с минимальными правами.
-- [ ] SecurityContext (`runAsNonRoot`, `runAsUser`).
+- [x] SecurityContext (`runAsNonRoot`, `runAsUser`).
 - [ ] DR‑план с процедурами восстановления.
 - [ ] Alertmanager и интеграции.
 - [ ] SSL для PostgreSQL (`sslmode=disable` заменить).

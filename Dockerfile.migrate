@@ -16,9 +16,12 @@ RUN go mod tidy && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o mi
 FROM alpine:latest
 
 RUN apk --no-cache add ca-certificates tzdata postgresql-client
-WORKDIR /root/
+RUN addgroup -g 10001 app && adduser -D -H -u 10001 -G app app
+WORKDIR /app
 
-COPY --from=builder /build/migrate .
-COPY --from=builder /build/migrations ./migrations
+COPY --from=builder /build/migrate /app/migrate
+COPY --from=builder /build/migrations /app/migrations
+RUN chown -R app:app /app
 
+USER app
 CMD ["./migrate"]

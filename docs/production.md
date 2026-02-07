@@ -48,6 +48,10 @@
 - Используйте отдельные ServiceAccount и минимальные RBAC права.
 - Пример манифеста: `docs/k8s/rbac.yaml`.
 
+## SecurityContext
+- Запускайте контейнеры от non‑root пользователя.
+- Примеры в `docs/k8s/api-deployment.yaml`, `docs/k8s/radius-deployment.yaml`.
+
 ## Резервное копирование
 - PostgreSQL: регулярные `pg_dump` с проверкой восстановления.
 - Хранить бэкапы минимум N дней (настройте политику ретенции).

@@ -17,6 +17,11 @@ spec:
       labels:
         app: {{ .Release.Name }}-api
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
       containers:
         - name: api
           image: {{ .Values.image.api }}

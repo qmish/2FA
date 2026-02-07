@@ -20,6 +20,11 @@ spec:
         app: api-server
     spec:
       serviceAccountName: api-server
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
       containers:
         - name: api-server
           image: 2fa/api-server:latest

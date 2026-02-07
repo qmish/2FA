@@ -6,13 +6,18 @@ spec:
   template:
     spec:
       restartPolicy: OnFailure
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
       containers:
         - name: migrate
           image: 2fa/migrate:latest
           imagePullPolicy: Never
           env:
             - name: MIGRATIONS_PATH
-              value: "/root/migrations"
+              value: "/app/migrations"
           envFrom:
             - configMapRef:
                 name: api-config

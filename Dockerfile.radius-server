@@ -16,10 +16,13 @@ RUN go mod tidy && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o ra
 FROM alpine:latest
 
 RUN apk --no-cache add ca-certificates tzdata
-WORKDIR /root/
+RUN addgroup -g 10001 app && adduser -D -H -u 10001 -G app app
+WORKDIR /app
 
-COPY --from=builder /build/radius-server .
+COPY --from=builder /build/radius-server /app/radius-server
+RUN chown -R app:app /app
 
 EXPOSE 1812/udp
 
+USER app
 CMD ["./radius-server"]

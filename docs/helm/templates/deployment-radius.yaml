@@ -17,6 +17,11 @@ spec:
       labels:
         app: {{ .Release.Name }}-radius
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
       containers:
         - name: radius
           image: {{ .Values.image.radius }}

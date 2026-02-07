@@ -20,6 +20,11 @@ spec:
         app: radius-server
     spec:
       serviceAccountName: radius-server
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
       containers:
         - name: radius-server
           image: 2fa/radius-server:latest
