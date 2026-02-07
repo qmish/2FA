@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -13,7 +14,7 @@ import (
 func TestListDevices(t *testing.T) {
 	now := time.Now()
 	lastSeen := now.Add(-time.Hour)
-	repo := fakeDeviceRepo{
+	repo := &fakeDeviceRepo{
 		items: []models.Device{
 			{
 				ID:         "d1",
@@ -47,7 +48,7 @@ func TestListLoginHistory(t *testing.T) {
 		},
 		total: 1,
 	}
-	svc := NewService(fakeDeviceRepo{}, repo)
+	svc := NewService(&fakeDeviceRepo{}, repo)
 	resp, err := svc.ListLoginHistory(context.Background(), "u1", dto.PageRequest{Limit: 10, Offset: 0})
 	if err != nil {
 		t.Fatalf("ListLoginHistory error: %v", err)
@@ -60,19 +61,59 @@ func TestListLoginHistory(t *testing.T) {
 	}
 }
 
+func TestDisableDeviceOK(t *testing.T) {
+	repo := &fakeDeviceRepo{
+		items: []models.Device{
+			{ID: "d1", UserID: "u1", Status: models.DeviceActive},
+		},
+	}
+	svc := NewService(repo, fakeLoginRepo{})
+	if err := svc.DisableDevice(context.Background(), "u1", "d1"); err != nil {
+		t.Fatalf("DisableDevice error: %v", err)
+	}
+	if repo.disabledID != "d1" {
+		t.Fatalf("expected device d1 disabled, got %q", repo.disabledID)
+	}
+}
+
+func TestDisableDeviceNotFound(t *testing.T) {
+	repo := &fakeDeviceRepo{
+		items: []models.Device{
+			{ID: "d1", UserID: "u2", Status: models.DeviceActive},
+		},
+	}
+	svc := NewService(repo, fakeLoginRepo{})
+	if err := svc.DisableDevice(context.Background(), "u1", "d1"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("expected ErrNotFound, got %v", err)
+	}
+}
+
 type fakeDeviceRepo struct {
-	items []models.Device
-	err   error
+	items      []models.Device
+	err        error
+	disabledID string
 }
 
 func (f fakeDeviceRepo) ListByUser(ctx context.Context, userID string) ([]models.Device, error) {
 	if f.err != nil {
 		return nil, f.err
 	}
-	return f.items, nil
+	if userID == "" {
+		return nil, nil
+	}
+	var filtered []models.Device
+	for _, item := range f.items {
+		if item.UserID == userID {
+			filtered = append(filtered, item)
+		}
+	}
+	return filtered, nil
 }
 func (f fakeDeviceRepo) Upsert(ctx context.Context, d *models.Device) error { return nil }
-func (f fakeDeviceRepo) Disable(ctx context.Context, id string) error       { return nil }
+func (f *fakeDeviceRepo) Disable(ctx context.Context, id string) error {
+	f.disabledID = id
+	return nil
+}
 
 type fakeLoginRepo struct {
 	items []models.LoginHistory

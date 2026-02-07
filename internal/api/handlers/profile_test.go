@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/qmish/2FA/internal/api/middlewares"
 	"github.com/qmish/2FA/internal/dto"
+	profilesvc "github.com/qmish/2FA/internal/profile/service"
 )
 
 func TestProfileDevicesUnauthorized(t *testing.T) {
@@ -82,9 +84,47 @@ func TestProfileLoginsOK(t *testing.T) {
 	}
 }
 
+func TestProfileDisableDeviceUnauthorized(t *testing.T) {
+	h := NewProfileHandler(profileMock{})
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/profile/devices/disable", nil)
+	rr := httptest.NewRecorder()
+
+	h.DisableDevice(rr, req)
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d", rr.Code)
+	}
+}
+
+func TestProfileDisableDeviceOK(t *testing.T) {
+	mock := profileMock{}
+	h := NewProfileHandler(mock)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/profile/devices/disable", strings.NewReader(`{"device_id":"d1"}`))
+	req = req.WithContext(middlewares.WithAuthClaims(req.Context(), &middlewares.AuthClaims{UserID: "u1"}))
+	rr := httptest.NewRecorder()
+
+	h.DisableDevice(rr, req)
+	if rr.Code != http.StatusNoContent {
+		t.Fatalf("expected 204, got %d", rr.Code)
+	}
+}
+
+func TestProfileDisableDeviceNotFound(t *testing.T) {
+	mock := profileMock{disableErr: profilesvc.ErrNotFound}
+	h := NewProfileHandler(mock)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/profile/devices/disable", strings.NewReader(`{"device_id":"d1"}`))
+	req = req.WithContext(middlewares.WithAuthClaims(req.Context(), &middlewares.AuthClaims{UserID: "u1"}))
+	rr := httptest.NewRecorder()
+
+	h.DisableDevice(rr, req)
+	if rr.Code != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d", rr.Code)
+	}
+}
+
 type profileMock struct {
 	devicesResp dto.UserDeviceListResponse
 	loginsResp  dto.UserLoginHistoryResponse
+	disableErr  error
 }
 
 func (p profileMock) ListDevices(ctx context.Context, userID string) (dto.UserDeviceListResponse, error) {
@@ -93,4 +133,8 @@ func (p profileMock) ListDevices(ctx context.Context, userID string) (dto.UserDe
 
 func (p profileMock) ListLoginHistory(ctx context.Context, userID string, page dto.PageRequest) (dto.UserLoginHistoryResponse, error) {
 	return p.loginsResp, nil
+}
+
+func (p profileMock) DisableDevice(ctx context.Context, userID string, deviceID string) error {
+	return p.disableErr
 }

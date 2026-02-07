@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 
 	"github.com/qmish/2FA/internal/dto"
 	"github.com/qmish/2FA/internal/models"
@@ -12,6 +13,11 @@ type Service struct {
 	devices repository.DeviceRepository
 	logins  repository.LoginHistoryRepository
 }
+
+var (
+	ErrNotFound     = errors.New("not found")
+	ErrInvalidInput = errors.New("invalid input")
+)
 
 func NewService(devices repository.DeviceRepository, logins repository.LoginHistoryRepository) *Service {
 	return &Service{devices: devices, logins: logins}
@@ -46,6 +52,27 @@ func (s *Service) ListLoginHistory(ctx context.Context, userID string, page dto.
 			Offset: page.Offset,
 		},
 	}, nil
+}
+
+func (s *Service) DisableDevice(ctx context.Context, userID string, deviceID string) error {
+	if deviceID == "" || userID == "" {
+		return ErrInvalidInput
+	}
+	items, err := s.devices.ListByUser(ctx, userID)
+	if err != nil {
+		return err
+	}
+	found := false
+	for _, item := range items {
+		if item.ID == deviceID {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return ErrNotFound
+	}
+	return s.devices.Disable(ctx, deviceID)
 }
 
 func toUserDeviceDTO(device models.Device) dto.UserDeviceDTO {

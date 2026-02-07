@@ -84,6 +84,10 @@ type UserDeviceListResponse struct {
 	Items []UserDeviceDTO `json:"items"`
 }
 
+type UserDeviceDisableRequest struct {
+	DeviceID string `json:"device_id"`
+}
+
 type RegisterRequest struct {
 	Token    string `json:"token"`
 	Username string `json:"username"`
