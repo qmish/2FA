@@ -126,6 +126,7 @@ type WebAuthnSessionRepository interface {
 	GetByID(ctx context.Context, id string) (*models.WebAuthnSession, error)
 	DeleteByID(ctx context.Context, id string) error
 	DeleteByTypeAndUser(ctx context.Context, sessionType string, userID string) error
+	DeleteExpired(ctx context.Context, now time.Time) (int64, error)
 }
 
 type InviteRepository interface {

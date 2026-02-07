@@ -1196,3 +1196,28 @@ func TestWebAuthnSessionRepositoryDeleteByTypeAndUser(t *testing.T) {
 		t.Fatalf("expectations: %v", err)
 	}
 }
+
+func TestWebAuthnSessionRepositoryDeleteExpired(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock: %v", err)
+	}
+	defer db.Close()
+
+	repo := NewWebAuthnSessionRepository(db)
+	now := time.Now()
+	mock.ExpectExec(regexp.QuoteMeta(`DELETE FROM webauthn_sessions WHERE expires_at <= $1`)).
+		WithArgs(now).
+		WillReturnResult(sqlmock.NewResult(0, 2))
+
+	affected, err := repo.DeleteExpired(context.Background(), now)
+	if err != nil {
+		t.Fatalf("DeleteExpired error: %v", err)
+	}
+	if affected != 2 {
+		t.Fatalf("expected 2, got %d", affected)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("expectations: %v", err)
+	}
+}

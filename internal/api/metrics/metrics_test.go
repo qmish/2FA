@@ -32,6 +32,7 @@ func TestLockoutMetrics(t *testing.T) {
 	reg.IncLockoutCreated()
 	reg.IncLockoutActive()
 	reg.AddLockoutCleared(3)
+	reg.AddWebauthnSessionsCleared(2)
 	out := reg.Render()
 	if !strings.Contains(out, "lockout_created_total 1") {
 		t.Fatalf("missing lockout_created_total")
@@ -41,6 +42,9 @@ func TestLockoutMetrics(t *testing.T) {
 	}
 	if !strings.Contains(out, "lockout_cleared_total 3") {
 		t.Fatalf("missing lockout_cleared_total")
+	}
+	if !strings.Contains(out, "webauthn_sessions_cleared_total 2") {
+		t.Fatalf("missing webauthn_sessions_cleared_total")
 	}
 }
 

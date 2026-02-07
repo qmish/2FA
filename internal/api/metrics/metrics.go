@@ -9,16 +9,17 @@ import (
 )
 
 type Registry struct {
-	mu             sync.Mutex
-	httpRequests   map[string]int64
-	httpLatency    map[string]*latencyMetric
-	authFailures   map[string]int64
-	authChallenges map[string]int64
-	systemErrors   map[string]int64
-	radiusRequests map[string]int64
-	lockoutCreated int64
-	lockoutActive  int64
-	lockoutCleared int64
+	mu                      sync.Mutex
+	httpRequests            map[string]int64
+	httpLatency             map[string]*latencyMetric
+	authFailures            map[string]int64
+	authChallenges          map[string]int64
+	systemErrors            map[string]int64
+	radiusRequests          map[string]int64
+	lockoutCreated          int64
+	lockoutActive           int64
+	lockoutCleared          int64
+	webauthnSessionsCleared int64
 }
 
 func NewRegistry() *Registry {
@@ -102,6 +103,15 @@ func (r *Registry) AddLockoutCleared(count int64) {
 	r.mu.Unlock()
 }
 
+func (r *Registry) AddWebauthnSessionsCleared(count int64) {
+	if count <= 0 {
+		return
+	}
+	r.mu.Lock()
+	r.webauthnSessionsCleared += count
+	r.mu.Unlock()
+}
+
 func (r *Registry) Render() string {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -158,6 +168,9 @@ func (r *Registry) Render() string {
 	b.WriteString("# HELP lockout_cleared_total Lockouts cleared\n")
 	b.WriteString("# TYPE lockout_cleared_total counter\n")
 	b.WriteString(fmt.Sprintf("lockout_cleared_total %d\n", r.lockoutCleared))
+	b.WriteString("# HELP webauthn_sessions_cleared_total WebAuthn sessions cleared\n")
+	b.WriteString("# TYPE webauthn_sessions_cleared_total counter\n")
+	b.WriteString(fmt.Sprintf("webauthn_sessions_cleared_total %d\n", r.webauthnSessionsCleared))
 	b.WriteString(fmt.Sprintf("# generated_at %s\n", time.Now().UTC().Format(time.RFC3339)))
 	return b.String()
 }

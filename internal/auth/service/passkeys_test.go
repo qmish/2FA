@@ -310,3 +310,7 @@ func (f *fakeWebAuthnSessionRepo) DeleteByTypeAndUser(ctx context.Context, sessi
 	}
 	return nil
 }
+
+func (f *fakeWebAuthnSessionRepo) DeleteExpired(ctx context.Context, now time.Time) (int64, error) {
+	return 0, nil
+}

@@ -829,6 +829,18 @@ func (r *WebAuthnSessionRepository) DeleteByTypeAndUser(ctx context.Context, ses
 	return err
 }
 
+func (r *WebAuthnSessionRepository) DeleteExpired(ctx context.Context, now time.Time) (int64, error) {
+	res, err := r.db.ExecContext(ctx, `DELETE FROM webauthn_sessions WHERE expires_at <= $1`, now)
+	if err != nil {
+		return 0, err
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+	return affected, nil
+}
+
 func nullIfEmpty(value string) any {
 	if value == "" {
 		return nil

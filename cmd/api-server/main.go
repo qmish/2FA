@@ -187,6 +187,19 @@ func main() {
 			metrics.Default.AddLockoutCleared(cleared)
 		}
 	}()
+	go func() {
+		ticker := time.NewTicker(time.Minute)
+		defer ticker.Stop()
+		for range ticker.C {
+			cleared, err := webauthnSessionRepo.DeleteExpired(context.Background(), time.Now())
+			if err != nil {
+				metrics.Default.IncSystemError("db")
+				log.Printf("webauthn sessions cleanup failed: %v", err)
+				continue
+			}
+			metrics.Default.AddWebauthnSessionsCleared(cleared)
+		}
+	}()
 
 	addr := ":" + cfg.HTTPPort
 	log.Printf("api-server listening on %s", addr)
