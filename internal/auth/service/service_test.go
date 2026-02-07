@@ -105,6 +105,35 @@ func TestAuthLoginProviderFailure(t *testing.T) {
 	}
 }
 
+func TestAuthLoginPushNumberMatch(t *testing.T) {
+	passwordHash, _ := bcrypt.GenerateFromPassword([]byte("pass"), bcrypt.DefaultCost)
+	users := fakeUserRepo{user: &models.User{ID: "u1", Username: "alice", Status: models.UserActive, PasswordHash: string(passwordHash)}}
+	challenges := &fakeChallengeRepo{}
+	sessions := &fakeSessionRepo{}
+	push := &fakePushProvider{providerID: "push-1"}
+	registry := providers.NewRegistry()
+	registry.RegisterPush(providers.DefaultPushProvider, push)
+
+	jwtSvc := jwt.NewService("2fa", []byte("secret"), time.Minute)
+	svc := NewService(users, challenges, sessions, registry, &fakeLockoutRepo{}, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwtSvc, time.Minute, time.Hour)
+	svc.pushCodeGen = func() string { return "042" }
+
+	resp, err := svc.Login(context.Background(), dto.LoginRequest{Username: "alice", Password: "pass", Method: models.MethodPush})
+	if err != nil {
+		t.Fatalf("login error: %v", err)
+	}
+	if push.lastBody != "042" {
+		t.Fatalf("unexpected push body: %q", push.lastBody)
+	}
+	item, ok := challenges.items[resp.ChallengeID]
+	if !ok {
+		t.Fatalf("missing challenge")
+	}
+	if item.CodeHash != hash("042") {
+		t.Fatalf("unexpected code hash")
+	}
+}
+
 func TestAuthVerifyMethodMismatch(t *testing.T) {
 	hash, _ := bcrypt.GenerateFromPassword([]byte("pass"), bcrypt.DefaultCost)
 	users := fakeUserRepo{user: &models.User{ID: "u1", Username: "alice", Status: models.UserActive, PasswordHash: string(hash), Phone: "+79990000000"}}
@@ -959,6 +988,17 @@ type fakeSMSProvider struct {
 }
 
 func (f fakeSMSProvider) SendSMS(ctx context.Context, to, message string) (string, error) {
+	return f.providerID, f.err
+}
+
+type fakePushProvider struct {
+	providerID string
+	err        error
+	lastBody   string
+}
+
+func (f *fakePushProvider) SendPush(ctx context.Context, deviceID, title, body string) (string, error) {
+	f.lastBody = body
 	return f.providerID, f.err
 }
 

@@ -6,6 +6,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
+	"math/big"
 	"strings"
 	"time"
 
@@ -62,6 +64,7 @@ type Service struct {
 	ttl           time.Duration
 	sessionTTL    time.Duration
 	codeGen       func() string
+	pushCodeGen   func() string
 	tokenGen      func() string
 }
 
@@ -78,19 +81,20 @@ func NewService(
 	sessionTTL time.Duration,
 ) *Service {
 	return &Service{
-		users:      users,
-		challenges: challenges,
-		sessions:   sessions,
-		providers:  providers,
-		lockouts:   lockouts,
-		logins:     logins,
-		audits:     audits,
-		jwt:        jwtSvc,
-		now:        time.Now,
-		ttl:        ttl,
-		sessionTTL: sessionTTL,
-		codeGen:    generateCode,
-		tokenGen:   newToken,
+		users:       users,
+		challenges:  challenges,
+		sessions:    sessions,
+		providers:   providers,
+		lockouts:    lockouts,
+		logins:      logins,
+		audits:      audits,
+		jwt:         jwtSvc,
+		now:         time.Now,
+		ttl:         ttl,
+		sessionTTL:  sessionTTL,
+		codeGen:     generateCode,
+		pushCodeGen: generatePushCode,
+		tokenGen:    newToken,
 	}
 }
 
@@ -201,6 +205,9 @@ func (s *Service) Login(ctx context.Context, req dto.LoginRequest) (dto.LoginRes
 	now := s.now()
 	expiresAt := now.Add(s.ttl)
 	code := s.codeGen()
+	if method == models.MethodPush {
+		code = s.pushCodeGen()
+	}
 	codeHash := hash(code)
 
 	challenge := &models.Challenge{
@@ -545,6 +552,14 @@ func generateCode() string {
 		return "000000"
 	}
 	return hex.EncodeToString(b)[:6]
+}
+
+func generatePushCode() string {
+	n, err := rand.Int(rand.Reader, big.NewInt(1000))
+	if err != nil {
+		return "000"
+	}
+	return fmt.Sprintf("%03d", n.Int64())
 }
 
 func hash(v string) string {
