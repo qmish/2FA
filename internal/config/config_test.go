@@ -81,8 +81,39 @@ func TestValidateWebAuthnOriginScheme(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
+	cfg.WebAuthnRPID = "localhost"
 	cfg.WebAuthnRPOrigin = "http://localhost:8080"
 	if err := cfg.Validate(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestValidateWebAuthnOriginHostMatchesRPID(t *testing.T) {
+	cfg := Defaults()
+	cfg.DBURL = "postgres://user:pass@localhost:5432/2fa?sslmode=disable"
+	cfg.JWTSecret = "secret"
+	cfg.AdminJWTSecret = "admin"
+	cfg.RadiusSecret = "radius"
+	cfg.WebAuthnRPID = "example.com"
+	cfg.WebAuthnRPName = "2FA"
+
+	cfg.WebAuthnRPOrigin = "https://example.com"
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	cfg.WebAuthnRPOrigin = "https://auth.example.com"
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	cfg.WebAuthnRPOrigin = "https://example.org"
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for mismatched origin host")
+	}
+
+	cfg.WebAuthnRPOrigin = "https://example.com.evil.com"
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for invalid suffix")
 	}
 }

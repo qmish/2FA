@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -262,6 +263,9 @@ func (c Config) Validate() error {
 		if !isAllowedWebAuthnOrigin(c.WebAuthnRPOrigin) {
 			return errors.New("webauthn_rp_origin must use https (localhost allowed)")
 		}
+		if !originMatchesRPID(c.WebAuthnRPOrigin, c.WebAuthnRPID) {
+			return errors.New("webauthn_rp_origin host must match webauthn_rp_id")
+		}
 	}
 	return nil
 }
@@ -275,4 +279,25 @@ func isAllowedWebAuthnOrigin(origin string) bool {
 		return true
 	}
 	return false
+}
+
+func originMatchesRPID(origin string, rpID string) bool {
+	origin = strings.TrimSpace(origin)
+	rpID = strings.TrimSpace(rpID)
+	if origin == "" || rpID == "" {
+		return false
+	}
+	parsed, err := url.Parse(origin)
+	if err != nil {
+		return false
+	}
+	host := strings.ToLower(parsed.Hostname())
+	rpID = strings.ToLower(rpID)
+	if host == "" || rpID == "" {
+		return false
+	}
+	if host == rpID {
+		return true
+	}
+	return strings.HasSuffix(host, "."+rpID)
 }
