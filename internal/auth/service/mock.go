@@ -15,6 +15,7 @@ type MockAuthService struct {
 	SetupTOTPFunc             func(ctx context.Context, userID string) (dto.TOTPSetupResponse, error)
 	DisableTOTPFunc           func(ctx context.Context, userID string) error
 	GenerateRecoveryCodesFunc func(ctx context.Context, userID string) (dto.RecoveryCodesResponse, error)
+	ClearRecoveryCodesFunc    func(ctx context.Context, userID string) error
 }
 
 func (m *MockAuthService) Login(ctx context.Context, req dto.LoginRequest) (dto.LoginResponse, error) {
@@ -47,4 +48,8 @@ func (m *MockAuthService) DisableTOTP(ctx context.Context, userID string) error 
 
 func (m *MockAuthService) GenerateRecoveryCodes(ctx context.Context, userID string) (dto.RecoveryCodesResponse, error) {
 	return m.GenerateRecoveryCodesFunc(ctx, userID)
+}
+
+func (m *MockAuthService) ClearRecoveryCodes(ctx context.Context, userID string) error {
+	return m.ClearRecoveryCodesFunc(ctx, userID)
 }

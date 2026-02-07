@@ -48,6 +48,19 @@ func (s *Service) GenerateRecoveryCodes(ctx context.Context, userID string) (dto
 	return dto.RecoveryCodesResponse{Codes: codes}, nil
 }
 
+func (s *Service) ClearRecoveryCodes(ctx context.Context, userID string) error {
+	if s.recoveryCodes == nil {
+		return ErrNotConfigured
+	}
+	if _, err := s.users.GetByID(ctx, userID); err != nil {
+		if err == repository.ErrNotFound {
+			return ErrNotFound
+		}
+		return err
+	}
+	return s.recoveryCodes.DeleteByUser(ctx, userID)
+}
+
 func generateRecoveryCodes(count int) ([]string, error) {
 	result := make([]string, 0, count)
 	seen := map[string]struct{}{}

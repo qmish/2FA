@@ -306,6 +306,26 @@ func (h *AuthHandler) GenerateRecoveryCodes(w http.ResponseWriter, r *http.Reque
 	writeJSON(w, http.StatusOK, resp)
 }
 
+func (h *AuthHandler) ClearRecoveryCodes(w http.ResponseWriter, r *http.Request) {
+	claims, ok := middlewares.AuthClaimsFromContext(r.Context())
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	if err := h.service.ClearRecoveryCodes(r.Context(), claims.UserID); err != nil {
+		switch {
+		case errors.Is(err, service.ErrNotFound):
+			writeError(w, http.StatusNotFound, "user_not_found")
+		case errors.Is(err, service.ErrNotConfigured):
+			writeError(w, http.StatusBadRequest, "recovery_not_configured")
+		default:
+			writeError(w, http.StatusBadRequest, "recovery_clear_failed")
+		}
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func isValidSecondFactorMethod(method models.SecondFactorMethod) bool {
 	switch method {
 	case models.MethodOTP, models.MethodTOTP, models.MethodCall, models.MethodPush, models.MethodRecovery:

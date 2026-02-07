@@ -15,4 +15,5 @@ type AuthService interface {
 	SetupTOTP(ctx context.Context, userID string) (dto.TOTPSetupResponse, error)
 	DisableTOTP(ctx context.Context, userID string) error
 	GenerateRecoveryCodes(ctx context.Context, userID string) (dto.RecoveryCodesResponse, error)
+	ClearRecoveryCodes(ctx context.Context, userID string) error
 }

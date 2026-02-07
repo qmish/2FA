@@ -61,3 +61,9 @@ func (s StubAuthService) GenerateRecoveryCodes(ctx context.Context, userID strin
 	_ = userID
 	return dto.RecoveryCodesResponse{}, ErrNotImplemented
 }
+
+func (s StubAuthService) ClearRecoveryCodes(ctx context.Context, userID string) error {
+	_ = ctx
+	_ = userID
+	return ErrNotImplemented
+}

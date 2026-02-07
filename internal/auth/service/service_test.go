@@ -445,6 +445,39 @@ func TestAuthGenerateRecoveryCodes(t *testing.T) {
 	}
 }
 
+func TestAuthClearRecoveryCodesOK(t *testing.T) {
+	users := fakeUserRepo{user: &models.User{ID: "u1", Username: "alice", Status: models.UserActive}}
+	recovery := &fakeRecoveryCodeRepo{}
+	svc := NewService(users, &fakeChallengeRepo{}, &fakeSessionRepo{}, nil, &fakeLockoutRepo{}, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwt.NewService("2fa", []byte("secret"), time.Minute), time.Minute, time.Hour)
+	svc.WithRecoveryCodes(recovery)
+
+	if err := svc.ClearRecoveryCodes(context.Background(), "u1"); err != nil {
+		t.Fatalf("clear recovery codes error: %v", err)
+	}
+	if recovery.deletedUserID != "u1" {
+		t.Fatalf("expected delete for u1, got %q", recovery.deletedUserID)
+	}
+}
+
+func TestAuthClearRecoveryCodesNotConfigured(t *testing.T) {
+	users := fakeUserRepo{user: &models.User{ID: "u1", Username: "alice", Status: models.UserActive}}
+	svc := NewService(users, &fakeChallengeRepo{}, &fakeSessionRepo{}, nil, &fakeLockoutRepo{}, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwt.NewService("2fa", []byte("secret"), time.Minute), time.Minute, time.Hour)
+
+	if err := svc.ClearRecoveryCodes(context.Background(), "u1"); !errors.Is(err, ErrNotConfigured) {
+		t.Fatalf("expected ErrNotConfigured, got %v", err)
+	}
+}
+
+func TestAuthClearRecoveryCodesUserNotFound(t *testing.T) {
+	recovery := &fakeRecoveryCodeRepo{}
+	svc := NewService(fakeUserRepo{}, &fakeChallengeRepo{}, &fakeSessionRepo{}, nil, &fakeLockoutRepo{}, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwt.NewService("2fa", []byte("secret"), time.Minute), time.Minute, time.Hour)
+	svc.WithRecoveryCodes(recovery)
+
+	if err := svc.ClearRecoveryCodes(context.Background(), "u1"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("expected ErrNotFound, got %v", err)
+	}
+}
+
 func TestAuthVerifySecondFactorRecovery(t *testing.T) {
 	challenges := &fakeChallengeRepo{items: map[string]challengeItem{}}
 	sessions := &fakeSessionRepo{}
@@ -1118,12 +1151,14 @@ func (f *fakeDeviceRepo) Disable(ctx context.Context, id string) error {
 }
 
 type fakeRecoveryCodeRepo struct {
-	codes        map[string]bool
-	createdCount int
-	consumed     bool
+	codes         map[string]bool
+	createdCount  int
+	consumed      bool
+	deletedUserID string
 }
 
 func (f *fakeRecoveryCodeRepo) DeleteByUser(ctx context.Context, userID string) error {
+	f.deletedUserID = userID
 	f.codes = map[string]bool{}
 	return nil
 }

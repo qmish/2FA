@@ -341,6 +341,39 @@ func TestAuthGenerateRecoveryCodesOK(t *testing.T) {
 	}
 }
 
+func TestAuthClearRecoveryCodesUnauthorized(t *testing.T) {
+	svc := newMockAuthService()
+	handler := NewAuthHandler(svc)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/recovery/clear", nil)
+	rec := httptest.NewRecorder()
+
+	handler.ClearRecoveryCodes(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("status=%d", rec.Code)
+	}
+}
+
+func TestAuthClearRecoveryCodesOK(t *testing.T) {
+	svc := newMockAuthService()
+	svc.ClearRecoveryCodesFunc = func(ctx context.Context, userID string) error {
+		if userID != "u1" {
+			t.Fatalf("unexpected user id: %s", userID)
+		}
+		return nil
+	}
+	handler := NewAuthHandler(svc)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/recovery/clear", nil)
+	req = req.WithContext(middlewares.WithAuthClaims(req.Context(), &middlewares.AuthClaims{UserID: "u1"}))
+	rec := httptest.NewRecorder()
+
+	handler.ClearRecoveryCodes(rec, req)
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("status=%d", rec.Code)
+	}
+}
+
 func TestAuthLoginInvalidIP(t *testing.T) {
 	svc := newMockAuthService()
 	handler := NewAuthHandler(svc)
@@ -372,6 +405,9 @@ func newMockAuthService() *service.MockAuthService {
 		},
 		GenerateRecoveryCodesFunc: func(ctx context.Context, userID string) (dto.RecoveryCodesResponse, error) {
 			return dto.RecoveryCodesResponse{}, nil
+		},
+		ClearRecoveryCodesFunc: func(ctx context.Context, userID string) error {
+			return nil
 		},
 	}
 }
