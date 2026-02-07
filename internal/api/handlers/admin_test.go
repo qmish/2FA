@@ -118,6 +118,36 @@ func TestAdminCreateUser(t *testing.T) {
 	}
 }
 
+func TestAdminExportUsersCSV(t *testing.T) {
+	authz := fakeAuthorizer{}
+	svc := &adminsvc.MockAdminService{
+		ListUsersFunc: func(ctx context.Context, req dto.AdminUserListRequest) (dto.AdminUserListResponse, error) {
+			return dto.AdminUserListResponse{
+				Items: []dto.AdminUserListItem{
+					{ID: "u1", Username: "alice", Email: "a@example.com", Status: models.UserActive, Role: models.RoleUser},
+				},
+				Page: dto.PageResponse{Total: 1, Limit: 10, Offset: 0},
+			}, nil
+		},
+	}
+
+	handler := NewAdminHandler(svc, authz)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/users/export?format=csv", nil)
+	req = req.WithContext(middlewares.WithAdminClaims(req.Context(), &middlewares.AdminClaims{UserID: "u1", Role: "admin"}))
+	rec := httptest.NewRecorder()
+
+	handler.ExportUsers(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	if ct := rec.Header().Get("Content-Type"); ct != "text/csv" {
+		t.Fatalf("unexpected content type: %s", ct)
+	}
+	if !strings.Contains(rec.Body.String(), "alice") {
+		t.Fatalf("expected user in csv, got %s", rec.Body.String())
+	}
+}
+
 func TestAdminImportUsers(t *testing.T) {
 	authz := fakeAuthorizer{}
 	svc := &adminsvc.MockAdminService{

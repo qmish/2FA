@@ -348,6 +348,34 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/ServerError"
+  /api/v1/admin/users/export:
+    get:
+      summary: Admin export users
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/query"
+        - $ref: "#/components/parameters/status"
+        - $ref: "#/components/parameters/group_id"
+        - $ref: "#/components/parameters/format"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserListResponse"
+            text/csv:
+              schema:
+                type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
   /api/v1/admin/invites/create:
     post:
       summary: Admin create invite

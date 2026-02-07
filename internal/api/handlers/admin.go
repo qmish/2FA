@@ -51,6 +51,45 @@ func (h *AdminHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, resp)
 }
 
+func (h *AdminHandler) ExportUsers(w http.ResponseWriter, r *http.Request) {
+	if !h.requirePermission(w, r, models.PermissionAdminUsersRead) {
+		return
+	}
+	req := dto.AdminUserListRequest{
+		Page: parsePage(r),
+		Filter: dto.AdminUserFilter{
+			Query:   r.URL.Query().Get("query"),
+			Status:  models.UserStatus(r.URL.Query().Get("status")),
+			GroupID: r.URL.Query().Get("group_id"),
+		},
+	}
+	resp, err := h.service.ListUsers(r.Context(), req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "export_users_failed")
+		return
+	}
+	if strings.EqualFold(r.URL.Query().Get("format"), "csv") {
+		w.Header().Set("Content-Type", "text/csv")
+		w.Header().Set("Content-Disposition", "attachment; filename=users.csv")
+		w.WriteHeader(http.StatusOK)
+		writer := csv.NewWriter(w)
+		_ = writer.Write([]string{"id", "username", "email", "phone", "status", "role"})
+		for _, item := range resp.Items {
+			_ = writer.Write([]string{
+				item.ID,
+				item.Username,
+				item.Email,
+				item.Phone,
+				string(item.Status),
+				string(item.Role),
+			})
+		}
+		writer.Flush()
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
 func (h *AdminHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	if !h.requirePermission(w, r, models.PermissionAdminUsersWrite) {
 		return

@@ -88,6 +88,7 @@ func New(r Routes) http.Handler {
 	mux.Handle("/api/v1/admin/users", adminAuth(http.HandlerFunc(r.Admin.ListUsers)))
 	mux.Handle("/api/v1/admin/users/create", adminAuth(http.HandlerFunc(r.Admin.CreateUser)))
 	mux.Handle("/api/v1/admin/users/import", adminAuth(http.HandlerFunc(r.Admin.ImportUsers)))
+	mux.Handle("/api/v1/admin/users/export", adminAuth(http.HandlerFunc(r.Admin.ExportUsers)))
 	mux.Handle("/api/v1/admin/users/update", adminAuth(http.HandlerFunc(r.Admin.UpdateUser)))
 	mux.Handle("/api/v1/admin/users/delete", adminAuth(http.HandlerFunc(r.Admin.DeleteUser)))
 	mux.Handle("/api/v1/admin/policies", adminAuth(http.HandlerFunc(r.Admin.ListPolicies)))
