@@ -86,6 +86,7 @@ Write-Host "=== Развертывание приложения ===" -Foreground
 Write-Host "Создание ConfigMap и Secrets..." -ForegroundColor Green
 kubectl apply -f docs/k8s/api-configmap.yaml
 kubectl apply -f docs/k8s/api-secrets.yaml
+kubectl apply -f docs/k8s/rbac.yaml
 
 # Запуск миграций
 Write-Host "Запуск миграций базы данных..." -ForegroundColor Green

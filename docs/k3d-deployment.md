@@ -68,6 +68,7 @@ kubectl wait --for=condition=ready pod -l app=redis --timeout=60s
 # ConfigMap и Secrets
 kubectl apply -f docs/k8s/api-configmap.yaml
 kubectl apply -f docs/k8s/api-secrets.yaml
+kubectl apply -f docs/k8s/rbac.yaml
 
 # Миграции
 kubectl apply -f docs/k8s/migrate-job.yaml

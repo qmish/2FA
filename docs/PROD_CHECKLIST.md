@@ -17,7 +17,7 @@
 
 ## P2 (желательно)
 - [x] NetworkPolicy для изоляции компонентов.
-- [ ] RBAC/ServiceAccount с минимальными правами.
+- [x] RBAC/ServiceAccount с минимальными правами.
 - [ ] SecurityContext (`runAsNonRoot`, `runAsUser`).
 - [ ] DR‑план с процедурами восстановления.
 - [ ] Alertmanager и интеграции.

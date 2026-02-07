@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: api-server
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: radius-server
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: api-server
+rules: []
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: radius-server
+rules: []
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: api-server
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: api-server
+subjects:
+  - kind: ServiceAccount
+    name: api-server
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: radius-server
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: radius-server
+subjects:
+  - kind: ServiceAccount
+    name: radius-server

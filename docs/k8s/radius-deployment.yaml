@@ -19,6 +19,7 @@ spec:
       labels:
         app: radius-server
     spec:
+      serviceAccountName: radius-server
       containers:
         - name: radius-server
           image: 2fa/radius-server:latest

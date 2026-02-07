@@ -19,6 +19,7 @@ spec:
       labels:
         app: api-server
     spec:
+      serviceAccountName: api-server
       containers:
         - name: api-server
           image: 2fa/api-server:latest

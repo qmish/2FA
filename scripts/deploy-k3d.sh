@@ -76,6 +76,7 @@ echo "=== Развертывание приложения ==="
 echo "Создание ConfigMap и Secrets..."
 kubectl apply -f docs/k8s/api-configmap.yaml
 kubectl apply -f docs/k8s/api-secrets.yaml
+kubectl apply -f docs/k8s/rbac.yaml
 
 # Запуск миграций
 echo "Запуск миграций базы данных..."
