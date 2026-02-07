@@ -49,6 +49,33 @@
       </section>
 
       <section class="card">
+        <h2>Register</h2>
+        <p class="hint">Регистрация по инвайт-токену.</p>
+        <div class="grid">
+          <label>Invite token
+            <input id="register-token" placeholder="invite token" />
+          </label>
+          <label>Username
+            <input id="register-username" placeholder="username" />
+          </label>
+          <label>Password
+            <input id="register-password" type="password" />
+          </label>
+          <label>Email
+            <input id="register-email" placeholder="email" />
+          </label>
+          <label>Phone
+            <input id="register-phone" placeholder="+79990000000" />
+          </label>
+        </div>
+        <div class="row">
+          <button id="register-btn">Register</button>
+          <span id="register-status" class="badge error hidden">Ошибка</span>
+        </div>
+        <pre id="register-result" class="result"></pre>
+      </section>
+
+      <section class="card">
         <h2>Healthcheck</h2>
         <div class="row">
           <button id="health-btn">Check /healthz</button>
@@ -177,6 +204,36 @@
       </section>
 
       <div id="admin-sections" class="hidden">
+        <section class="card">
+          <h2>Admin invites</h2>
+          <p class="hint">Создание инвайтов для регистрации пользователей.</p>
+          <div class="grid">
+            <label>Admin token
+              <textarea id="admin-invites-token" rows="2" placeholder="admin JWT"></textarea>
+            </label>
+            <label>Email
+              <input id="admin-invites-email" placeholder="user@example.com" />
+            </label>
+            <label>Phone
+              <input id="admin-invites-phone" placeholder="+79990000000" />
+            </label>
+            <label>Role
+              <select id="admin-invites-role">
+                <option value="user">user</option>
+                <option value="admin">admin</option>
+              </select>
+            </label>
+            <label>TTL minutes
+              <input id="admin-invites-ttl" type="number" min="1" placeholder="1440" />
+            </label>
+          </div>
+          <div class="row">
+            <button id="admin-invites-btn">Create invite</button>
+            <span id="admin-invites-status" class="badge error hidden">Ошибка</span>
+          </div>
+          <pre id="admin-invites-result" class="result"></pre>
+        </section>
+
         <section class="card">
           <h2>Admin audit</h2>
           <p class="hint">Время отображается в ISO времени.</p>

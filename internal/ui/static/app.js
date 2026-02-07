@@ -146,6 +146,27 @@ async function handleLogin() {
   }
 }
 
+async function handleRegister() {
+  setStatus("register-status", true);
+  try {
+    const body = {
+      token: document.getElementById("register-token").value.trim(),
+      username: document.getElementById("register-username").value.trim(),
+      password: document.getElementById("register-password").value,
+      email: document.getElementById("register-email").value.trim(),
+      phone: document.getElementById("register-phone").value.trim(),
+    };
+    const resp = await api("/api/v1/auth/register", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    setResult("register-result", resp);
+  } catch (err) {
+    setResult("register-result", err);
+    setStatus("register-status", false, err);
+  }
+}
+
 async function handleVerify() {
   setStatus("verify-status", true);
   try {
@@ -692,6 +713,7 @@ async function handleAdminLogin() {
       setAdminToken(token);
     }
     document.getElementById("admin-token").value = getAdminToken();
+  document.getElementById("admin-invites-token").value = getAdminToken();
     document.getElementById("admin-sessions-token").value = getAdminToken();
     document.getElementById("admin-lockouts-token").value = getAdminToken();
     updateAdminVisibility();
@@ -705,11 +727,54 @@ async function handleAdminLogin() {
 function handleAdminTokenClear() {
   clearAdminToken();
   document.getElementById("admin-token").value = "";
+  document.getElementById("admin-invites-token").value = "";
   document.getElementById("admin-sessions-token").value = "";
   document.getElementById("admin-lockouts-token").value = "";
   updateAdminVisibility();
   setResult("admin-login-result", { ok: true });
   setStatus("admin-login-status", true);
+}
+
+async function handleAdminInviteCreate() {
+  setStatus("admin-invites-status", true);
+  try {
+    const token = document.getElementById("admin-invites-token").value.trim();
+    setAdminToken(token);
+    const body = {
+      email: document.getElementById("admin-invites-email").value.trim(),
+      phone: document.getElementById("admin-invites-phone").value.trim(),
+      role: document.getElementById("admin-invites-role").value,
+      ttl_minutes: Number(document.getElementById("admin-invites-ttl").value),
+    };
+    if (!body.ttl_minutes) {
+      delete body.ttl_minutes;
+    }
+    const res = await fetch("/api/v1/admin/invites/create", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+    const text = await res.text();
+    let payload = text;
+    try {
+      payload = JSON.parse(text);
+    } catch (_) {
+      // keep raw
+    }
+    if (!res.ok) {
+      throw { status: res.status, payload };
+    }
+    setResult("admin-invites-result", payload);
+    if (payload && payload.token) {
+      document.getElementById("register-token").value = payload.token;
+    }
+  } catch (err) {
+    setResult("admin-invites-result", err);
+    setStatus("admin-invites-status", false, err);
+  }
 }
 
 async function handleHealth() {
@@ -759,6 +824,7 @@ async function handleMetrics() {
 
 function initUI() {
   document.getElementById("login-btn").addEventListener("click", handleLogin);
+  document.getElementById("register-btn").addEventListener("click", handleRegister);
   document.getElementById("verify-btn").addEventListener("click", handleVerify);
   document.getElementById("sessions-btn").addEventListener("click", handleSessions);
   document.getElementById("logout-btn").addEventListener("click", handleLogout);
@@ -773,6 +839,7 @@ function initUI() {
   document.getElementById("audit-btn").addEventListener("click", handleAuditList);
   document.getElementById("audit-export-btn").addEventListener("click", handleAuditExport);
   document.getElementById("admin-token").value = getAdminToken();
+  document.getElementById("admin-invites-token").value = getAdminToken();
   document.getElementById("admin-sessions-token").value = getAdminToken();
   document.getElementById("admin-sessions-btn").addEventListener("click", handleAdminSessions);
   document.getElementById("admin-lockouts-token").value = getAdminToken();
@@ -780,6 +847,7 @@ function initUI() {
   document.getElementById("admin-lockouts-clear").addEventListener("click", handleAdminLockoutsClear);
   document.getElementById("admin-login-btn").addEventListener("click", handleAdminLogin);
   document.getElementById("admin-token-clear").addEventListener("click", handleAdminTokenClear);
+  document.getElementById("admin-invites-btn").addEventListener("click", handleAdminInviteCreate);
   document.getElementById("health-btn").addEventListener("click", handleHealth);
   document.getElementById("metrics-btn").addEventListener("click", handleMetrics);
   syncTokenFields();

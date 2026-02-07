@@ -37,6 +37,12 @@ func TestUIHandlerIndex(t *testing.T) {
 	if !strings.Contains(rec.Body.String(), "Admin login") {
 		t.Fatalf("missing admin login section: %s", rec.Body.String())
 	}
+	if !strings.Contains(rec.Body.String(), "Register") {
+		t.Fatalf("missing register section: %s", rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "Admin invites") {
+		t.Fatalf("missing admin invites section: %s", rec.Body.String())
+	}
 	if !strings.Contains(rec.Body.String(), "Export audit CSV") {
 		t.Fatalf("missing audit export section: %s", rec.Body.String())
 	}
