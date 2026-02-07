@@ -242,6 +242,82 @@ async function handleLogout() {
   }
 }
 
+async function handleDevices() {
+  setStatus("devices-status", true);
+  try {
+    const resp = await api("/api/v1/profile/devices", { method: "GET" });
+    setResult("devices-result", resp);
+    renderDevices(resp);
+  } catch (err) {
+    setResult("devices-result", err);
+    setStatus("devices-status", false, err);
+  }
+}
+
+async function handleDeviceDisable() {
+  setStatus("devices-status", true);
+  try {
+    const deviceID = document.getElementById("device-id").value.trim();
+    await api("/api/v1/profile/devices/disable", {
+      method: "POST",
+      body: JSON.stringify({ device_id: deviceID }),
+    });
+    setResult("devices-result", { ok: true });
+    await handleDevices();
+  } catch (err) {
+    setResult("devices-result", err);
+    setStatus("devices-status", false, err);
+  }
+}
+
+function renderDevices(resp) {
+  const list = document.getElementById("devices-list");
+  if (!list) return;
+  if (!resp || !resp.items || !Array.isArray(resp.items)) {
+    list.innerHTML = "";
+    return;
+  }
+  const rows = resp.items
+    .map((item) => {
+      return `
+        <tr>
+          <td>${item.id}</td>
+          <td>${item.type || "-"}</td>
+          <td>${item.name || "-"}</td>
+          <td>${item.status || "-"}</td>
+          <td>${formatTime(item.last_seen_at)}</td>
+          <td>${formatTime(item.created_at)}</td>
+          <td><button class="btn-link" data-device-id="${item.id}">disable</button></td>
+        </tr>
+      `;
+    })
+    .join("");
+  list.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Type</th>
+          <th>Name</th>
+          <th>Status</th>
+          <th>Last Seen</th>
+          <th>Created</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+  list.querySelectorAll("button[data-device-id]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.getAttribute("data-device-id");
+      if (!id) return;
+      document.getElementById("device-id").value = id;
+      await handleDeviceDisable();
+    });
+  });
+}
+
 async function handleRevoke() {
   setStatus("sessions-status", true);
   try {
@@ -840,6 +916,8 @@ function initUI() {
   document.getElementById("register-btn").addEventListener("click", handleRegister);
   document.getElementById("verify-btn").addEventListener("click", handleVerify);
   document.getElementById("sessions-btn").addEventListener("click", handleSessions);
+  document.getElementById("devices-btn").addEventListener("click", handleDevices);
+  document.getElementById("device-disable-btn").addEventListener("click", handleDeviceDisable);
   document.getElementById("logout-btn").addEventListener("click", handleLogout);
   document.getElementById("current-session-btn").addEventListener("click", handleCurrentSession);
   document.getElementById("revoke-btn").addEventListener("click", handleRevoke);

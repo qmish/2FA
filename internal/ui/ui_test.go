@@ -25,6 +25,9 @@ func TestUIHandlerIndex(t *testing.T) {
 	if !strings.Contains(rec.Body.String(), "Sessions list") {
 		t.Fatalf("missing sessions list section: %s", rec.Body.String())
 	}
+	if !strings.Contains(rec.Body.String(), "Devices") {
+		t.Fatalf("missing devices section: %s", rec.Body.String())
+	}
 	if !strings.Contains(rec.Body.String(), "Admin audit") {
 		t.Fatalf("missing admin audit section: %s", rec.Body.String())
 	}

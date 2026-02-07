@@ -154,6 +154,22 @@
       </section>
 
       <section class="card">
+        <h2>Devices</h2>
+        <div class="row">
+          <button id="devices-btn">List devices</button>
+          <span id="devices-status" class="badge error hidden">Ошибка</span>
+        </div>
+        <div class="grid">
+          <label>Device ID
+            <input id="device-id" placeholder="device_id" />
+          </label>
+        </div>
+        <button id="device-disable-btn" class="secondary">Disable device</button>
+        <div id="devices-list" class="table"></div>
+        <pre id="devices-result" class="result"></pre>
+      </section>
+
+      <section class="card">
         <h2>Tokens</h2>
         <div class="grid">
           <label>Access token
