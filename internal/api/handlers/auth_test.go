@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/qmish/2FA/internal/api/middlewares"
@@ -374,6 +375,82 @@ func TestAuthClearRecoveryCodesOK(t *testing.T) {
 	}
 }
 
+func TestAuthPasskeyRegisterBeginUnauthorized(t *testing.T) {
+	svc := newMockAuthService()
+	handler := NewAuthHandler(svc)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/passkeys/register/begin", nil)
+	rec := httptest.NewRecorder()
+
+	handler.BeginPasskeyRegistration(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("status=%d", rec.Code)
+	}
+}
+
+func TestAuthPasskeyRegisterBeginOK(t *testing.T) {
+	svc := newMockAuthService()
+	svc.BeginPasskeyRegistrationFunc = func(ctx context.Context, userID string) (dto.PasskeyRegisterBeginResponse, error) {
+		if userID != "u1" {
+			t.Fatalf("unexpected user id: %s", userID)
+		}
+		return dto.PasskeyRegisterBeginResponse{Options: json.RawMessage(`{"publicKey":{}}`)}, nil
+	}
+	handler := NewAuthHandler(svc)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/passkeys/register/begin", nil)
+	req = req.WithContext(middlewares.WithAuthClaims(req.Context(), &middlewares.AuthClaims{UserID: "u1"}))
+	rec := httptest.NewRecorder()
+
+	handler.BeginPasskeyRegistration(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	var resp dto.PasskeyRegisterBeginResponse
+	if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
+		t.Fatalf("decode error: %v", err)
+	}
+	if len(resp.Options) == 0 {
+		t.Fatalf("expected options")
+	}
+}
+
+func TestAuthPasskeyRegisterFinishUnauthorized(t *testing.T) {
+	svc := newMockAuthService()
+	handler := NewAuthHandler(svc)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/passkeys/register/finish", nil)
+	rec := httptest.NewRecorder()
+
+	handler.FinishPasskeyRegistration(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("status=%d", rec.Code)
+	}
+}
+
+func TestAuthPasskeyRegisterFinishOK(t *testing.T) {
+	svc := newMockAuthService()
+	svc.FinishPasskeyRegistrationFunc = func(ctx context.Context, userID string, credential json.RawMessage) error {
+		if userID != "u1" {
+			t.Fatalf("unexpected user id: %s", userID)
+		}
+		if len(credential) == 0 {
+			t.Fatalf("expected credential payload")
+		}
+		return nil
+	}
+	handler := NewAuthHandler(svc)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/passkeys/register/finish", strings.NewReader(`{"credential":{"id":"c1"}}`))
+	req = req.WithContext(middlewares.WithAuthClaims(req.Context(), &middlewares.AuthClaims{UserID: "u1"}))
+	rec := httptest.NewRecorder()
+
+	handler.FinishPasskeyRegistration(rec, req)
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("status=%d", rec.Code)
+	}
+}
+
 func TestAuthLoginInvalidIP(t *testing.T) {
 	svc := newMockAuthService()
 	handler := NewAuthHandler(svc)
@@ -407,6 +484,12 @@ func newMockAuthService() *service.MockAuthService {
 			return dto.RecoveryCodesResponse{}, nil
 		},
 		ClearRecoveryCodesFunc: func(ctx context.Context, userID string) error {
+			return nil
+		},
+		BeginPasskeyRegistrationFunc: func(ctx context.Context, userID string) (dto.PasskeyRegisterBeginResponse, error) {
+			return dto.PasskeyRegisterBeginResponse{}, nil
+		},
+		FinishPasskeyRegistrationFunc: func(ctx context.Context, userID string, credential json.RawMessage) error {
 			return nil
 		},
 	}

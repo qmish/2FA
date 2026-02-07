@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 
 	"github.com/qmish/2FA/internal/dto"
@@ -65,5 +66,18 @@ func (s StubAuthService) GenerateRecoveryCodes(ctx context.Context, userID strin
 func (s StubAuthService) ClearRecoveryCodes(ctx context.Context, userID string) error {
 	_ = ctx
 	_ = userID
+	return ErrNotImplemented
+}
+
+func (s StubAuthService) BeginPasskeyRegistration(ctx context.Context, userID string) (dto.PasskeyRegisterBeginResponse, error) {
+	_ = ctx
+	_ = userID
+	return dto.PasskeyRegisterBeginResponse{}, ErrNotImplemented
+}
+
+func (s StubAuthService) FinishPasskeyRegistration(ctx context.Context, userID string, credential json.RawMessage) error {
+	_ = ctx
+	_ = userID
+	_ = credential
 	return ErrNotImplemented
 }

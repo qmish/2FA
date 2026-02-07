@@ -1,6 +1,10 @@
 package dto
 
-import "github.com/qmish/2FA/internal/models"
+import (
+	"encoding/json"
+
+	"github.com/qmish/2FA/internal/models"
+)
 
 type LoginRequest struct {
 	Username  string                    `json:"username"`
@@ -107,6 +111,14 @@ type UserPasskeyListResponse struct {
 
 type UserPasskeyDeleteRequest struct {
 	ID string `json:"id"`
+}
+
+type PasskeyRegisterBeginResponse struct {
+	Options json.RawMessage `json:"public_key_options"`
+}
+
+type PasskeyRegisterFinishRequest struct {
+	Credential json.RawMessage `json:"credential"`
 }
 
 type RegisterRequest struct {

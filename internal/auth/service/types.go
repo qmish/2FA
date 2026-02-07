@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/qmish/2FA/internal/dto"
 )
@@ -16,4 +17,6 @@ type AuthService interface {
 	DisableTOTP(ctx context.Context, userID string) error
 	GenerateRecoveryCodes(ctx context.Context, userID string) (dto.RecoveryCodesResponse, error)
 	ClearRecoveryCodes(ctx context.Context, userID string) error
+	BeginPasskeyRegistration(ctx context.Context, userID string) (dto.PasskeyRegisterBeginResponse, error)
+	FinishPasskeyRegistration(ctx context.Context, userID string, credential json.RawMessage) error
 }

@@ -2,20 +2,23 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/qmish/2FA/internal/dto"
 )
 
 type MockAuthService struct {
-	LoginFunc                 func(ctx context.Context, req dto.LoginRequest) (dto.LoginResponse, error)
-	RegisterFunc              func(ctx context.Context, req dto.RegisterRequest) (dto.RegisterResponse, error)
-	VerifyFunc                func(ctx context.Context, req dto.VerifyRequest) (dto.TokenPair, error)
-	RefreshFunc               func(ctx context.Context, req dto.RefreshRequest, ip string) (dto.TokenPair, error)
-	LogoutFunc                func(ctx context.Context, userID string, sessionID string, ip string) error
-	SetupTOTPFunc             func(ctx context.Context, userID string) (dto.TOTPSetupResponse, error)
-	DisableTOTPFunc           func(ctx context.Context, userID string) error
-	GenerateRecoveryCodesFunc func(ctx context.Context, userID string) (dto.RecoveryCodesResponse, error)
-	ClearRecoveryCodesFunc    func(ctx context.Context, userID string) error
+	LoginFunc                     func(ctx context.Context, req dto.LoginRequest) (dto.LoginResponse, error)
+	RegisterFunc                  func(ctx context.Context, req dto.RegisterRequest) (dto.RegisterResponse, error)
+	VerifyFunc                    func(ctx context.Context, req dto.VerifyRequest) (dto.TokenPair, error)
+	RefreshFunc                   func(ctx context.Context, req dto.RefreshRequest, ip string) (dto.TokenPair, error)
+	LogoutFunc                    func(ctx context.Context, userID string, sessionID string, ip string) error
+	SetupTOTPFunc                 func(ctx context.Context, userID string) (dto.TOTPSetupResponse, error)
+	DisableTOTPFunc               func(ctx context.Context, userID string) error
+	GenerateRecoveryCodesFunc     func(ctx context.Context, userID string) (dto.RecoveryCodesResponse, error)
+	ClearRecoveryCodesFunc        func(ctx context.Context, userID string) error
+	BeginPasskeyRegistrationFunc  func(ctx context.Context, userID string) (dto.PasskeyRegisterBeginResponse, error)
+	FinishPasskeyRegistrationFunc func(ctx context.Context, userID string, credential json.RawMessage) error
 }
 
 func (m *MockAuthService) Login(ctx context.Context, req dto.LoginRequest) (dto.LoginResponse, error) {
@@ -52,4 +55,12 @@ func (m *MockAuthService) GenerateRecoveryCodes(ctx context.Context, userID stri
 
 func (m *MockAuthService) ClearRecoveryCodes(ctx context.Context, userID string) error {
 	return m.ClearRecoveryCodesFunc(ctx, userID)
+}
+
+func (m *MockAuthService) BeginPasskeyRegistration(ctx context.Context, userID string) (dto.PasskeyRegisterBeginResponse, error) {
+	return m.BeginPasskeyRegistrationFunc(ctx, userID)
+}
+
+func (m *MockAuthService) FinishPasskeyRegistration(ctx context.Context, userID string, credential json.RawMessage) error {
+	return m.FinishPasskeyRegistrationFunc(ctx, userID, credential)
 }

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	webauthnlib "github.com/go-webauthn/webauthn/webauthn"
 	"github.com/qmish/2FA/internal/admin/auth"
 	adminsvc "github.com/qmish/2FA/internal/admin/service"
 	"github.com/qmish/2FA/internal/api/handlers"
@@ -112,6 +113,18 @@ func main() {
 	authService.WithInvites(inviteRepo)
 	authService.WithRecoveryCodes(recoveryRepo)
 	authService.WithDevices(deviceRepo)
+	if cfg.WebAuthnRPID != "" && cfg.WebAuthnRPOrigin != "" && cfg.WebAuthnRPName != "" {
+		wa, err := webauthnlib.New(&webauthnlib.Config{
+			RPID:          cfg.WebAuthnRPID,
+			RPDisplayName: cfg.WebAuthnRPName,
+			RPOrigins:     []string{cfg.WebAuthnRPOrigin},
+		})
+		if err != nil {
+			log.Printf("webauthn disabled: %v", err)
+		} else {
+			authService.WithWebAuthn(wa, webauthnRepo)
+		}
+	}
 	if cfg.LDAPURL != "" {
 		authService.WithLDAPAuth(ldap.NewClient(cfg.LDAPURL, cfg.LDAPTimeout))
 	}

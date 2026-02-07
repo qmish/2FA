@@ -30,6 +30,9 @@ type Config struct {
 	SessionTTL       time.Duration `yaml:"session_ttl"`
 	AuthLoginLimit   int           `yaml:"auth_login_limit"`
 	AuthVerifyLimit  int           `yaml:"auth_verify_limit"`
+	WebAuthnRPID     string        `yaml:"webauthn_rp_id"`
+	WebAuthnRPOrigin string        `yaml:"webauthn_rp_origin"`
+	WebAuthnRPName   string        `yaml:"webauthn_rp_name"`
 }
 
 func Defaults() Config {
@@ -124,6 +127,15 @@ func LoadFromEnv() Config {
 			cfg.AuthVerifyLimit = limit
 		}
 	}
+	if v := os.Getenv("WEBAUTHN_RP_ID"); v != "" {
+		cfg.WebAuthnRPID = v
+	}
+	if v := os.Getenv("WEBAUTHN_RP_ORIGIN"); v != "" {
+		cfg.WebAuthnRPOrigin = v
+	}
+	if v := os.Getenv("WEBAUTHN_RP_NAME"); v != "" {
+		cfg.WebAuthnRPName = v
+	}
 	return cfg
 }
 
@@ -213,6 +225,15 @@ func merge(env Config, file Config) Config {
 	}
 	if env.AuthVerifyLimit != Defaults().AuthVerifyLimit {
 		file.AuthVerifyLimit = env.AuthVerifyLimit
+	}
+	if env.WebAuthnRPID != "" {
+		file.WebAuthnRPID = env.WebAuthnRPID
+	}
+	if env.WebAuthnRPOrigin != "" {
+		file.WebAuthnRPOrigin = env.WebAuthnRPOrigin
+	}
+	if env.WebAuthnRPName != "" {
+		file.WebAuthnRPName = env.WebAuthnRPName
 	}
 	return file
 }

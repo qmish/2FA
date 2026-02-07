@@ -326,6 +326,58 @@ func (h *AuthHandler) ClearRecoveryCodes(w http.ResponseWriter, r *http.Request)
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (h *AuthHandler) BeginPasskeyRegistration(w http.ResponseWriter, r *http.Request) {
+	claims, ok := middlewares.AuthClaimsFromContext(r.Context())
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	resp, err := h.service.BeginPasskeyRegistration(r.Context(), claims.UserID)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrNotFound):
+			writeError(w, http.StatusNotFound, "user_not_found")
+		case errors.Is(err, service.ErrNotConfigured):
+			writeError(w, http.StatusBadRequest, "passkeys_not_configured")
+		default:
+			writeError(w, http.StatusBadRequest, "passkey_register_begin_failed")
+		}
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+func (h *AuthHandler) FinishPasskeyRegistration(w http.ResponseWriter, r *http.Request) {
+	claims, ok := middlewares.AuthClaimsFromContext(r.Context())
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	var req dto.PasskeyRegisterFinishRequest
+	dec := json.NewDecoder(r.Body)
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&req); err != nil || len(req.Credential) == 0 {
+		writeError(w, http.StatusBadRequest, "invalid_request")
+		return
+	}
+	if err := h.service.FinishPasskeyRegistration(r.Context(), claims.UserID, req.Credential); err != nil {
+		switch {
+		case errors.Is(err, service.ErrChallengeNotFound):
+			writeError(w, http.StatusNotFound, "challenge_not_found")
+		case errors.Is(err, service.ErrChallengeExpired):
+			writeError(w, http.StatusConflict, "challenge_expired")
+		case errors.Is(err, service.ErrNotFound):
+			writeError(w, http.StatusNotFound, "user_not_found")
+		case errors.Is(err, service.ErrNotConfigured):
+			writeError(w, http.StatusBadRequest, "passkeys_not_configured")
+		default:
+			writeError(w, http.StatusBadRequest, "passkey_register_failed")
+		}
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func isValidSecondFactorMethod(method models.SecondFactorMethod) bool {
 	switch method {
 	case models.MethodOTP, models.MethodTOTP, models.MethodCall, models.MethodPush, models.MethodRecovery:
