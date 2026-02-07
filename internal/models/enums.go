@@ -102,6 +102,7 @@ const (
 	AuditEntityLockout      AuditEntityType = "lockout"
 	AuditEntitySession      AuditEntityType = "session"
 	AuditEntityPermission   AuditEntityType = "permission"
+	AuditEntityPasskey      AuditEntityType = "passkey"
 )
 
 type AuditAction string
@@ -122,6 +123,8 @@ const (
 	AuditSecondFactorDeny    AuditAction = "second_factor_deny"
 	AuditLockoutCreate       AuditAction = "lockout_create"
 	AuditLockoutClear        AuditAction = "lockout_clear"
+	AuditPasskeyRegister     AuditAction = "passkey_register"
+	AuditPasskeyLogin        AuditAction = "passkey_login"
 )
 
 type InviteStatus string

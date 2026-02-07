@@ -336,12 +336,15 @@ func (h *AuthHandler) BeginPasskeyLogin(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrNotConfigured):
+			metrics.Default.IncPasskeyEvent("login_begin", "failed")
 			writeError(w, http.StatusBadRequest, "passkeys_not_configured")
 		default:
+			metrics.Default.IncPasskeyEvent("login_begin", "failed")
 			writeError(w, http.StatusBadRequest, "passkey_login_begin_failed")
 		}
 		return
 	}
+	metrics.Default.IncPasskeyEvent("login_begin", "success")
 	writeJSON(w, http.StatusOK, resp)
 }
 
@@ -362,16 +365,21 @@ func (h *AuthHandler) FinishPasskeyLogin(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrChallengeNotFound):
+			metrics.Default.IncPasskeyEvent("login_finish", "failed")
 			writeError(w, http.StatusNotFound, "challenge_not_found")
 		case errors.Is(err, service.ErrChallengeExpired):
+			metrics.Default.IncPasskeyEvent("login_finish", "failed")
 			writeError(w, http.StatusConflict, "challenge_expired")
 		case errors.Is(err, service.ErrNotConfigured):
+			metrics.Default.IncPasskeyEvent("login_finish", "failed")
 			writeError(w, http.StatusBadRequest, "passkeys_not_configured")
 		default:
+			metrics.Default.IncPasskeyEvent("login_finish", "failed")
 			writeError(w, http.StatusBadRequest, "passkey_login_failed")
 		}
 		return
 	}
+	metrics.Default.IncPasskeyEvent("login_finish", "success")
 	writeJSON(w, http.StatusOK, resp)
 }
 
@@ -385,14 +393,18 @@ func (h *AuthHandler) BeginPasskeyRegistration(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrNotFound):
+			metrics.Default.IncPasskeyEvent("register_begin", "failed")
 			writeError(w, http.StatusNotFound, "user_not_found")
 		case errors.Is(err, service.ErrNotConfigured):
+			metrics.Default.IncPasskeyEvent("register_begin", "failed")
 			writeError(w, http.StatusBadRequest, "passkeys_not_configured")
 		default:
+			metrics.Default.IncPasskeyEvent("register_begin", "failed")
 			writeError(w, http.StatusBadRequest, "passkey_register_begin_failed")
 		}
 		return
 	}
+	metrics.Default.IncPasskeyEvent("register_begin", "success")
 	writeJSON(w, http.StatusOK, resp)
 }
 
@@ -412,18 +424,24 @@ func (h *AuthHandler) FinishPasskeyRegistration(w http.ResponseWriter, r *http.R
 	if err := h.service.FinishPasskeyRegistration(r.Context(), claims.UserID, req.Credential); err != nil {
 		switch {
 		case errors.Is(err, service.ErrChallengeNotFound):
+			metrics.Default.IncPasskeyEvent("register_finish", "failed")
 			writeError(w, http.StatusNotFound, "challenge_not_found")
 		case errors.Is(err, service.ErrChallengeExpired):
+			metrics.Default.IncPasskeyEvent("register_finish", "failed")
 			writeError(w, http.StatusConflict, "challenge_expired")
 		case errors.Is(err, service.ErrNotFound):
+			metrics.Default.IncPasskeyEvent("register_finish", "failed")
 			writeError(w, http.StatusNotFound, "user_not_found")
 		case errors.Is(err, service.ErrNotConfigured):
+			metrics.Default.IncPasskeyEvent("register_finish", "failed")
 			writeError(w, http.StatusBadRequest, "passkeys_not_configured")
 		default:
+			metrics.Default.IncPasskeyEvent("register_finish", "failed")
 			writeError(w, http.StatusBadRequest, "passkey_register_failed")
 		}
 		return
 	}
+	metrics.Default.IncPasskeyEvent("register_finish", "success")
 	w.WriteHeader(http.StatusNoContent)
 }
 

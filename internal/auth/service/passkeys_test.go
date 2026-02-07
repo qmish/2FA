@@ -102,6 +102,46 @@ func TestPasskeyRegisterFinishStoresCredential(t *testing.T) {
 	}
 }
 
+func TestPasskeyRegisterAudit(t *testing.T) {
+	user := &models.User{ID: "u1", Username: "alice"}
+	audits := &auditCollector{}
+	svc := NewService(fakeUserRepo{user: user}, nil, nil, nil, nil, &fakeLoginHistoryRepo{}, audits, nil, time.Minute, time.Hour)
+	adapter := &fakeWebAuthnAdapter{
+		created: &webauthn.Credential{
+			ID:        []byte("cred"),
+			PublicKey: []byte("pk"),
+		},
+	}
+	creds := &fakeWebAuthnCredentialRepo{}
+	svc.webauthnAdapter = adapter
+	svc.webauthnCreds = creds
+	svc.webauthnParseCreation = func(data []byte) (*protocol.ParsedCredentialCreationData, error) {
+		return &protocol.ParsedCredentialCreationData{}, nil
+	}
+	svc.webauthnSessions = &fakeWebAuthnSessionRepo{
+		itemsByTypeUser: map[string]*models.WebAuthnSession{
+			"register:u1": {
+				ID:        "s1",
+				Type:      "register",
+				UserID:    "u1",
+				Data:      `{"challenge":"challenge"}`,
+				ExpiresAt: time.Now().Add(time.Minute),
+			},
+		},
+	}
+
+	if err := svc.FinishPasskeyRegistration(context.Background(), "u1", json.RawMessage(`{"id":"x"}`)); err != nil {
+		t.Fatalf("FinishPasskeyRegistration error: %v", err)
+	}
+	event := audits.find(models.AuditPasskeyRegister)
+	if event == nil || event.EntityType != models.AuditEntityPasskey {
+		t.Fatalf("unexpected audit event: %+v", event)
+	}
+	if event.EntityID != creds.created.ID {
+		t.Fatalf("unexpected audit entity id: %s", event.EntityID)
+	}
+}
+
 func TestPasskeyLoginBeginNotConfigured(t *testing.T) {
 	svc := NewService(fakeUserRepo{}, nil, nil, nil, nil, nil, nil, nil, time.Minute, time.Hour)
 	if _, err := svc.BeginPasskeyLogin(context.Background()); !errors.Is(err, ErrNotConfigured) {
@@ -192,6 +232,57 @@ func TestPasskeyLoginFinishOK(t *testing.T) {
 	}
 	if creds.updatedID != "c1" || creds.updatedCount != 9 {
 		t.Fatalf("expected sign count update, got %+v", creds)
+	}
+}
+
+func TestPasskeyLoginAudit(t *testing.T) {
+	user := &models.User{ID: "u1", Username: "alice", Status: models.UserActive}
+	audits := &auditCollector{}
+	sessions := &fakeSessionRepo{}
+	jwtSvc := jwt.NewService("2fa", []byte("secret"), time.Minute)
+	svc := NewService(fakeUserRepo{user: user}, nil, sessions, nil, nil, &fakeLoginHistoryRepo{}, audits, jwtSvc, time.Minute, time.Hour)
+	adapter := &fakeWebAuthnAdapter{
+		validUser: &webauthnUser{id: "u1", name: "alice"},
+		validCredential: &webauthn.Credential{
+			ID:        []byte("cred"),
+			PublicKey: []byte("pk"),
+		},
+	}
+	creds := &fakeWebAuthnCredentialRepo{
+		getByID: &models.WebAuthnCredential{ID: "c1", UserID: "u1", CredentialID: base64.RawURLEncoding.EncodeToString([]byte("cred"))},
+		items: []models.WebAuthnCredential{
+			{ID: "c1", UserID: "u1", CredentialID: base64.RawURLEncoding.EncodeToString([]byte("cred")), PublicKey: base64.RawURLEncoding.EncodeToString([]byte("pk"))},
+		},
+	}
+	svc.webauthnAdapter = adapter
+	svc.webauthnCreds = creds
+	svc.webauthnParseAssertion = func(data []byte) (*protocol.ParsedCredentialAssertionData, error) {
+		return &protocol.ParsedCredentialAssertionData{
+			ParsedPublicKeyCredential: protocol.ParsedPublicKeyCredential{
+				RawID: []byte("cred"),
+			},
+			Response: protocol.ParsedAssertionResponse{
+				UserHandle: []byte("u1"),
+			},
+		}, nil
+	}
+	svc.webauthnSessions = &fakeWebAuthnSessionRepo{
+		itemsByID: map[string]*models.WebAuthnSession{
+			"s1": {
+				ID:        "s1",
+				Type:      "login",
+				Data:      `{"challenge":"challenge"}`,
+				ExpiresAt: time.Now().Add(time.Minute),
+			},
+		},
+	}
+
+	if _, err := svc.FinishPasskeyLogin(context.Background(), "s1", json.RawMessage(`{"id":"x"}`), "127.0.0.1", "ua"); err != nil {
+		t.Fatalf("FinishPasskeyLogin error: %v", err)
+	}
+	event := audits.find(models.AuditPasskeyLogin)
+	if event == nil || event.EntityType != models.AuditEntityPasskey {
+		t.Fatalf("unexpected audit event: %+v", event)
 	}
 }
 
@@ -313,4 +404,28 @@ func (f *fakeWebAuthnSessionRepo) DeleteByTypeAndUser(ctx context.Context, sessi
 
 func (f *fakeWebAuthnSessionRepo) DeleteExpired(ctx context.Context, now time.Time) (int64, error) {
 	return 0, nil
+}
+
+type auditCollector struct {
+	events []models.AuditEvent
+}
+
+func (a *auditCollector) Create(ctx context.Context, e *models.AuditEvent) error {
+	if e != nil {
+		a.events = append(a.events, *e)
+	}
+	return nil
+}
+
+func (a *auditCollector) List(ctx context.Context, filter repository.AuditFilter, limit, offset int) ([]models.AuditEvent, int, error) {
+	return nil, 0, nil
+}
+
+func (a *auditCollector) find(action models.AuditAction) *models.AuditEvent {
+	for i := range a.events {
+		if a.events[i].Action == action {
+			return &a.events[i]
+		}
+	}
+	return nil
 }

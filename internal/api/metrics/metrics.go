@@ -15,6 +15,7 @@ type Registry struct {
 	authFailures            map[string]int64
 	authChallenges          map[string]int64
 	authRegistrations       map[string]int64
+	passkeyEvents           map[string]int64
 	systemErrors            map[string]int64
 	radiusRequests          map[string]int64
 	lockoutCreated          int64
@@ -30,6 +31,7 @@ func NewRegistry() *Registry {
 		authFailures:      map[string]int64{},
 		authChallenges:    map[string]int64{},
 		authRegistrations: map[string]int64{},
+		passkeyEvents:     map[string]int64{},
 		systemErrors:      map[string]int64{},
 		radiusRequests:    map[string]int64{},
 	}
@@ -74,6 +76,13 @@ func (r *Registry) IncAuthRegistration(result string) {
 	key := fmt.Sprintf("result=%s", result)
 	r.mu.Lock()
 	r.authRegistrations[key]++
+	r.mu.Unlock()
+}
+
+func (r *Registry) IncPasskeyEvent(operation, result string) {
+	key := fmt.Sprintf("operation=%s,result=%s", operation, result)
+	r.mu.Lock()
+	r.passkeyEvents[key]++
 	r.mu.Unlock()
 }
 
@@ -161,6 +170,12 @@ func (r *Registry) Render() string {
 	for _, k := range sortedKeys(r.authRegistrations) {
 		labels := formatLabels(k)
 		b.WriteString(fmt.Sprintf("auth_registrations_total{%s} %d\n", labels, r.authRegistrations[k]))
+	}
+	b.WriteString("# HELP passkey_events_total Passkey events\n")
+	b.WriteString("# TYPE passkey_events_total counter\n")
+	for _, k := range sortedKeys(r.passkeyEvents) {
+		labels := formatLabels(k)
+		b.WriteString(fmt.Sprintf("passkey_events_total{%s} %d\n", labels, r.passkeyEvents[k]))
 	}
 	b.WriteString("# HELP system_errors_total System errors\n")
 	b.WriteString("# TYPE system_errors_total counter\n")

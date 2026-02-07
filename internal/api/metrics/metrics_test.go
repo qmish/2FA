@@ -61,6 +61,19 @@ func TestAuthRegistrationMetrics(t *testing.T) {
 	}
 }
 
+func TestPasskeyMetrics(t *testing.T) {
+	reg := NewRegistry()
+	reg.IncPasskeyEvent("register_begin", "success")
+	reg.IncPasskeyEvent("login_finish", "failed")
+	out := reg.Render()
+	if !strings.Contains(out, `passkey_events_total{operation="register_begin",result="success"} 1`) {
+		t.Fatalf("missing register_begin success counter")
+	}
+	if !strings.Contains(out, `passkey_events_total{operation="login_finish",result="failed"} 1`) {
+		t.Fatalf("missing login_finish failed counter")
+	}
+}
+
 func TestRadiusMetrics(t *testing.T) {
 	reg := NewRegistry()
 	reg.IncRadiusRequest("accept")

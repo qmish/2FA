@@ -146,7 +146,21 @@ func (s *Service) FinishPasskeyRegistration(ctx context.Context, userID string, 
 		SignCount:    int64(cred.Authenticator.SignCount),
 		CreatedAt:    now,
 	}
-	return s.webauthnCreds.Create(ctx, item)
+	if err := s.webauthnCreds.Create(ctx, item); err != nil {
+		return err
+	}
+	if s.audits != nil {
+		_ = s.audits.Create(ctx, &models.AuditEvent{
+			ID:          s.tokenGen(),
+			ActorUserID: userID,
+			Action:      models.AuditPasskeyRegister,
+			EntityType:  models.AuditEntityPasskey,
+			EntityID:    item.ID,
+			Payload:     item.CredentialID,
+			CreatedAt:   now,
+		})
+	}
+	return nil
 }
 
 func (s *Service) BeginPasskeyLogin(ctx context.Context) (dto.PasskeyLoginBeginResponse, error) {
@@ -222,6 +236,24 @@ func (s *Service) FinishPasskeyLogin(ctx context.Context, sessionID string, cred
 	}
 	if s.jwt == nil {
 		return dto.TokenPair{}, ErrSecondFactorFailed
+	}
+	if s.audits != nil {
+		entityID := ""
+		payload := credID
+		if cred != nil {
+			entityID = cred.ID
+			payload = cred.CredentialID
+		}
+		_ = s.audits.Create(ctx, &models.AuditEvent{
+			ID:          s.tokenGen(),
+			ActorUserID: userModel.ID,
+			Action:      models.AuditPasskeyLogin,
+			EntityType:  models.AuditEntityPasskey,
+			EntityID:    entityID,
+			Payload:     payload,
+			IP:          ip,
+			CreatedAt:   now,
+		})
 	}
 	if ip != "" {
 		s.recordLoginResult(ctx, userModel.ID, "", ip, models.AuthSuccess)
