@@ -244,6 +244,9 @@ func (c Config) Validate() error {
 	if c.DBURL == "" {
 		return errors.New("db_url is required")
 	}
+	if !isValidURL(c.DBURL) {
+		return errors.New("db_url must be a valid URL")
+	}
 	if c.JWTSecret == "" {
 		return errors.New("jwt_secret is required")
 	}
