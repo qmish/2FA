@@ -32,6 +32,12 @@ monitoring:
   enabled: false
   namespace: "monitoring"
 
+hpa:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPU: 70
+
 service:
   type: ClusterIP
   port: 80

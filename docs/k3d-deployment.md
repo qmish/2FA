@@ -80,6 +80,7 @@ kubectl apply -f docs/k8s/api-service.yaml
 kubectl apply -f docs/k8s/api-ingress.yaml
 kubectl apply -f docs/k8s/api-pdb.yaml
 kubectl apply -f docs/k8s/api-servicemonitor.yaml
+kubectl apply -f docs/k8s/api-hpa.yaml
 
 # RADIUS сервер
 kubectl apply -f docs/k8s/radius-deployment.yaml

@@ -14,6 +14,7 @@
 - [x] RollingUpdate + PodDisruptionBudget.
 - [x] Централизованное логирование (Loki/ELK/Cloud).
 - [x] HA PostgreSQL (оператор/репликация).
+- [x] HPA для API (autoscaling по CPU).
 
 ## P2 (желательно)
 - [x] NetworkPolicy для изоляции компонентов.
@@ -24,3 +25,5 @@
 - [x] SSL для PostgreSQL (`sslmode=disable` заменить).
 - [x] Ingress rate‑limit на уровне ingress.
 - [x] Прод‑домены WebAuthn в гайдах (без `2fa.local`).
+- [ ] Экспорт дашбордов Grafana и инструкции по импорту.
+- [ ] Политика ретенции логов/метрик и её документирование.
