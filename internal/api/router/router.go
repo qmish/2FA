@@ -54,6 +54,7 @@ func New(r Routes) http.Handler {
 	if r.AuthMiddleware != nil {
 		mux.Handle("/api/v1/auth/totp/setup", r.AuthMiddleware(http.HandlerFunc(r.Auth.SetupTOTP)))
 		mux.Handle("/api/v1/auth/totp/disable", r.AuthMiddleware(http.HandlerFunc(r.Auth.DisableTOTP)))
+		mux.Handle("/api/v1/auth/recovery/generate", r.AuthMiddleware(http.HandlerFunc(r.Auth.GenerateRecoveryCodes)))
 	}
 	if r.Profile != nil && r.AuthMiddleware != nil {
 		mux.Handle("/api/v1/profile/devices", r.AuthMiddleware(http.HandlerFunc(r.Profile.ListDevices)))

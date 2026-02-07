@@ -632,6 +632,56 @@ func (r *OTPSecretRepository) Disable(ctx context.Context, id string) error {
 	return err
 }
 
+type RecoveryCodeRepository struct {
+	db *sql.DB
+}
+
+func NewRecoveryCodeRepository(db *sql.DB) *RecoveryCodeRepository {
+	return &RecoveryCodeRepository{db: db}
+}
+
+func (r *RecoveryCodeRepository) DeleteByUser(ctx context.Context, userID string) error {
+	_, err := r.db.ExecContext(ctx, `DELETE FROM recovery_codes WHERE user_id = $1`, userID)
+	return err
+}
+
+func (r *RecoveryCodeRepository) CreateMany(ctx context.Context, codes []models.RecoveryCode) error {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	for _, code := range codes {
+		if _, err := tx.ExecContext(ctx, `
+        INSERT INTO recovery_codes (id, user_id, code_hash, used_at, created_at)
+        VALUES ($1,$2,$3,$4,$5)`,
+			code.ID,
+			code.UserID,
+			code.CodeHash,
+			nullTime(code.UsedAt),
+			code.CreatedAt,
+		); err != nil {
+			_ = tx.Rollback()
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+func (r *RecoveryCodeRepository) Consume(ctx context.Context, userID string, codeHash string, usedAt time.Time) (bool, error) {
+	res, err := r.db.ExecContext(ctx, `
+        UPDATE recovery_codes
+        SET used_at = $3
+        WHERE user_id = $1 AND code_hash = $2 AND used_at IS NULL`, userID, codeHash, usedAt)
+	if err != nil {
+		return false, err
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	return affected > 0, nil
+}
+
 type InviteRepository struct {
 	db *sql.DB
 }

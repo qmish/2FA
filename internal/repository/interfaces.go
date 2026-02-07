@@ -105,6 +105,12 @@ type OTPSecretRepository interface {
 	Disable(ctx context.Context, id string) error
 }
 
+type RecoveryCodeRepository interface {
+	DeleteByUser(ctx context.Context, userID string) error
+	CreateMany(ctx context.Context, codes []models.RecoveryCode) error
+	Consume(ctx context.Context, userID string, codeHash string, usedAt time.Time) (bool, error)
+}
+
 type InviteRepository interface {
 	Create(ctx context.Context, invite *models.Invite) error
 	GetByTokenHash(ctx context.Context, tokenHash string) (*models.Invite, error)

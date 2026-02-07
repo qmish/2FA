@@ -55,3 +55,9 @@ func (s StubAuthService) DisableTOTP(ctx context.Context, userID string) error {
 	_ = userID
 	return ErrNotImplemented
 }
+
+func (s StubAuthService) GenerateRecoveryCodes(ctx context.Context, userID string) (dto.RecoveryCodesResponse, error) {
+	_ = ctx
+	_ = userID
+	return dto.RecoveryCodesResponse{}, ErrNotImplemented
+}

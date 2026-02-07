@@ -286,6 +286,71 @@ func TestAuthVerifySecondFactorTOTP(t *testing.T) {
 	}
 }
 
+func TestAuthGenerateRecoveryCodes(t *testing.T) {
+	users := fakeUserRepo{user: &models.User{ID: "u1", Username: "alice", Status: models.UserActive}}
+	recovery := &fakeRecoveryCodeRepo{}
+	svc := NewService(users, &fakeChallengeRepo{}, &fakeSessionRepo{}, nil, &fakeLockoutRepo{}, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwt.NewService("2fa", []byte("secret"), time.Minute), time.Minute, time.Hour)
+	svc.WithRecoveryCodes(recovery)
+
+	resp, err := svc.GenerateRecoveryCodes(context.Background(), "u1")
+	if err != nil {
+		t.Fatalf("generate recovery codes error: %v", err)
+	}
+	if len(resp.Codes) == 0 {
+		t.Fatalf("expected recovery codes")
+	}
+	unique := map[string]struct{}{}
+	for _, code := range resp.Codes {
+		if code == "" {
+			t.Fatalf("empty recovery code")
+		}
+		unique[code] = struct{}{}
+	}
+	if len(unique) != len(resp.Codes) {
+		t.Fatalf("duplicate recovery codes")
+	}
+	if recovery.createdCount != len(resp.Codes) {
+		t.Fatalf("expected %d codes created, got %d", len(resp.Codes), recovery.createdCount)
+	}
+}
+
+func TestAuthVerifySecondFactorRecovery(t *testing.T) {
+	challenges := &fakeChallengeRepo{items: map[string]challengeItem{}}
+	sessions := &fakeSessionRepo{}
+	recovery := &fakeRecoveryCodeRepo{
+		codes: map[string]bool{
+			hash("rc-1"): false,
+		},
+	}
+	svc := NewService(fakeUserRepo{}, challenges, sessions, nil, &fakeLockoutRepo{}, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwt.NewService("2fa", []byte("secret"), time.Minute), time.Minute, time.Hour)
+	svc.WithRecoveryCodes(recovery)
+
+	challenge := &models.Challenge{
+		ID:        "c1",
+		UserID:    "u1",
+		Method:    models.MethodRecovery,
+		Status:    models.ChallengeCreated,
+		ExpiresAt: time.Now().Add(time.Minute),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	if err := challenges.Create(context.Background(), challenge); err != nil {
+		t.Fatalf("create challenge error: %v", err)
+	}
+	if _, err := svc.VerifySecondFactor(context.Background(), dto.VerifyRequest{
+		UserID:      "u1",
+		ChallengeID: "c1",
+		Method:      models.MethodRecovery,
+		Code:        "rc-1",
+		IP:          "127.0.0.1",
+	}); err != nil {
+		t.Fatalf("verify recovery error: %v", err)
+	}
+	if !recovery.consumed {
+		t.Fatalf("expected recovery code to be consumed")
+	}
+}
+
 func TestAuthVerifySecondFactorTOTPInvalid(t *testing.T) {
 	now := time.Date(2026, 2, 6, 10, 0, 0, 0, time.UTC)
 	challenges := &fakeChallengeRepo{items: map[string]challengeItem{}}
@@ -891,6 +956,38 @@ func (f *fakeOTPSecretRepo) Create(ctx context.Context, s *models.OTPSecret) err
 func (f *fakeOTPSecretRepo) Disable(ctx context.Context, id string) error {
 	f.disabledID = id
 	return nil
+}
+
+type fakeRecoveryCodeRepo struct {
+	codes        map[string]bool
+	createdCount int
+	consumed     bool
+}
+
+func (f *fakeRecoveryCodeRepo) DeleteByUser(ctx context.Context, userID string) error {
+	f.codes = map[string]bool{}
+	return nil
+}
+
+func (f *fakeRecoveryCodeRepo) CreateMany(ctx context.Context, codes []models.RecoveryCode) error {
+	if f.codes == nil {
+		f.codes = map[string]bool{}
+	}
+	for _, code := range codes {
+		f.codes[code.CodeHash] = false
+		f.createdCount++
+	}
+	return nil
+}
+
+func (f *fakeRecoveryCodeRepo) Consume(ctx context.Context, userID string, codeHash string, usedAt time.Time) (bool, error) {
+	used, ok := f.codes[codeHash]
+	if !ok || used {
+		return false, nil
+	}
+	f.codes[codeHash] = true
+	f.consumed = true
+	return true, nil
 }
 
 type fakeLDAPAuth struct {

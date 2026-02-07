@@ -285,9 +285,30 @@ func (h *AuthHandler) DisableTOTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (h *AuthHandler) GenerateRecoveryCodes(w http.ResponseWriter, r *http.Request) {
+	claims, ok := middlewares.AuthClaimsFromContext(r.Context())
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	resp, err := h.service.GenerateRecoveryCodes(r.Context(), claims.UserID)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrNotFound):
+			writeError(w, http.StatusNotFound, "user_not_found")
+		case errors.Is(err, service.ErrNotConfigured):
+			writeError(w, http.StatusBadRequest, "recovery_not_configured")
+		default:
+			writeError(w, http.StatusBadRequest, "recovery_generate_failed")
+		}
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
 func isValidSecondFactorMethod(method models.SecondFactorMethod) bool {
 	switch method {
-	case models.MethodOTP, models.MethodTOTP, models.MethodCall, models.MethodPush:
+	case models.MethodOTP, models.MethodTOTP, models.MethodCall, models.MethodPush, models.MethodRecovery:
 		return true
 	default:
 		return false

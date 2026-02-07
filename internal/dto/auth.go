@@ -96,6 +96,10 @@ type RegisterResponse struct {
 	UserID string `json:"user_id"`
 }
 
+type RecoveryCodesResponse struct {
+	Codes []string `json:"codes"`
+}
+
 type SessionDTO struct {
 	ID         string `json:"id"`
 	IP         string `json:"ip"`

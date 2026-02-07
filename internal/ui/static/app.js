@@ -365,6 +365,17 @@ async function handleTotpDisable() {
   }
 }
 
+async function handleRecoveryGenerate() {
+  setStatus("recovery-status", true);
+  try {
+    const resp = await api("/api/v1/auth/recovery/generate", { method: "POST" });
+    setResult("recovery-result", resp);
+  } catch (err) {
+    setResult("recovery-result", err);
+    setStatus("recovery-status", false, err);
+  }
+}
+
 async function handleAuditList() {
   setStatus("audit-status", true);
   try {
@@ -838,6 +849,8 @@ function initUI() {
   const totpDisableBtn = document.getElementById("totp-disable-btn");
   if (totpSetupBtn) totpSetupBtn.addEventListener("click", handleTotpSetup);
   if (totpDisableBtn) totpDisableBtn.addEventListener("click", handleTotpDisable);
+  const recoveryBtn = document.getElementById("recovery-generate-btn");
+  if (recoveryBtn) recoveryBtn.addEventListener("click", handleRecoveryGenerate);
   document.getElementById("audit-btn").addEventListener("click", handleAuditList);
   document.getElementById("audit-export-btn").addEventListener("click", handleAuditExport);
   document.getElementById("admin-token").value = getAdminToken();

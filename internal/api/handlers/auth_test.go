@@ -301,6 +301,46 @@ func TestAuthLogoutSessionMismatch(t *testing.T) {
 	}
 }
 
+func TestAuthGenerateRecoveryCodesUnauthorized(t *testing.T) {
+	svc := newMockAuthService()
+	handler := NewAuthHandler(svc)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/recovery/generate", nil)
+	rec := httptest.NewRecorder()
+
+	handler.GenerateRecoveryCodes(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("status=%d", rec.Code)
+	}
+}
+
+func TestAuthGenerateRecoveryCodesOK(t *testing.T) {
+	svc := newMockAuthService()
+	svc.GenerateRecoveryCodesFunc = func(ctx context.Context, userID string) (dto.RecoveryCodesResponse, error) {
+		if userID != "u1" {
+			t.Fatalf("unexpected user id: %s", userID)
+		}
+		return dto.RecoveryCodesResponse{Codes: []string{"c1", "c2"}}, nil
+	}
+	handler := NewAuthHandler(svc)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/recovery/generate", nil)
+	req = req.WithContext(middlewares.WithAuthClaims(req.Context(), &middlewares.AuthClaims{UserID: "u1"}))
+	rec := httptest.NewRecorder()
+
+	handler.GenerateRecoveryCodes(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	var resp dto.RecoveryCodesResponse
+	if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
+		t.Fatalf("decode error: %v", err)
+	}
+	if len(resp.Codes) != 2 {
+		t.Fatalf("unexpected codes: %+v", resp.Codes)
+	}
+}
+
 func TestAuthLoginInvalidIP(t *testing.T) {
 	svc := newMockAuthService()
 	handler := NewAuthHandler(svc)
@@ -329,6 +369,9 @@ func newMockAuthService() *service.MockAuthService {
 		},
 		LogoutFunc: func(ctx context.Context, userID string, sessionID string, ip string) error {
 			return nil
+		},
+		GenerateRecoveryCodesFunc: func(ctx context.Context, userID string) (dto.RecoveryCodesResponse, error) {
+			return dto.RecoveryCodesResponse{}, nil
 		},
 	}
 }

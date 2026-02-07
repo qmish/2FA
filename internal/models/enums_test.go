@@ -23,6 +23,7 @@ func TestEnumValues(t *testing.T) {
 		{string(MethodOTP), "otp"},
 		{string(MethodTOTP), "totp"},
 		{string(MethodCall), "call"},
+		{string(MethodRecovery), "recovery"},
 		{string(AuthSuccess), "success"},
 		{string(AuthDeny), "deny"},
 		{string(AuthTimeout), "timeout"},

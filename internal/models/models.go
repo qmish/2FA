@@ -60,6 +60,14 @@ type OTPSecret struct {
 	CreatedAt time.Time
 }
 
+type RecoveryCode struct {
+	ID        string
+	UserID    string
+	CodeHash  string
+	UsedAt    *time.Time
+	CreatedAt time.Time
+}
+
 type Invite struct {
 	ID        string
 	TokenHash string

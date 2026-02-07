@@ -35,10 +35,11 @@ const (
 type SecondFactorMethod string
 
 const (
-	MethodPush SecondFactorMethod = "push"
-	MethodOTP  SecondFactorMethod = "otp"
-	MethodTOTP SecondFactorMethod = "totp"
-	MethodCall SecondFactorMethod = "call"
+	MethodPush     SecondFactorMethod = "push"
+	MethodOTP      SecondFactorMethod = "otp"
+	MethodTOTP     SecondFactorMethod = "totp"
+	MethodCall     SecondFactorMethod = "call"
+	MethodRecovery SecondFactorMethod = "recovery"
 )
 
 type AuthResult string

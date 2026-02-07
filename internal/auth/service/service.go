@@ -51,6 +51,7 @@ type Service struct {
 	groupPolicies repository.GroupPolicyRepository
 	otpSecrets    repository.OTPSecretRepository
 	invites       repository.InviteRepository
+	recoveryCodes repository.RecoveryCodeRepository
 	totpIssuer    string
 	totpDigits    int
 	totpPeriod    int
@@ -123,6 +124,11 @@ func (s *Service) WithLDAPAuth(auth ldap.Authenticator) *Service {
 
 func (s *Service) WithInvites(invites repository.InviteRepository) *Service {
 	s.invites = invites
+	return s
+}
+
+func (s *Service) WithRecoveryCodes(repo repository.RecoveryCodeRepository) *Service {
+	s.recoveryCodes = repo
 	return s
 }
 
@@ -224,6 +230,8 @@ func (s *Service) Login(ctx context.Context, req dto.LoginRequest) (dto.LoginRes
 			providerID, sendErr = s.providers.SendPush(ctx, "", user.ID, "2FA", code)
 		case models.MethodTOTP:
 			// TOTP не требует внешнего провайдера
+		case models.MethodRecovery:
+			// Recovery codes не требуют внешнего провайдера
 		}
 		if sendErr != nil {
 			_ = s.challenges.UpdateStatus(ctx, challengeID, models.ChallengeFailed)
@@ -283,6 +291,20 @@ func (s *Service) VerifySecondFactor(ctx context.Context, req dto.VerifyRequest)
 		}
 	case models.MethodTOTP:
 		if !s.validateTOTP(ctx, challenge.UserID, req.Code) {
+			_ = s.challenges.UpdateStatus(ctx, challenge.ID, models.ChallengeDenied)
+			s.recordLoginFailure(ctx, challenge.UserID, "", req.IP)
+			s.recordSecondFactor(ctx, challenge.UserID, challenge.ID, models.AuditSecondFactorDeny, req.IP, string(challenge.Method))
+			return dto.TokenPair{}, ErrSecondFactorFailed
+		}
+	case models.MethodRecovery:
+		if s.recoveryCodes == nil {
+			_ = s.challenges.UpdateStatus(ctx, challenge.ID, models.ChallengeDenied)
+			s.recordLoginFailure(ctx, challenge.UserID, "", req.IP)
+			s.recordSecondFactor(ctx, challenge.UserID, challenge.ID, models.AuditSecondFactorDeny, req.IP, string(challenge.Method))
+			return dto.TokenPair{}, ErrSecondFactorFailed
+		}
+		ok, err := s.recoveryCodes.Consume(ctx, challenge.UserID, hash(req.Code), s.now())
+		if err != nil || !ok {
 			_ = s.challenges.UpdateStatus(ctx, challenge.ID, models.ChallengeDenied)
 			s.recordLoginFailure(ctx, challenge.UserID, "", req.IP)
 			s.recordSecondFactor(ctx, challenge.UserID, challenge.ID, models.AuditSecondFactorDeny, req.IP, string(challenge.Method))

@@ -54,6 +54,7 @@ func main() {
 	rolePermRepo := postgres.NewRolePermissionRepository(db)
 	challengeRepo := postgres.NewChallengeRepository(db)
 	otpSecretRepo := postgres.NewOTPSecretRepository(db)
+	recoveryRepo := postgres.NewRecoveryCodeRepository(db)
 	sessionRepo := postgres.NewSessionRepository(db)
 	deviceRepo := postgres.NewDeviceRepository(db)
 	lockoutRepo := postgres.NewLockoutRepository(db)
@@ -108,6 +109,7 @@ func main() {
 	authService.WithOTPSecrets(otpSecretRepo)
 	authService.WithTOTPConfig(cfg.JWTIssuer, 6, 30)
 	authService.WithInvites(inviteRepo)
+	authService.WithRecoveryCodes(recoveryRepo)
 	if cfg.LDAPURL != "" {
 		authService.WithLDAPAuth(ldap.NewClient(cfg.LDAPURL, cfg.LDAPTimeout))
 	}

@@ -147,6 +147,26 @@ paths:
           $ref: "#/components/responses/TooManyRequests"
         "500":
           $ref: "#/components/responses/ServerError"
+  /api/v1/auth/recovery/generate:
+    post:
+      summary: Generate recovery codes
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecoveryCodesResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
   /api/v1/sessions:
     get:
       summary: User sessions list
@@ -1306,7 +1326,7 @@ components:
           enum: [web, mobile, vpn, mail, rdp, ssh]
         method:
           type: string
-          enum: [otp, call, push]
+          enum: [otp, totp, call, push, recovery]
         ip: { type: string }
         user_agent: { type: string }
       required: [username, password]
@@ -1349,6 +1369,14 @@ components:
         user_id: { type: string }
       example:
         user_id: "u1"
+    RecoveryCodesResponse:
+      type: object
+      properties:
+        codes:
+          type: array
+          items: { type: string }
+      example:
+        codes: ["0000000001", "0000000002"]
     VerifyRequest:
       type: object
       properties:

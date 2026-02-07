@@ -861,3 +861,31 @@ func TestInviteRepositoryCreateGetMarkUsed(t *testing.T) {
 		t.Fatalf("expectations: %v", err)
 	}
 }
+
+func TestRecoveryCodeRepositoryConsume(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock: %v", err)
+	}
+	defer db.Close()
+
+	repo := NewRecoveryCodeRepository(db)
+	now := time.Now()
+	mock.ExpectExec(regexp.QuoteMeta(`
+        UPDATE recovery_codes
+        SET used_at = $3
+        WHERE user_id = $1 AND code_hash = $2 AND used_at IS NULL`)).
+		WithArgs("u1", "hash1", sqlmock.AnyArg()).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	ok, err := repo.Consume(context.Background(), "u1", "hash1", now)
+	if err != nil {
+		t.Fatalf("Consume error: %v", err)
+	}
+	if !ok {
+		t.Fatalf("expected consume to succeed")
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("expectations: %v", err)
+	}
+}

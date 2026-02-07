@@ -38,6 +38,7 @@
               <option value="totp">totp</option>
               <option value="push">push</option>
               <option value="call">call</option>
+              <option value="recovery">recovery</option>
             </select>
           </label>
         </div>
@@ -109,6 +110,7 @@
               <option value="totp">totp</option>
               <option value="push">push</option>
               <option value="call">call</option>
+              <option value="recovery">recovery</option>
             </select>
           </label>
           <label>Code
@@ -178,6 +180,16 @@
           <span id="totp-setup-status" class="badge error hidden">Ошибка</span>
         </div>
         <pre id="totp-setup-result" class="result"></pre>
+      </section>
+
+      <section class="card">
+        <h2>Recovery codes</h2>
+        <p class="hint">Генерация recovery codes для текущего пользователя (нужен access token).</p>
+        <div class="row">
+          <button id="recovery-generate-btn">Generate recovery codes</button>
+          <span id="recovery-status" class="badge error hidden">Ошибка</span>
+        </div>
+        <pre id="recovery-result" class="result"></pre>
       </section>
 
       <section class="card">
