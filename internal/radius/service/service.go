@@ -97,6 +97,11 @@ func (s *RadiusService) HandleAccessRequest(ctx context.Context, req protocol.Ac
 		metrics.Default.IncRadiusRequest(string(models.RadiusTimeout))
 		return AccessResponse{Code: AccessReject, Message: requiredMessage(method)}
 	}
+	if isPasskeyKeyword(otp) {
+		s.recordLogin(ctx, user.ID, models.AuthDeny)
+		metrics.Default.IncRadiusRequest(string(models.RadiusReject))
+		return AccessResponse{Code: AccessReject, Message: "passkey_not_supported"}
+	}
 	if err := s.verifyCode(ctx, user, otp); err != nil {
 		s.recordLogin(ctx, user.ID, models.AuthDeny)
 		metrics.Default.IncRadiusRequest(string(models.RadiusReject))
@@ -249,6 +254,15 @@ func parseMethodKeyword(value string) (models.SecondFactorMethod, bool) {
 		return models.MethodOTP, true
 	default:
 		return "", false
+	}
+}
+
+func isPasskeyKeyword(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "passkey", "webauthn":
+		return true
+	default:
+		return false
 	}
 }
 

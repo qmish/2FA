@@ -120,6 +120,38 @@ func TestRadiusServicePushVerifyCode(t *testing.T) {
 	}
 }
 
+func TestRadiusServicePasskeyNotSupported(t *testing.T) {
+	hash, _ := bcrypt.GenerateFromPassword([]byte("pass"), bcrypt.DefaultCost)
+	users := fakeUserRepo{user: &models.User{ID: "u1", Username: "alice", Status: models.UserActive, PasswordHash: string(hash)}}
+	challenges := &fakeChallengeRepo{}
+	svc := NewRadiusService(users, challenges, nil, fakeLoginRepo{}, fakeAuditRepo{}, time.Minute)
+
+	req := protocol.AccessRequest{Username: "alice", Password: "pass:passkey"}
+	resp := svc.HandleAccessRequest(context.Background(), req)
+	if resp.Code != AccessReject || resp.Message != "passkey_not_supported" {
+		t.Fatalf("expected passkey_not_supported, got %s", resp.Message)
+	}
+	if challenges.created != nil {
+		t.Fatalf("unexpected challenge created: %+v", challenges.created)
+	}
+}
+
+func TestRadiusServiceWebauthnNotSupported(t *testing.T) {
+	hash, _ := bcrypt.GenerateFromPassword([]byte("pass"), bcrypt.DefaultCost)
+	users := fakeUserRepo{user: &models.User{ID: "u1", Username: "alice", Status: models.UserActive, PasswordHash: string(hash)}}
+	challenges := &fakeChallengeRepo{}
+	svc := NewRadiusService(users, challenges, nil, fakeLoginRepo{}, fakeAuditRepo{}, time.Minute)
+
+	req := protocol.AccessRequest{Username: "alice", Password: "pass:webauthn"}
+	resp := svc.HandleAccessRequest(context.Background(), req)
+	if resp.Code != AccessReject || resp.Message != "passkey_not_supported" {
+		t.Fatalf("expected passkey_not_supported, got %s", resp.Message)
+	}
+	if challenges.created != nil {
+		t.Fatalf("unexpected challenge created: %+v", challenges.created)
+	}
+}
+
 type fakeUserRepo struct {
 	user *models.User
 }

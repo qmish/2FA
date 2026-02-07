@@ -75,6 +75,8 @@ radius.2fa.local:31812
 - Первый запрос: `Access-Reject` с сообщением `otp_required`
 - После получения OTP на телефон: второй запрос с `test123:123456` → `Access-Accept`
 
+> Важно: passkeys/WebAuthn не поддерживаются в RADIUS/AnyConnect. Используйте OTP/push/call.
+
 #### Использование Docker (если radclient не установлен)
 
 ```bash

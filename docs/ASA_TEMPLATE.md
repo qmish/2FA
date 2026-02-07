@@ -23,6 +23,7 @@ aaa-server RADIUS-2FA (inside) host <K3D_NODE_IP>
 
 > Примечание: используется **NodePort 31812/UDP** (см. `docs/k8s/radius-service.yaml`).
 > Если пробросите UDP 1812 напрямую, замените порт на 1812.
+> Passkeys/WebAuthn через RADIUS/AnyConnect не поддерживаются — используйте OTP/push/call.
 
 ## 2) Пул адресов и групповая политика
 
