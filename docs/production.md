@@ -30,6 +30,7 @@
 - Примеры PDB: `docs/k8s/api-pdb.yaml`, `docs/k8s/radius-pdb.yaml`.
 - Настройте `resources` для CPU/Memory в Helm/манифестах.
 - Для Redis используйте PersistentVolume вместо `emptyDir`.
+- Для HA PostgreSQL используйте оператор (пример: `docs/k8s/postgres-cnpg.yaml`).
 
 ## Мониторинг
 - Для Prometheus Operator используйте ServiceMonitor: `docs/k8s/api-servicemonitor.yaml`.

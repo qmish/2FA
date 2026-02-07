@@ -13,7 +13,7 @@
 - [x] Мониторинг: ServiceMonitor для `/metrics`.
 - [x] RollingUpdate + PodDisruptionBudget.
 - [x] Централизованное логирование (Loki/ELK/Cloud).
-- [ ] HA PostgreSQL (оператор/репликация).
+- [x] HA PostgreSQL (оператор/репликация).
 
 ## P2 (желательно)
 - [ ] NetworkPolicy для изоляции компонентов.
