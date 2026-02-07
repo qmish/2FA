@@ -39,4 +39,5 @@ type AdminService interface {
 	ListLockouts(ctx context.Context, req dto.AdminLockoutListRequest) (dto.AdminLockoutListResponse, error)
 	ClearLockouts(ctx context.Context, actorUserID string, req dto.AdminLockoutClearRequest) error
 	CreateInvite(ctx context.Context, req dto.AdminInviteCreateRequest) (dto.AdminInviteResponse, error)
+	BulkCreateUsers(ctx context.Context, req dto.AdminUserBulkRequest) (dto.AdminUserBulkResponse, error)
 }

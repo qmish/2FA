@@ -39,6 +39,7 @@ type MockAdminService struct {
 	ListLockoutsFunc       func(ctx context.Context, req dto.AdminLockoutListRequest) (dto.AdminLockoutListResponse, error)
 	ClearLockoutsFunc      func(ctx context.Context, actorUserID string, req dto.AdminLockoutClearRequest) error
 	CreateInviteFunc       func(ctx context.Context, req dto.AdminInviteCreateRequest) (dto.AdminInviteResponse, error)
+	BulkCreateUsersFunc    func(ctx context.Context, req dto.AdminUserBulkRequest) (dto.AdminUserBulkResponse, error)
 }
 
 func (m *MockAdminService) ListUsers(ctx context.Context, req dto.AdminUserListRequest) (dto.AdminUserListResponse, error) {
@@ -167,4 +168,8 @@ func (m *MockAdminService) ClearLockouts(ctx context.Context, actorUserID string
 
 func (m *MockAdminService) CreateInvite(ctx context.Context, req dto.AdminInviteCreateRequest) (dto.AdminInviteResponse, error) {
 	return m.CreateInviteFunc(ctx, req)
+}
+
+func (m *MockAdminService) BulkCreateUsers(ctx context.Context, req dto.AdminUserBulkRequest) (dto.AdminUserBulkResponse, error) {
+	return m.BulkCreateUsersFunc(ctx, req)
 }

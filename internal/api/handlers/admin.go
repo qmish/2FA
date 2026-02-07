@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -86,6 +87,23 @@ func (h *AdminHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, resp)
 }
 
+func (h *AdminHandler) ImportUsers(w http.ResponseWriter, r *http.Request) {
+	if !h.requirePermission(w, r, models.PermissionAdminUsersWrite) {
+		return
+	}
+	items, err := parseCSVUsers(r.Body)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_csv")
+		return
+	}
+	resp, err := h.service.BulkCreateUsers(r.Context(), dto.AdminUserBulkRequest{Items: items})
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "import_users_failed")
+		return
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
 func (h *AdminHandler) CreateInvite(w http.ResponseWriter, r *http.Request) {
 	if !h.requirePermission(w, r, models.PermissionAdminUsersWrite) {
 		return
@@ -109,6 +127,67 @@ func (h *AdminHandler) CreateInvite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusCreated, resp)
+}
+
+func parseCSVUsers(body io.Reader) ([]dto.AdminUserCreateRequest, error) {
+	reader := csv.NewReader(body)
+	reader.TrimLeadingSpace = true
+	records, err := reader.ReadAll()
+	if err != nil {
+		return nil, err
+	}
+	if len(records) == 0 {
+		return nil, errors.New("empty csv")
+	}
+	header := map[string]int{}
+	start := 0
+	if isHeaderRow(records[0]) {
+		for idx, col := range records[0] {
+			key := strings.ToLower(strings.TrimSpace(col))
+			if key != "" {
+				header[key] = idx
+			}
+		}
+		start = 1
+	}
+	items := make([]dto.AdminUserCreateRequest, 0, len(records))
+	for i := start; i < len(records); i++ {
+		row := records[i]
+		if len(row) == 0 || (len(row) == 1 && strings.TrimSpace(row[0]) == "") {
+			continue
+		}
+		get := func(name string, idx int) string {
+			if len(header) > 0 {
+				if pos, ok := header[name]; ok && pos < len(row) {
+					return strings.TrimSpace(row[pos])
+				}
+				return ""
+			}
+			if idx < len(row) {
+				return strings.TrimSpace(row[idx])
+			}
+			return ""
+		}
+		items = append(items, dto.AdminUserCreateRequest{
+			Username: get("username", 0),
+			Email:    get("email", 1),
+			Phone:    get("phone", 2),
+			Status:   models.UserStatus(get("status", 3)),
+			Role:     models.UserRole(get("role", 4)),
+			Password: get("password", 5),
+		})
+	}
+	return items, nil
+}
+
+func isHeaderRow(row []string) bool {
+	for _, col := range row {
+		switch strings.ToLower(strings.TrimSpace(col)) {
+		case "username", "email", "phone", "status", "role", "password":
+			return true
+		}
+	}
+	return false
 }
 
 func (h *AdminHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {

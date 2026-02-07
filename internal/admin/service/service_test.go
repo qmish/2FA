@@ -81,6 +81,45 @@ func TestServiceCreateUser(t *testing.T) {
 	}
 }
 
+func TestServiceBulkCreateUsers(t *testing.T) {
+	repo := &recordUserRepo{}
+	svc := NewService(
+		repo,
+		&fakeInviteRepo{},
+		fakePolicyRepo{},
+		fakePolicyRuleRepo{},
+		fakeRadiusClientRepo{},
+		fakeRolePermRepo{},
+		fakeGroupRepo{},
+		fakeUserGroupRepo{},
+		fakeGroupPolicyRepo{},
+		fakeAuditRepo{},
+		fakeLoginRepo{},
+		fakeRadiusReqRepo{},
+		fakeSessionRepo{},
+		&fakeLockoutRepo{},
+	)
+
+	resp, err := svc.BulkCreateUsers(context.Background(), dto.AdminUserBulkRequest{
+		Items: []dto.AdminUserCreateRequest{
+			{Username: "alice", Email: "a@example.com", Password: "secret"},
+			{Username: "bad", Email: "bad@", Password: "secret"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("BulkCreateUsers error: %v", err)
+	}
+	if resp.Created != 1 || resp.Failed != 1 {
+		t.Fatalf("unexpected counts: %+v", resp)
+	}
+	if repo.createdCount != 1 {
+		t.Fatalf("expected 1 created user, got %d", repo.createdCount)
+	}
+	if len(resp.Items) != 2 || resp.Items[1].Error == "" {
+		t.Fatalf("unexpected items: %+v", resp.Items)
+	}
+}
+
 func TestServiceCreateInvite(t *testing.T) {
 	invites := &fakeInviteRepo{}
 	svc := NewService(
@@ -284,11 +323,13 @@ func (f *fakeInviteRepo) MarkExpired(ctx context.Context, now time.Time) (int64,
 
 type recordUserRepo struct {
 	fakeUserRepo
-	created *models.User
+	created      *models.User
+	createdCount int
 }
 
 func (r *recordUserRepo) Create(ctx context.Context, u *models.User) error {
 	r.created = u
+	r.createdCount++
 	return nil
 }
 

@@ -27,6 +27,24 @@ type AdminInviteResponse struct {
 	ExpiresAt int64           `json:"expires_at"`
 }
 
+type AdminUserBulkRequest struct {
+	Items []AdminUserCreateRequest `json:"items"`
+}
+
+type AdminUserBulkItem struct {
+	Row      int    `json:"row"`
+	Username string `json:"username"`
+	ID       string `json:"id,omitempty"`
+	Status   string `json:"status"`
+	Error    string `json:"error,omitempty"`
+}
+
+type AdminUserBulkResponse struct {
+	Created int                 `json:"created"`
+	Failed  int                 `json:"failed"`
+	Items   []AdminUserBulkItem `json:"items"`
+}
+
 type AdminUserUpdateRequest struct {
 	Email  string            `json:"email"`
 	Phone  string            `json:"phone"`

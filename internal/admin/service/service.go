@@ -150,6 +150,72 @@ func (s *Service) CreateUser(ctx context.Context, req dto.AdminUserCreateRequest
 	}, nil
 }
 
+func (s *Service) BulkCreateUsers(ctx context.Context, req dto.AdminUserBulkRequest) (dto.AdminUserBulkResponse, error) {
+	resp := dto.AdminUserBulkResponse{
+		Items: make([]dto.AdminUserBulkItem, 0, len(req.Items)),
+	}
+	for idx, item := range req.Items {
+		row := idx + 1
+		item.Username = strings.TrimSpace(item.Username)
+		item.Email = validator.NormalizeEmail(item.Email)
+		item.Phone = validator.NormalizePhone(item.Phone)
+
+		if item.Username == "" || item.Password == "" {
+			resp.Failed++
+			resp.Items = append(resp.Items, dto.AdminUserBulkItem{
+				Row:      row,
+				Username: item.Username,
+				Status:   "failed",
+				Error:    "invalid_input",
+			})
+			continue
+		}
+		if item.Email != "" && !validator.IsEmailValid(item.Email) {
+			resp.Failed++
+			resp.Items = append(resp.Items, dto.AdminUserBulkItem{
+				Row:      row,
+				Username: item.Username,
+				Status:   "failed",
+				Error:    "invalid_email",
+			})
+			continue
+		}
+		if item.Phone != "" && !validator.IsPhoneValid(item.Phone) {
+			resp.Failed++
+			resp.Items = append(resp.Items, dto.AdminUserBulkItem{
+				Row:      row,
+				Username: item.Username,
+				Status:   "failed",
+				Error:    "invalid_phone",
+			})
+			continue
+		}
+		created, err := s.CreateUser(ctx, item)
+		if err != nil {
+			errLabel := "create_failed"
+			if errors.Is(err, ErrConflict) {
+				errLabel = "conflict"
+			}
+			resp.Failed++
+			resp.Items = append(resp.Items, dto.AdminUserBulkItem{
+				Row:      row,
+				Username: item.Username,
+				Status:   "failed",
+				Error:    errLabel,
+			})
+			continue
+		}
+		resp.Created++
+		resp.Items = append(resp.Items, dto.AdminUserBulkItem{
+			Row:      row,
+			Username: created.Username,
+			ID:       created.ID,
+			Status:   "created",
+		})
+	}
+	return resp, nil
+}
+
 func (s *Service) UpdateUser(ctx context.Context, id string, req dto.AdminUserUpdateRequest) (dto.AdminUserResponse, error) {
 	user, err := s.users.GetByID(ctx, id)
 	if err != nil {

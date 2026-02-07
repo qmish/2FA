@@ -118,6 +118,29 @@ func TestAdminCreateUser(t *testing.T) {
 	}
 }
 
+func TestAdminImportUsers(t *testing.T) {
+	authz := fakeAuthorizer{}
+	svc := &adminsvc.MockAdminService{
+		BulkCreateUsersFunc: func(ctx context.Context, req dto.AdminUserBulkRequest) (dto.AdminUserBulkResponse, error) {
+			if len(req.Items) != 2 {
+				t.Fatalf("unexpected items: %+v", req.Items)
+			}
+			return dto.AdminUserBulkResponse{Created: 2, Failed: 0}, nil
+		},
+	}
+
+	handler := NewAdminHandler(svc, authz)
+	body := bytes.NewBufferString("username,email,phone,status,role,password\nalice,a@example.com,,active,user,pass\nbob,b@example.com,,active,user,pass\n")
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/admin/users/import", body)
+	req = req.WithContext(middlewares.WithAdminClaims(req.Context(), &middlewares.AdminClaims{UserID: "u1", Role: "admin"}))
+	rec := httptest.NewRecorder()
+
+	handler.ImportUsers(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+}
+
 func TestAdminCreateInvite(t *testing.T) {
 	authz := fakeAuthorizer{}
 	svc := &adminsvc.MockAdminService{

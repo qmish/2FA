@@ -217,3 +217,9 @@ func (s StubService) CreateInvite(ctx context.Context, req dto.AdminInviteCreate
 	_ = req
 	return dto.AdminInviteResponse{}, ErrNotImplemented
 }
+
+func (s StubService) BulkCreateUsers(ctx context.Context, req dto.AdminUserBulkRequest) (dto.AdminUserBulkResponse, error) {
+	_ = ctx
+	_ = req
+	return dto.AdminUserBulkResponse{}, ErrNotImplemented
+}

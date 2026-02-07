@@ -319,6 +319,35 @@ paths:
           $ref: "#/components/responses/Conflict"
         "500":
           $ref: "#/components/responses/ServerError"
+  /api/v1/admin/users/import:
+    post:
+      summary: Admin import users (CSV)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          text/csv:
+            schema:
+              type: string
+            example: |
+              username,email,phone,status,role,password
+              alice,a@example.com,,active,user,secret
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUserBulkResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/ServerError"
   /api/v1/admin/invites/create:
     post:
       summary: Admin create invite
@@ -1444,6 +1473,40 @@ components:
         phone: "+70000000000"
         status: "active"
         role: "user"
+    AdminUserBulkItem:
+      type: object
+      properties:
+        row: { type: integer }
+        username: { type: string }
+        id: { type: string }
+        status: { type: string }
+        error: { type: string }
+      example:
+        row: 2
+        username: "alice"
+        id: "u1"
+        status: "created"
+    AdminUserBulkResponse:
+      type: object
+      properties:
+        created: { type: integer }
+        failed: { type: integer }
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminUserBulkItem"
+      example:
+        created: 1
+        failed: 1
+        items:
+          - row: 2
+            username: "alice"
+            id: "u1"
+            status: "created"
+          - row: 3
+            username: "bad"
+            status: "failed"
+            error: "invalid_email"
     AdminInviteCreateRequest:
       type: object
       properties:
