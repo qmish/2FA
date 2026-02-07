@@ -55,6 +55,9 @@
 ## DR (Disaster Recovery)
 - План восстановления и тесты: `docs/disaster-recovery.md`.
 
+## Alertmanager
+- Пример развёртывания Alertmanager: `docs/k8s/alertmanager.yaml`.
+
 ## Резервное копирование
 - PostgreSQL: регулярные `pg_dump` с проверкой восстановления.
 - Хранить бэкапы минимум N дней (настройте политику ретенции).

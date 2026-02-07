@@ -20,7 +20,7 @@
 - [x] RBAC/ServiceAccount с минимальными правами.
 - [x] SecurityContext (`runAsNonRoot`, `runAsUser`).
 - [x] DR‑план с процедурами восстановления.
-- [ ] Alertmanager и интеграции.
+- [x] Alertmanager и интеграции.
 - [ ] SSL для PostgreSQL (`sslmode=disable` заменить).
 - [ ] Ingress rate‑limit на уровне ingress.
 - [ ] Прод‑домены WebAuthn в гайдах (без `2fa.local`).
