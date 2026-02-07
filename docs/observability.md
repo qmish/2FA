@@ -15,5 +15,8 @@
 - Passkey: `passkey_events_total{operation="register_begin|register_finish|login_begin|login_finish",result="success|failed"}`
 - Очистка WebAuthn-сессий: `webauthn_sessions_cleared_total`
 
+## ServiceMonitor
+- Пример для Prometheus Operator: `docs/k8s/api-servicemonitor.yaml`.
+
 ## Healthcheck
 - `GET /healthz` — проверка доступности сервиса, БД и Redis

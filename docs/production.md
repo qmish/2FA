@@ -31,6 +31,10 @@
 - Настройте `resources` для CPU/Memory в Helm/манифестах.
 - Для Redis используйте PersistentVolume вместо `emptyDir`.
 
+## Мониторинг
+- Для Prometheus Operator используйте ServiceMonitor: `docs/k8s/api-servicemonitor.yaml`.
+- В Helm включайте `monitoring.enabled` и задавайте namespace мониторинга.
+
 ## Резервное копирование
 - PostgreSQL: регулярные `pg_dump` с проверкой восстановления.
 - Хранить бэкапы минимум N дней (настройте политику ретенции).

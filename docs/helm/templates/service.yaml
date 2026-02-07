@@ -8,4 +8,5 @@ spec:
     app: {{ .Release.Name }}-api
   ports:
     - port: {{ .Values.service.port }}
+      name: http
       targetPort: 8080

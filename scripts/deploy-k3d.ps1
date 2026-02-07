@@ -101,6 +101,7 @@ kubectl apply -f docs/k8s/api-deployment.yaml
 kubectl apply -f docs/k8s/api-service.yaml
 kubectl apply -f docs/k8s/api-ingress.yaml
 kubectl apply -f docs/k8s/api-pdb.yaml
+kubectl apply -f docs/k8s/api-servicemonitor.yaml
 
 # Развертывание RADIUS сервера
 Write-Host "Развертывание RADIUS сервера..." -ForegroundColor Green

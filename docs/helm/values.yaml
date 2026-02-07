@@ -28,6 +28,10 @@ pdb:
   enabled: true
   minAvailable: 1
 
+monitoring:
+  enabled: false
+  namespace: "monitoring"
+
 service:
   type: ClusterIP
   port: 80
