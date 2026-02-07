@@ -98,5 +98,16 @@ func (s *Service) Register(ctx context.Context, req dto.RegisterRequest) (dto.Re
 	if err := s.invites.MarkUsed(ctx, invite.ID, user.ID, now); err != nil {
 		return dto.RegisterResponse{}, err
 	}
+	if s.audits != nil {
+		_ = s.audits.Create(ctx, &models.AuditEvent{
+			ID:          s.tokenGen(),
+			ActorUserID: user.ID,
+			Action:      models.AuditCreate,
+			EntityType:  models.AuditEntityUser,
+			EntityID:    user.ID,
+			Payload:     user.Username,
+			CreatedAt:   now,
+		})
+	}
 	return dto.RegisterResponse{UserID: user.ID}, nil
 }

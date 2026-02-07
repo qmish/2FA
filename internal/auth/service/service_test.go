@@ -681,6 +681,40 @@ func TestAuthRegisterSuccess(t *testing.T) {
 	}
 }
 
+func TestAuthRegisterAudit(t *testing.T) {
+	invites := &fakeInviteRepo{
+		items: map[string]*models.Invite{},
+	}
+	token := "invite-token"
+	now := time.Now()
+	invite := &models.Invite{
+		ID:        "i1",
+		TokenHash: hash(token),
+		Role:      models.RoleUser,
+		Status:    models.InvitePending,
+		ExpiresAt: now.Add(time.Hour),
+		CreatedAt: now,
+	}
+	invites.items[invite.TokenHash] = invite
+	repo := &recordUserRepo{}
+	audits := &recordAuditRepo{}
+	svc := NewService(repo, &fakeChallengeRepo{}, &fakeSessionRepo{}, nil, &fakeLockoutRepo{}, &fakeLoginHistoryRepo{}, audits, jwt.NewService("2fa", []byte("secret"), time.Minute), time.Minute, time.Hour)
+	svc.WithInvites(invites)
+	svc.now = func() time.Time { return now }
+
+	_, err := svc.Register(context.Background(), dto.RegisterRequest{
+		Token:    token,
+		Username: "alice",
+		Password: "pass",
+	})
+	if err != nil {
+		t.Fatalf("register error: %v", err)
+	}
+	if audits.last == nil || audits.last.Action != models.AuditCreate || audits.last.EntityType != models.AuditEntityUser || audits.last.ActorUserID != repo.created.ID {
+		t.Fatalf("unexpected audit event: %+v", audits.last)
+	}
+}
+
 func TestAuthRegisterInvalidInvite(t *testing.T) {
 	invites := &fakeInviteRepo{
 		items: map[string]*models.Invite{},

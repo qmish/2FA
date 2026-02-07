@@ -108,16 +108,21 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrInviteInvalid):
+			metrics.Default.IncAuthRegistration("failed")
 			writeError(w, http.StatusForbidden, "invite_invalid")
 		case errors.Is(err, service.ErrConflict):
+			metrics.Default.IncAuthRegistration("failed")
 			writeError(w, http.StatusConflict, "user_conflict")
 		case errors.Is(err, service.ErrNotConfigured):
+			metrics.Default.IncAuthRegistration("failed")
 			writeError(w, http.StatusBadRequest, "invite_not_configured")
 		default:
+			metrics.Default.IncAuthRegistration("failed")
 			writeError(w, http.StatusBadRequest, "register_failed")
 		}
 		return
 	}
+	metrics.Default.IncAuthRegistration("success")
 	writeJSON(w, http.StatusCreated, resp)
 }
 

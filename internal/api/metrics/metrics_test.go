@@ -48,6 +48,19 @@ func TestLockoutMetrics(t *testing.T) {
 	}
 }
 
+func TestAuthRegistrationMetrics(t *testing.T) {
+	reg := NewRegistry()
+	reg.IncAuthRegistration("success")
+	reg.IncAuthRegistration("failed")
+	out := reg.Render()
+	if !strings.Contains(out, `auth_registrations_total{result="success"} 1`) {
+		t.Fatalf("missing success registration counter")
+	}
+	if !strings.Contains(out, `auth_registrations_total{result="failed"} 1`) {
+		t.Fatalf("missing failed registration counter")
+	}
+}
+
 func TestRadiusMetrics(t *testing.T) {
 	reg := NewRegistry()
 	reg.IncRadiusRequest("accept")

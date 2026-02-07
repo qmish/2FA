@@ -6,6 +6,11 @@
 
 ### Шаги
 1. Настройте `CONFIG_PATH` или переменные окружения по `configs/config.example.yaml`.
+   Для passkeys (WebAuthn) обязательно укажите:
+   - `webauthn_rp_id` (домен приложения)
+   - `webauthn_rp_origin` (https origin)
+   - `webauthn_rp_name` (отображаемое имя)
+   Passkeys требуют HTTPS и корректный домен.
 2. Примените миграции:
    ```bash
    go run ./cmd/migrate
