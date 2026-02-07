@@ -288,3 +288,41 @@ func TestValidatePorts(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+
+func TestValidateLDAPURLScheme(t *testing.T) {
+	cfg := Defaults()
+	cfg.DBURL = "postgres://user:pass@localhost:5432/2fa?sslmode=disable"
+	cfg.JWTSecret = "secret"
+	cfg.AdminJWTSecret = "admin"
+	cfg.RadiusSecret = "radius"
+	cfg.RedisURL = "redis://localhost:6379/0"
+
+	cfg.LDAPURL = "http://ldap.local"
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for invalid ldap_url scheme")
+	}
+
+	cfg.LDAPURL = "ldap://ldap.local"
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestValidateExpressMobileURLScheme(t *testing.T) {
+	cfg := Defaults()
+	cfg.DBURL = "postgres://user:pass@localhost:5432/2fa?sslmode=disable"
+	cfg.JWTSecret = "secret"
+	cfg.AdminJWTSecret = "admin"
+	cfg.RadiusSecret = "radius"
+	cfg.RedisURL = "redis://localhost:6379/0"
+
+	cfg.ExpressMobileURL = "http://api.express-mobile.local"
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for non-https express_mobile_url")
+	}
+
+	cfg.ExpressMobileURL = "https://api.express-mobile.local"
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}

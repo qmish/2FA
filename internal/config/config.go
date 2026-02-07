@@ -287,6 +287,12 @@ func (c Config) Validate() error {
 	if c.RedisURL != "" && !isValidURL(c.RedisURL) {
 		return errors.New("redis_url must be a valid URL")
 	}
+	if c.LDAPURL != "" && !hasAllowedScheme(c.LDAPURL, "ldap", "ldaps") {
+		return errors.New("ldap_url must use ldap or ldaps scheme")
+	}
+	if c.ExpressMobileURL != "" && !hasAllowedScheme(c.ExpressMobileURL, "https") {
+		return errors.New("express_mobile_url must use https scheme")
+	}
 	if c.JWTTTL <= 0 || c.AdminJWTTTL <= 0 || c.AuthChallengeTTL <= 0 || c.SessionTTL <= 0 {
 		return errors.New("ttl values must be positive")
 	}
@@ -357,4 +363,20 @@ func isValidPort(raw string) bool {
 		return false
 	}
 	return port > 0 && port <= 65535
+}
+
+func hasAllowedScheme(raw string, schemes ...string) bool {
+	parsed, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil {
+		return false
+	}
+	if parsed.Scheme == "" || parsed.Host == "" {
+		return false
+	}
+	for _, scheme := range schemes {
+		if strings.EqualFold(parsed.Scheme, scheme) {
+			return true
+		}
+	}
+	return false
 }
