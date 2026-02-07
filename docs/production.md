@@ -52,6 +52,9 @@
 - Запускайте контейнеры от non‑root пользователя.
 - Примеры в `docs/k8s/api-deployment.yaml`, `docs/k8s/radius-deployment.yaml`.
 
+## DR (Disaster Recovery)
+- План восстановления и тесты: `docs/disaster-recovery.md`.
+
 ## Резервное копирование
 - PostgreSQL: регулярные `pg_dump` с проверкой восстановления.
 - Хранить бэкапы минимум N дней (настройте политику ретенции).
