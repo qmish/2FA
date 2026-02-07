@@ -254,5 +254,10 @@ func (c Config) Validate() error {
 	if c.JWTTTL <= 0 || c.AdminJWTTTL <= 0 || c.AuthChallengeTTL <= 0 || c.SessionTTL <= 0 {
 		return errors.New("ttl values must be positive")
 	}
+	if c.WebAuthnRPID != "" || c.WebAuthnRPOrigin != "" || c.WebAuthnRPName != "" {
+		if c.WebAuthnRPID == "" || c.WebAuthnRPOrigin == "" || c.WebAuthnRPName == "" {
+			return errors.New("webauthn_rp_id, webauthn_rp_origin, webauthn_rp_name are required together")
+		}
+	}
 	return nil
 }
