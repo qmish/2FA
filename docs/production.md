@@ -25,6 +25,11 @@
 - Для Helm можно указать `secrets.existingSecret` и создать секрет отдельно.
 - Для Kubernetes используйте внешние секрет‑менеджеры (External Secrets/Sealed Secrets/Vault).
 
+## Надежность
+- Рекомендуется использовать RollingUpdate и PodDisruptionBudget.
+- Примеры PDB: `docs/k8s/api-pdb.yaml`, `docs/k8s/radius-pdb.yaml`.
+- Настройте `resources` для CPU/Memory в Helm/манифестах.
+
 ## Резервное копирование
 - PostgreSQL: регулярные `pg_dump` с проверкой восстановления.
 - Хранить бэкапы минимум N дней (настройте политику ретенции).

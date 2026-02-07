@@ -89,11 +89,13 @@ echo "Развертывание API сервера..."
 kubectl apply -f docs/k8s/api-deployment.yaml
 kubectl apply -f docs/k8s/api-service.yaml
 kubectl apply -f docs/k8s/api-ingress.yaml
+kubectl apply -f docs/k8s/api-pdb.yaml
 
 # Развертывание RADIUS сервера
 echo "Развертывание RADIUS сервера..."
 kubectl apply -f docs/k8s/radius-deployment.yaml
 kubectl apply -f docs/k8s/radius-service.yaml
+kubectl apply -f docs/k8s/radius-pdb.yaml
 
 # Ожидание готовности подов
 echo "Ожидание готовности подов..."

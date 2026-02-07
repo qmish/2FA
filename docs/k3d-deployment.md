@@ -76,10 +76,12 @@ kubectl wait --for=condition=complete job/migrate --timeout=120s
 kubectl apply -f docs/k8s/api-deployment.yaml
 kubectl apply -f docs/k8s/api-service.yaml
 kubectl apply -f docs/k8s/api-ingress.yaml
+kubectl apply -f docs/k8s/api-pdb.yaml
 
 # RADIUS сервер
 kubectl apply -f docs/k8s/radius-deployment.yaml
 kubectl apply -f docs/k8s/radius-service.yaml
+kubectl apply -f docs/k8s/radius-pdb.yaml
 ```
 
 ## Проверка статуса

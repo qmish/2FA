@@ -99,11 +99,13 @@ Write-Host "Развертывание API сервера..." -ForegroundColor G
 kubectl apply -f docs/k8s/api-deployment.yaml
 kubectl apply -f docs/k8s/api-service.yaml
 kubectl apply -f docs/k8s/api-ingress.yaml
+kubectl apply -f docs/k8s/api-pdb.yaml
 
 # Развертывание RADIUS сервера
 Write-Host "Развертывание RADIUS сервера..." -ForegroundColor Green
 kubectl apply -f docs/k8s/radius-deployment.yaml
 kubectl apply -f docs/k8s/radius-service.yaml
+kubectl apply -f docs/k8s/radius-pdb.yaml
 
 # Ожидание готовности подов
 Write-Host "Ожидание готовности подов..." -ForegroundColor Yellow
