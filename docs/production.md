@@ -35,6 +35,10 @@
 - Для Prometheus Operator используйте ServiceMonitor: `docs/k8s/api-servicemonitor.yaml`.
 - В Helm включайте `monitoring.enabled` и задавайте namespace мониторинга.
 
+## Логирование
+- Для централизованного логирования можно использовать Loki/Promtail.
+- Примеры манифестов: `docs/k8s/logging-loki.yaml`, `docs/k8s/logging-promtail.yaml`.
+
 ## Резервное копирование
 - PostgreSQL: регулярные `pg_dump` с проверкой восстановления.
 - Хранить бэкапы минимум N дней (настройте политику ретенции).

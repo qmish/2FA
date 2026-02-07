@@ -18,5 +18,8 @@
 ## ServiceMonitor
 - Пример для Prometheus Operator: `docs/k8s/api-servicemonitor.yaml`.
 
+## Логирование
+- Базовый стек Loki/Promtail: `docs/k8s/logging-loki.yaml`, `docs/k8s/logging-promtail.yaml`.
+
 ## Healthcheck
 - `GET /healthz` — проверка доступности сервиса, БД и Redis
