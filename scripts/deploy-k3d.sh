@@ -88,6 +88,7 @@ kubectl wait --for=condition=complete job/migrate --timeout=120s || true
 echo "Развертывание API сервера..."
 kubectl apply -f docs/k8s/api-deployment.yaml
 kubectl apply -f docs/k8s/api-service.yaml
+kubectl apply -f docs/k8s/api-ingress.yaml
 
 # Развертывание RADIUS сервера
 echo "Развертывание RADIUS сервера..."
@@ -107,6 +108,8 @@ kubectl get pods
 kubectl get services
 echo ""
 echo "API доступен по адресу: http://localhost:8080"
+echo "API доступен по домену: http://2fa.local (нужно добавить в hosts)"
+echo "Linux/macOS hosts: /etc/hosts"
 echo "RADIUS доступен по адресу: localhost:1812"
 echo ""
 echo "Для просмотра логов:"

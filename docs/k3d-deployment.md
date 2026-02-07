@@ -75,6 +75,7 @@ kubectl wait --for=condition=complete job/migrate --timeout=120s
 # API сервер
 kubectl apply -f docs/k8s/api-deployment.yaml
 kubectl apply -f docs/k8s/api-service.yaml
+kubectl apply -f docs/k8s/api-ingress.yaml
 
 # RADIUS сервер
 kubectl apply -f docs/k8s/radius-deployment.yaml
@@ -100,6 +101,7 @@ kubectl logs -l app=radius-server
 ## Доступ к приложению
 
 - **API**: http://localhost:8080
+- **API по домену**: http://2fa.local (добавьте `127.0.0.1 2fa.local` в hosts)
 - **Health check**: http://localhost:8080/healthz
 - **RADIUS**: localhost:1812 (UDP)
 

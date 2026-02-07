@@ -98,6 +98,7 @@ kubectl wait --for=condition=complete job/migrate --timeout=120s -ErrorAction Si
 Write-Host "Развертывание API сервера..." -ForegroundColor Green
 kubectl apply -f docs/k8s/api-deployment.yaml
 kubectl apply -f docs/k8s/api-service.yaml
+kubectl apply -f docs/k8s/api-ingress.yaml
 
 # Развертывание RADIUS сервера
 Write-Host "Развертывание RADIUS сервера..." -ForegroundColor Green
@@ -117,6 +118,8 @@ kubectl get pods
 kubectl get services
 Write-Host ""
 Write-Host "API доступен по адресу: http://localhost:8080" -ForegroundColor Green
+Write-Host "API доступен по домену: http://2fa.local (нужно добавить в hosts)" -ForegroundColor Green
+Write-Host "Windows hosts: C:\\Windows\\System32\\drivers\\etc\\hosts" -ForegroundColor Yellow
 Write-Host "RADIUS доступен по адресу: localhost:1812" -ForegroundColor Green
 Write-Host ""
 Write-Host "Для просмотра логов:" -ForegroundColor Cyan
