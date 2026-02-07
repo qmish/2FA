@@ -17,6 +17,7 @@ func TestEnumValues(t *testing.T) {
 		{string(DeviceHardware), "hardware"},
 		{string(DeviceEmail), "email"},
 		{string(DeviceSMS), "sms"},
+		{string(DeviceWeb), "web"},
 		{string(DeviceActive), "active"},
 		{string(DeviceDisabled), "disabled"},
 		{string(MethodPush), "push"},

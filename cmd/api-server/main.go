@@ -110,6 +110,7 @@ func main() {
 	authService.WithTOTPConfig(cfg.JWTIssuer, 6, 30)
 	authService.WithInvites(inviteRepo)
 	authService.WithRecoveryCodes(recoveryRepo)
+	authService.WithDevices(deviceRepo)
 	if cfg.LDAPURL != "" {
 		authService.WithLDAPAuth(ldap.NewClient(cfg.LDAPURL, cfg.LDAPTimeout))
 	}

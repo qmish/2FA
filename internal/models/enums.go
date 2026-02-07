@@ -23,6 +23,7 @@ const (
 	DeviceHardware DeviceType = "hardware"
 	DeviceEmail    DeviceType = "email"
 	DeviceSMS      DeviceType = "sms"
+	DeviceWeb      DeviceType = "web"
 )
 
 type DeviceStatus string

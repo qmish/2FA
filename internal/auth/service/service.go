@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/qmish/2FA/internal/api/metrics"
@@ -50,6 +51,7 @@ type Service struct {
 	userGroups    repository.UserGroupRepository
 	groupPolicies repository.GroupPolicyRepository
 	otpSecrets    repository.OTPSecretRepository
+	devices       repository.DeviceRepository
 	invites       repository.InviteRepository
 	recoveryCodes repository.RecoveryCodeRepository
 	totpIssuer    string
@@ -107,6 +109,11 @@ func (s *Service) WithPolicies(
 
 func (s *Service) WithOTPSecrets(repo repository.OTPSecretRepository) *Service {
 	s.otpSecrets = repo
+	return s
+}
+
+func (s *Service) WithDevices(repo repository.DeviceRepository) *Service {
+	s.devices = repo
 	return s
 }
 
@@ -321,6 +328,7 @@ func (s *Service) VerifySecondFactor(ctx context.Context, req dto.VerifyRequest)
 
 	_ = s.challenges.UpdateStatus(ctx, challenge.ID, models.ChallengeApproved)
 	s.recordSecondFactor(ctx, challenge.UserID, challenge.ID, models.AuditSecondFactorApprove, req.IP, string(challenge.Method))
+	s.recordDevice(ctx, challenge.UserID, req.UserAgent)
 
 	now := s.now()
 	refresh := newToken()
@@ -495,6 +503,27 @@ func (s *Service) recordSecondFactor(ctx context.Context, userID string, challen
 		Payload:     payload,
 		IP:          ip,
 		CreatedAt:   s.now(),
+	})
+}
+
+func (s *Service) recordDevice(ctx context.Context, userID string, userAgent string) {
+	if s.devices == nil || userID == "" {
+		return
+	}
+	name := strings.TrimSpace(userAgent)
+	if name == "" {
+		return
+	}
+	now := s.now()
+	deviceID := uuid.NewSHA1(uuid.NameSpaceOID, []byte("device:"+userID+":"+name)).String()
+	_ = s.devices.Upsert(ctx, &models.Device{
+		ID:         deviceID,
+		UserID:     userID,
+		Type:       models.DeviceWeb,
+		Name:       name,
+		Status:     models.DeviceActive,
+		LastSeenAt: &now,
+		CreatedAt:  now,
 	})
 }
 

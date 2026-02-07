@@ -130,6 +130,47 @@ func TestAuthVerifyMethodMismatch(t *testing.T) {
 	}
 }
 
+func TestAuthVerifySecondFactorRecordsDevice(t *testing.T) {
+	challenges := &fakeChallengeRepo{items: map[string]challengeItem{}}
+	sessions := &fakeSessionRepo{}
+	devices := &fakeDeviceRepo{}
+	svc := NewService(fakeUserRepo{}, challenges, sessions, nil, &fakeLockoutRepo{}, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwt.NewService("2fa", []byte("secret"), time.Minute), time.Minute, time.Hour)
+	svc.WithDevices(devices)
+
+	challenge := &models.Challenge{
+		ID:        "c1",
+		UserID:    "u1",
+		Method:    models.MethodOTP,
+		Status:    models.ChallengeCreated,
+		CodeHash:  hash("123456"),
+		ExpiresAt: time.Now().Add(time.Minute),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	if err := challenges.Create(context.Background(), challenge); err != nil {
+		t.Fatalf("create challenge error: %v", err)
+	}
+	_, err := svc.VerifySecondFactor(context.Background(), dto.VerifyRequest{
+		UserID:      "u1",
+		ChallengeID: "c1",
+		Method:      models.MethodOTP,
+		Code:        "123456",
+		UserAgent:   "Mozilla/5.0",
+	})
+	if err != nil {
+		t.Fatalf("verify error: %v", err)
+	}
+	if devices.upserted == nil {
+		t.Fatalf("expected device to be recorded")
+	}
+	if devices.upserted.UserID != "u1" || devices.upserted.Type != models.DeviceWeb || devices.upserted.Name != "Mozilla/5.0" {
+		t.Fatalf("unexpected device: %+v", devices.upserted)
+	}
+	if devices.upserted.Status != models.DeviceActive || devices.upserted.LastSeenAt == nil {
+		t.Fatalf("unexpected device status: %+v", devices.upserted)
+	}
+}
+
 func TestAuthVerifySecondFactorPushCodeMismatch(t *testing.T) {
 	challenges := &fakeChallengeRepo{items: map[string]challengeItem{}}
 	sessions := &fakeSessionRepo{}
@@ -1016,6 +1057,23 @@ func (f *fakeOTPSecretRepo) Create(ctx context.Context, s *models.OTPSecret) err
 }
 func (f *fakeOTPSecretRepo) Disable(ctx context.Context, id string) error {
 	f.disabledID = id
+	return nil
+}
+
+type fakeDeviceRepo struct {
+	upserted *models.Device
+}
+
+func (f *fakeDeviceRepo) ListByUser(ctx context.Context, userID string) ([]models.Device, error) {
+	return nil, nil
+}
+
+func (f *fakeDeviceRepo) Upsert(ctx context.Context, d *models.Device) error {
+	f.upserted = d
+	return nil
+}
+
+func (f *fakeDeviceRepo) Disable(ctx context.Context, id string) error {
 	return nil
 }
 
