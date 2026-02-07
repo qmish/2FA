@@ -282,7 +282,7 @@ func (s *Service) VerifySecondFactor(ctx context.Context, req dto.VerifyRequest)
 		return dto.TokenPair{}, ErrChallengeExpired
 	}
 	switch challenge.Method {
-	case models.MethodOTP:
+	case models.MethodOTP, models.MethodPush, models.MethodCall:
 		if hash(req.Code) != challenge.CodeHash {
 			_ = s.challenges.UpdateStatus(ctx, challenge.ID, models.ChallengeDenied)
 			s.recordLoginFailure(ctx, challenge.UserID, "", req.IP)

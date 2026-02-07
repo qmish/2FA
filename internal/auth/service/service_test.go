@@ -130,6 +130,67 @@ func TestAuthVerifyMethodMismatch(t *testing.T) {
 	}
 }
 
+func TestAuthVerifySecondFactorPushCodeMismatch(t *testing.T) {
+	challenges := &fakeChallengeRepo{items: map[string]challengeItem{}}
+	sessions := &fakeSessionRepo{}
+	svc := NewService(fakeUserRepo{}, challenges, sessions, nil, &fakeLockoutRepo{}, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwt.NewService("2fa", []byte("secret"), time.Minute), time.Minute, time.Hour)
+
+	challenge := &models.Challenge{
+		ID:        "c1",
+		UserID:    "u1",
+		Method:    models.MethodPush,
+		Status:    models.ChallengeCreated,
+		CodeHash:  hash("123456"),
+		ExpiresAt: time.Now().Add(time.Minute),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	if err := challenges.Create(context.Background(), challenge); err != nil {
+		t.Fatalf("create challenge error: %v", err)
+	}
+	_, err := svc.VerifySecondFactor(context.Background(), dto.VerifyRequest{
+		UserID:      "u1",
+		ChallengeID: "c1",
+		Method:      models.MethodPush,
+		Code:        "000000",
+	})
+	if !errors.Is(err, ErrSecondFactorFailed) {
+		t.Fatalf("expected ErrSecondFactorFailed, got %v", err)
+	}
+}
+
+func TestAuthVerifySecondFactorCallCodeOK(t *testing.T) {
+	challenges := &fakeChallengeRepo{items: map[string]challengeItem{}}
+	sessions := &fakeSessionRepo{}
+	svc := NewService(fakeUserRepo{}, challenges, sessions, nil, &fakeLockoutRepo{}, &fakeLoginHistoryRepo{}, &fakeAuditRepo{}, jwt.NewService("2fa", []byte("secret"), time.Minute), time.Minute, time.Hour)
+
+	challenge := &models.Challenge{
+		ID:        "c1",
+		UserID:    "u1",
+		Method:    models.MethodCall,
+		Status:    models.ChallengeCreated,
+		CodeHash:  hash("654321"),
+		ExpiresAt: time.Now().Add(time.Minute),
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
+	if err := challenges.Create(context.Background(), challenge); err != nil {
+		t.Fatalf("create challenge error: %v", err)
+	}
+	resp, err := svc.VerifySecondFactor(context.Background(), dto.VerifyRequest{
+		UserID:      "u1",
+		ChallengeID: "c1",
+		Method:      models.MethodCall,
+		Code:        "654321",
+	})
+	if err != nil {
+		t.Fatalf("verify error: %v", err)
+	}
+	if resp.AccessToken == "" || resp.RefreshToken == "" {
+		t.Fatalf("missing tokens")
+	}
+}
+
 func TestAuthLoginLocked(t *testing.T) {
 	hash, _ := bcrypt.GenerateFromPassword([]byte("pass"), bcrypt.DefaultCost)
 	users := fakeUserRepo{user: &models.User{ID: "u1", Username: "alice", Status: models.UserActive, PasswordHash: string(hash)}}
