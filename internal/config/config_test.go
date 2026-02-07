@@ -51,6 +51,7 @@ func TestValidateWebAuthnConfig(t *testing.T) {
 	cfg.JWTSecret = "secret"
 	cfg.AdminJWTSecret = "admin"
 	cfg.RadiusSecret = "radius"
+	cfg.RedisURL = "redis://localhost:6379/0"
 	cfg.WebAuthnRPID = "2fa.local"
 	if err := cfg.Validate(); err == nil {
 		t.Fatalf("expected validation error for incomplete webauthn config")
@@ -69,6 +70,7 @@ func TestValidateWebAuthnOriginScheme(t *testing.T) {
 	cfg.JWTSecret = "secret"
 	cfg.AdminJWTSecret = "admin"
 	cfg.RadiusSecret = "radius"
+	cfg.RedisURL = "redis://localhost:6379/0"
 	cfg.WebAuthnRPID = "2fa.local"
 	cfg.WebAuthnRPName = "2FA"
 	cfg.WebAuthnRPOrigin = "http://example.com"
@@ -94,6 +96,7 @@ func TestValidateWebAuthnOriginHostMatchesRPID(t *testing.T) {
 	cfg.JWTSecret = "secret"
 	cfg.AdminJWTSecret = "admin"
 	cfg.RadiusSecret = "radius"
+	cfg.RedisURL = "redis://localhost:6379/0"
 	cfg.WebAuthnRPID = "example.com"
 	cfg.WebAuthnRPName = "2FA"
 
@@ -115,5 +118,30 @@ func TestValidateWebAuthnOriginHostMatchesRPID(t *testing.T) {
 	cfg.WebAuthnRPOrigin = "https://example.com.evil.com"
 	if err := cfg.Validate(); err == nil {
 		t.Fatalf("expected validation error for invalid suffix")
+	}
+}
+
+func TestValidateRedisRequiredWhenRateLimitEnabled(t *testing.T) {
+	cfg := Defaults()
+	cfg.DBURL = "postgres://user:pass@localhost:5432/2fa?sslmode=disable"
+	cfg.JWTSecret = "secret"
+	cfg.AdminJWTSecret = "admin"
+	cfg.RadiusSecret = "radius"
+	cfg.RedisURL = ""
+
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for missing redis_url")
+	}
+
+	cfg.RedisURL = "redis://localhost:6379/0"
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	cfg.RedisURL = ""
+	cfg.AuthLoginLimit = 0
+	cfg.AuthVerifyLimit = 0
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }

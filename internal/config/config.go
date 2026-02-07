@@ -253,6 +253,9 @@ func (c Config) Validate() error {
 	if c.RadiusSecret == "" {
 		return errors.New("radius_secret is required")
 	}
+	if (c.AuthLoginLimit > 0 || c.AuthVerifyLimit > 0) && c.RedisURL == "" {
+		return errors.New("redis_url is required when rate limiting is enabled")
+	}
 	if c.JWTTTL <= 0 || c.AdminJWTTTL <= 0 || c.AuthChallengeTTL <= 0 || c.SessionTTL <= 0 {
 		return errors.New("ttl values must be positive")
 	}
