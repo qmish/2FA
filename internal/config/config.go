@@ -250,11 +250,17 @@ func (c Config) Validate() error {
 	if strings.EqualFold(c.JWTSecret, "change_me") {
 		return errors.New("jwt_secret must be set to a non-default value")
 	}
+	if strings.TrimSpace(c.JWTIssuer) == "" {
+		return errors.New("jwt_issuer is required")
+	}
 	if c.AdminJWTSecret == "" {
 		return errors.New("admin_jwt_secret is required")
 	}
 	if strings.EqualFold(c.AdminJWTSecret, "change_me") {
 		return errors.New("admin_jwt_secret must be set to a non-default value")
+	}
+	if strings.TrimSpace(c.AdminJWTIssuer) == "" {
+		return errors.New("admin_jwt_issuer is required")
 	}
 	if c.RadiusSecret == "" {
 		return errors.New("radius_secret is required")
@@ -267,6 +273,9 @@ func (c Config) Validate() error {
 	}
 	if (c.AuthLoginLimit > 0 || c.AuthVerifyLimit > 0) && c.RedisURL == "" {
 		return errors.New("redis_url is required when rate limiting is enabled")
+	}
+	if c.RedisURL != "" && !isValidURL(c.RedisURL) {
+		return errors.New("redis_url must be a valid URL")
 	}
 	if c.JWTTTL <= 0 || c.AdminJWTTTL <= 0 || c.AuthChallengeTTL <= 0 || c.SessionTTL <= 0 {
 		return errors.New("ttl values must be positive")
@@ -315,4 +324,15 @@ func originMatchesRPID(origin string, rpID string) bool {
 		return true
 	}
 	return strings.HasSuffix(host, "."+rpID)
+}
+
+func isValidURL(raw string) bool {
+	parsed, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil {
+		return false
+	}
+	if parsed.Scheme == "" || parsed.Host == "" {
+		return false
+	}
+	return true
 }

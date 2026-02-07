@@ -225,3 +225,23 @@ func TestValidateRejectsEmptyJWTIssuer(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+
+func TestValidateRedisURLFormat(t *testing.T) {
+	cfg := Defaults()
+	cfg.DBURL = "postgres://user:pass@localhost:5432/2fa?sslmode=disable"
+	cfg.JWTSecret = "secret"
+	cfg.AdminJWTSecret = "admin"
+	cfg.RadiusSecret = "radius"
+	cfg.AuthLoginLimit = 0
+	cfg.AuthVerifyLimit = 0
+
+	cfg.RedisURL = "localhost:6379"
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for invalid redis_url")
+	}
+
+	cfg.RedisURL = "redis://localhost:6379/0"
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
