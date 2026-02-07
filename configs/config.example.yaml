@@ -18,6 +18,6 @@ auth_challenge_ttl: 5m
 session_ttl: 24h
 auth_login_limit: 10
 auth_verify_limit: 10
-webauthn_rp_id: "2fa.local"
-webauthn_rp_origin: "https://2fa.local"
+webauthn_rp_id: "example.com"
+webauthn_rp_origin: "https://example.com"
 webauthn_rp_name: "2FA"

@@ -23,4 +23,4 @@
 - [x] Alertmanager и интеграции.
 - [x] SSL для PostgreSQL (`sslmode=disable` заменить).
 - [x] Ingress rate‑limit на уровне ingress.
-- [ ] Прод‑домены WebAuthn в гайдах (без `2fa.local`).
+- [x] Прод‑домены WebAuthn в гайдах (без `2fa.local`).
