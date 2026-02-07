@@ -57,6 +57,7 @@ kubectl apply -f docs/k8s/postgres-statefulset.yaml
 kubectl wait --for=condition=ready pod -l app=postgres --timeout=120s
 
 # Redis
+kubectl apply -f docs/k8s/redis-pvc.yaml
 kubectl apply -f docs/k8s/redis-deployment.yaml
 kubectl wait --for=condition=ready pod -l app=redis --timeout=60s
 ```

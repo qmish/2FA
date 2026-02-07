@@ -63,6 +63,7 @@ kubectl wait --for=condition=ready pod -l app=postgres --timeout=120s
 
 # Развертывание Redis
 echo "Развертывание Redis..."
+kubectl apply -f docs/k8s/redis-pvc.yaml
 kubectl apply -f docs/k8s/redis-deployment.yaml
 
 # Ожидание готовности Redis

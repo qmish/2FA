@@ -29,6 +29,7 @@
 - Рекомендуется использовать RollingUpdate и PodDisruptionBudget.
 - Примеры PDB: `docs/k8s/api-pdb.yaml`, `docs/k8s/radius-pdb.yaml`.
 - Настройте `resources` для CPU/Memory в Helm/манифестах.
+- Для Redis используйте PersistentVolume вместо `emptyDir`.
 
 ## Резервное копирование
 - PostgreSQL: регулярные `pg_dump` с проверкой восстановления.

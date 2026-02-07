@@ -40,7 +40,8 @@ spec:
             periodSeconds: 10
       volumes:
         - name: redis-data
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: redis-data-pvc
 ---
 apiVersion: v1
 kind: Service
