@@ -1,0 +1,38 @@
+{{- if .Values.backup.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Release.Name }}-postgres-backup
+spec:
+  schedule: {{ .Values.backup.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: pg-backup
+              image: postgres:15
+              env:
+                - name: DB_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ default (printf "%s-secrets" .Release.Name) .Values.secrets.existingSecret }}
+                      key: DB_URL
+              command:
+                - /bin/sh
+                - -c
+                - >
+                  mkdir -p /backup &&
+                  pg_dump "$DB_URL" > /backup/backup-$(date +%F-%H%M%S).sql
+              volumeMounts:
+                - name: backup
+                  mountPath: /backup
+          volumes:
+            - name: backup
+              persistentVolumeClaim:
+                claimName: {{ .Release.Name }}-backup-pvc
+{{- end }}

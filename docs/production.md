@@ -15,8 +15,19 @@
 - Теги образов должны быть версионными (например, `v1.44.32`) для откатов.
 - Перед релизом прогонять тесты: `go test ./...`.
 
+## TLS/Ingress
+- Для продакшна используйте HTTPS и TLS‑секреты (Ingress + cert‑manager).
+- Пример Ingress с TLS: `docs/k8s/api-ingress.yaml`.
+- В Helm включайте `ingress.enabled` и `ingress.tls.enabled`.
+
+## Секреты
+- Не храните реальные секреты в репозитории.
+- Для Helm можно указать `secrets.existingSecret` и создать секрет отдельно.
+- Для Kubernetes используйте внешние секрет‑менеджеры (External Secrets/Sealed Secrets/Vault).
+
 ## Резервное копирование
 - PostgreSQL: регулярные `pg_dump` с проверкой восстановления.
 - Хранить бэкапы минимум N дней (настройте политику ретенции).
 - Проверять восстановление на стенде (restore + `cmd/migrate`).
 - Секреты и конфиги (JWT, RADIUS, FCM и др.) хранить вне репозитория и бэкапить отдельно.
+- Пример CronJob и PVC: `docs/k8s/postgres-backup-cronjob.yaml`, `docs/k8s/postgres-backup-pvc.yaml`.

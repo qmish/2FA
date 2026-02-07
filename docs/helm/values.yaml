@@ -8,6 +8,20 @@ service:
   type: ClusterIP
   port: 80
 
+ingress:
+  enabled: false
+  className: ""
+  host: "2fa.local"
+  tls:
+    enabled: false
+    secretName: "api-tls"
+    clusterIssuer: "letsencrypt-prod"
+
+backup:
+  enabled: false
+  schedule: "0 2 * * *"
+  storage: "10Gi"
+
 config:
   HTTP_PORT: "8080"
   RADIUS_ADDR: ":1812"
@@ -19,6 +33,7 @@ config:
   AUTH_VERIFY_LIMIT: "10"
 
 secrets:
+  existingSecret: ""
   DB_URL: "postgres://user:pass@db:5432/2fa?sslmode=disable"
   REDIS_URL: "redis://redis:6379/0"
   JWT_SECRET: "CHANGE_ME"

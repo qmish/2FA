@@ -21,7 +21,7 @@ spec:
             - configMapRef:
                 name: {{ .Release.Name }}-config
             - secretRef:
-                name: {{ .Release.Name }}-secrets
+                name: {{ default (printf "%s-secrets" .Release.Name) .Values.secrets.existingSecret }}
           readinessProbe:
             httpGet:
               path: /healthz

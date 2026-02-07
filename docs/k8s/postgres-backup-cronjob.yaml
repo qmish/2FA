@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-backup
+spec:
+  schedule: "0 2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: pg-backup
+              image: postgres:15
+              env:
+                - name: DB_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: api-secrets
+                      key: DB_URL
+              command:
+                - /bin/sh
+                - -c
+                - >
+                  mkdir -p /backup &&
+                  pg_dump "$DB_URL" > /backup/backup-$(date +%F-%H%M%S).sql
+              volumeMounts:
+                - name: backup
+                  mountPath: /backup
+          volumes:
+            - name: backup
+              persistentVolumeClaim:
+                claimName: postgres-backup-pvc
