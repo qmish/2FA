@@ -262,6 +262,9 @@ func (c Config) Validate() error {
 	if strings.EqualFold(c.RadiusSecret, "change_me") {
 		return errors.New("radius_secret must be set to a non-default value")
 	}
+	if c.AuthLoginLimit < 0 || c.AuthVerifyLimit < 0 {
+		return errors.New("rate limit values must be non-negative")
+	}
 	if (c.AuthLoginLimit > 0 || c.AuthVerifyLimit > 0) && c.RedisURL == "" {
 		return errors.New("redis_url is required when rate limiting is enabled")
 	}
