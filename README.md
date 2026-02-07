@@ -42,6 +42,8 @@ go run ./cmd/migrate
 - `docs/observability/alerts.yaml`
 ## Security
 - `docs/security.md`
+## Production
+- `docs/production.md`
 
 ## Конфигурация
 - env: `configs/config.example.env`

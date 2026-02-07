@@ -23,3 +23,6 @@
    ```bash
    go run ./cmd/radius-server
    ```
+
+### Продакшен
+Рекомендации по WebAuthn, CI/CD и резервному копированию: `docs/production.md`.

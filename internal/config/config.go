@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -258,6 +259,20 @@ func (c Config) Validate() error {
 		if c.WebAuthnRPID == "" || c.WebAuthnRPOrigin == "" || c.WebAuthnRPName == "" {
 			return errors.New("webauthn_rp_id, webauthn_rp_origin, webauthn_rp_name are required together")
 		}
+		if !isAllowedWebAuthnOrigin(c.WebAuthnRPOrigin) {
+			return errors.New("webauthn_rp_origin must use https (localhost allowed)")
+		}
 	}
 	return nil
+}
+
+func isAllowedWebAuthnOrigin(origin string) bool {
+	origin = strings.TrimSpace(origin)
+	if strings.HasPrefix(origin, "https://") {
+		return true
+	}
+	if strings.HasPrefix(origin, "http://localhost") || strings.HasPrefix(origin, "http://127.0.0.1") {
+		return true
+	}
+	return false
 }

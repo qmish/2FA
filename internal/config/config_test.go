@@ -62,3 +62,27 @@ func TestValidateWebAuthnConfig(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+
+func TestValidateWebAuthnOriginScheme(t *testing.T) {
+	cfg := Defaults()
+	cfg.DBURL = "postgres://user:pass@localhost:5432/2fa?sslmode=disable"
+	cfg.JWTSecret = "secret"
+	cfg.AdminJWTSecret = "admin"
+	cfg.RadiusSecret = "radius"
+	cfg.WebAuthnRPID = "2fa.local"
+	cfg.WebAuthnRPName = "2FA"
+	cfg.WebAuthnRPOrigin = "http://example.com"
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for non-https origin")
+	}
+
+	cfg.WebAuthnRPOrigin = "https://2fa.local"
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	cfg.WebAuthnRPOrigin = "http://localhost:8080"
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
