@@ -914,3 +914,149 @@ func TestRecoveryCodeRepositoryCountAvailable(t *testing.T) {
 		t.Fatalf("expectations: %v", err)
 	}
 }
+
+func TestWebAuthnCredentialRepositoryCreate(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock: %v", err)
+	}
+	defer db.Close()
+
+	repo := NewWebAuthnCredentialRepository(db)
+	now := time.Now()
+	item := &models.WebAuthnCredential{
+		ID:           "c1",
+		UserID:       "u1",
+		CredentialID: "cred",
+		PublicKey:    "pk",
+		SignCount:    1,
+		CreatedAt:    now,
+	}
+
+	mock.ExpectExec(regexp.QuoteMeta(`
+        INSERT INTO webauthn_credentials
+          (id, user_id, credential_id, public_key, sign_count, created_at, last_used_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)`)).
+		WithArgs(item.ID, item.UserID, item.CredentialID, item.PublicKey, item.SignCount, item.CreatedAt, item.LastUsedAt).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	if err := repo.Create(context.Background(), item); err != nil {
+		t.Fatalf("Create error: %v", err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("expectations: %v", err)
+	}
+}
+
+func TestWebAuthnCredentialRepositoryListByUser(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock: %v", err)
+	}
+	defer db.Close()
+
+	repo := NewWebAuthnCredentialRepository(db)
+	now := time.Now()
+	rows := sqlmock.NewRows([]string{"id", "user_id", "credential_id", "public_key", "sign_count", "created_at", "last_used_at"}).
+		AddRow("c1", "u1", "cred1", "pk1", 1, now, nil).
+		AddRow("c2", "u1", "cred2", "pk2", 2, now, now)
+
+	mock.ExpectQuery(regexp.QuoteMeta(`
+        SELECT id, user_id, credential_id, public_key, sign_count, created_at, last_used_at
+        FROM webauthn_credentials
+        WHERE user_id = $1
+        ORDER BY created_at DESC`)).
+		WithArgs("u1").
+		WillReturnRows(rows)
+
+	items, err := repo.ListByUser(context.Background(), "u1")
+	if err != nil {
+		t.Fatalf("ListByUser error: %v", err)
+	}
+	if len(items) != 2 {
+		t.Fatalf("expected 2 items, got %d", len(items))
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("expectations: %v", err)
+	}
+}
+
+func TestWebAuthnCredentialRepositoryDeleteByID(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock: %v", err)
+	}
+	defer db.Close()
+
+	repo := NewWebAuthnCredentialRepository(db)
+	mock.ExpectExec(regexp.QuoteMeta(`
+        DELETE FROM webauthn_credentials WHERE user_id = $1 AND id = $2`)).
+		WithArgs("u1", "c1").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	ok, err := repo.DeleteByID(context.Background(), "u1", "c1")
+	if err != nil {
+		t.Fatalf("DeleteByID error: %v", err)
+	}
+	if !ok {
+		t.Fatalf("expected deleted=true")
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("expectations: %v", err)
+	}
+}
+
+func TestWebAuthnCredentialRepositoryGetByCredentialID(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock: %v", err)
+	}
+	defer db.Close()
+
+	repo := NewWebAuthnCredentialRepository(db)
+	now := time.Now()
+	rows := sqlmock.NewRows([]string{"id", "user_id", "credential_id", "public_key", "sign_count", "created_at", "last_used_at"}).
+		AddRow("c1", "u1", "cred1", "pk1", 1, now, nil)
+
+	mock.ExpectQuery(regexp.QuoteMeta(`
+        SELECT id, user_id, credential_id, public_key, sign_count, created_at, last_used_at
+        FROM webauthn_credentials
+        WHERE credential_id = $1`)).
+		WithArgs("cred1").
+		WillReturnRows(rows)
+
+	item, err := repo.GetByCredentialID(context.Background(), "cred1")
+	if err != nil {
+		t.Fatalf("GetByCredentialID error: %v", err)
+	}
+	if item.ID != "c1" {
+		t.Fatalf("unexpected id: %s", item.ID)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("expectations: %v", err)
+	}
+}
+
+func TestWebAuthnCredentialRepositoryUpdateSignCount(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock: %v", err)
+	}
+	defer db.Close()
+
+	repo := NewWebAuthnCredentialRepository(db)
+	now := time.Now()
+	mock.ExpectExec(regexp.QuoteMeta(`
+        UPDATE webauthn_credentials
+        SET sign_count = $2, last_used_at = $3
+        WHERE id = $1`)).
+		WithArgs("c1", int64(5), now).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	if err := repo.UpdateSignCount(context.Background(), "c1", 5, now); err != nil {
+		t.Fatalf("UpdateSignCount error: %v", err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("expectations: %v", err)
+	}
+}

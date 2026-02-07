@@ -93,6 +93,22 @@ type UserFactorsResponse struct {
 	RecoveryCodesAvailable int  `json:"recovery_codes_available"`
 }
 
+type UserPasskeyDTO struct {
+	ID           string `json:"id"`
+	CredentialID string `json:"credential_id"`
+	SignCount    int64  `json:"sign_count"`
+	CreatedAt    int64  `json:"created_at"`
+	LastUsedAt   *int64 `json:"last_used_at,omitempty"`
+}
+
+type UserPasskeyListResponse struct {
+	Items []UserPasskeyDTO `json:"items"`
+}
+
+type UserPasskeyDeleteRequest struct {
+	ID string `json:"id"`
+}
+
 type RegisterRequest struct {
 	Token    string `json:"token"`
 	Username string `json:"username"`

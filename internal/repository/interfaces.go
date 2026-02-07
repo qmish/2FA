@@ -112,6 +112,14 @@ type RecoveryCodeRepository interface {
 	CountAvailable(ctx context.Context, userID string) (int, error)
 }
 
+type WebAuthnCredentialRepository interface {
+	Create(ctx context.Context, cred *models.WebAuthnCredential) error
+	ListByUser(ctx context.Context, userID string) ([]models.WebAuthnCredential, error)
+	DeleteByID(ctx context.Context, userID string, id string) (bool, error)
+	GetByCredentialID(ctx context.Context, credentialID string) (*models.WebAuthnCredential, error)
+	UpdateSignCount(ctx context.Context, id string, signCount int64, lastUsedAt time.Time) error
+}
+
 type InviteRepository interface {
 	Create(ctx context.Context, invite *models.Invite) error
 	GetByTokenHash(ctx context.Context, tokenHash string) (*models.Invite, error)

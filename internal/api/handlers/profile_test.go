@@ -152,11 +152,81 @@ func TestProfileFactorsOK(t *testing.T) {
 	}
 }
 
+func TestProfilePasskeysUnauthorized(t *testing.T) {
+	h := NewProfileHandler(profileMock{})
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/profile/passkeys", nil)
+	rr := httptest.NewRecorder()
+
+	h.ListPasskeys(rr, req)
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d", rr.Code)
+	}
+}
+
+func TestProfilePasskeysOK(t *testing.T) {
+	mock := profileMock{passkeysResp: dto.UserPasskeyListResponse{Items: []dto.UserPasskeyDTO{{ID: "c1"}}}}
+	h := NewProfileHandler(mock)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/profile/passkeys", nil)
+	req = req.WithContext(middlewares.WithAuthClaims(req.Context(), &middlewares.AuthClaims{UserID: "u1"}))
+	rr := httptest.NewRecorder()
+
+	h.ListPasskeys(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rr.Code)
+	}
+	var resp dto.UserPasskeyListResponse
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode error: %v", err)
+	}
+	if len(resp.Items) != 1 || resp.Items[0].ID != "c1" {
+		t.Fatalf("unexpected response: %+v", resp)
+	}
+}
+
+func TestProfilePasskeyDeleteUnauthorized(t *testing.T) {
+	h := NewProfileHandler(profileMock{})
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/profile/passkeys/delete", strings.NewReader(`{"id":"c1"}`))
+	rr := httptest.NewRecorder()
+
+	h.DeletePasskey(rr, req)
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d", rr.Code)
+	}
+}
+
+func TestProfilePasskeyDeleteOK(t *testing.T) {
+	mock := profileMock{}
+	h := NewProfileHandler(mock)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/profile/passkeys/delete", strings.NewReader(`{"id":"c1"}`))
+	req = req.WithContext(middlewares.WithAuthClaims(req.Context(), &middlewares.AuthClaims{UserID: "u1"}))
+	rr := httptest.NewRecorder()
+
+	h.DeletePasskey(rr, req)
+	if rr.Code != http.StatusNoContent {
+		t.Fatalf("expected 204, got %d", rr.Code)
+	}
+}
+
+func TestProfilePasskeyDeleteNotFound(t *testing.T) {
+	mock := profileMock{passkeyDeleteErr: profilesvc.ErrNotFound}
+	h := NewProfileHandler(mock)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/profile/passkeys/delete", strings.NewReader(`{"id":"c1"}`))
+	req = req.WithContext(middlewares.WithAuthClaims(req.Context(), &middlewares.AuthClaims{UserID: "u1"}))
+	rr := httptest.NewRecorder()
+
+	h.DeletePasskey(rr, req)
+	if rr.Code != http.StatusNotFound {
+		t.Fatalf("expected 404, got %d", rr.Code)
+	}
+}
+
 type profileMock struct {
-	devicesResp dto.UserDeviceListResponse
-	loginsResp  dto.UserLoginHistoryResponse
-	disableErr  error
-	factorsResp dto.UserFactorsResponse
+	devicesResp      dto.UserDeviceListResponse
+	loginsResp       dto.UserLoginHistoryResponse
+	disableErr       error
+	factorsResp      dto.UserFactorsResponse
+	passkeysResp     dto.UserPasskeyListResponse
+	passkeyDeleteErr error
 }
 
 func (p profileMock) ListDevices(ctx context.Context, userID string) (dto.UserDeviceListResponse, error) {
@@ -173,4 +243,12 @@ func (p profileMock) DisableDevice(ctx context.Context, userID string, deviceID 
 
 func (p profileMock) GetFactors(ctx context.Context, userID string) (dto.UserFactorsResponse, error) {
 	return p.factorsResp, nil
+}
+
+func (p profileMock) ListPasskeys(ctx context.Context, userID string) (dto.UserPasskeyListResponse, error) {
+	return p.passkeysResp, nil
+}
+
+func (p profileMock) DeletePasskey(ctx context.Context, userID string, id string) error {
+	return p.passkeyDeleteErr
 }

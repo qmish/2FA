@@ -179,6 +179,22 @@
       </section>
 
       <section class="card">
+        <h2>Passkeys</h2>
+        <div class="row">
+          <button id="passkeys-btn">List passkeys</button>
+          <span id="passkeys-status" class="badge error hidden">Ошибка</span>
+        </div>
+        <div class="grid">
+          <label>Passkey ID
+            <input id="passkey-id" placeholder="passkey_id" />
+          </label>
+        </div>
+        <button id="passkey-delete-btn" class="secondary">Delete passkey</button>
+        <div id="passkeys-list" class="table"></div>
+        <pre id="passkeys-result" class="result"></pre>
+      </section>
+
+      <section class="card">
         <h2>Tokens</h2>
         <div class="grid">
           <label>Access token

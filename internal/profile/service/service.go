@@ -14,6 +14,7 @@ type Service struct {
 	logins        repository.LoginHistoryRepository
 	otpSecrets    repository.OTPSecretRepository
 	recoveryCodes repository.RecoveryCodeRepository
+	webauthnCreds repository.WebAuthnCredentialRepository
 }
 
 var (
@@ -27,12 +28,14 @@ func NewService(
 	logins repository.LoginHistoryRepository,
 	otpSecrets repository.OTPSecretRepository,
 	recoveryCodes repository.RecoveryCodeRepository,
+	webauthnCreds repository.WebAuthnCredentialRepository,
 ) *Service {
 	return &Service{
 		devices:       devices,
 		logins:        logins,
 		otpSecrets:    otpSecrets,
 		recoveryCodes: recoveryCodes,
+		webauthnCreds: webauthnCreds,
 	}
 }
 
@@ -109,6 +112,41 @@ func (s *Service) GetFactors(ctx context.Context, userID string) (dto.UserFactor
 	return resp, nil
 }
 
+func (s *Service) ListPasskeys(ctx context.Context, userID string) (dto.UserPasskeyListResponse, error) {
+	if userID == "" {
+		return dto.UserPasskeyListResponse{}, ErrInvalidInput
+	}
+	if s.webauthnCreds == nil {
+		return dto.UserPasskeyListResponse{}, ErrNotConfigured
+	}
+	items, err := s.webauthnCreds.ListByUser(ctx, userID)
+	if err != nil {
+		return dto.UserPasskeyListResponse{}, err
+	}
+	resp := dto.UserPasskeyListResponse{Items: make([]dto.UserPasskeyDTO, 0, len(items))}
+	for _, item := range items {
+		resp.Items = append(resp.Items, toUserPasskeyDTO(item))
+	}
+	return resp, nil
+}
+
+func (s *Service) DeletePasskey(ctx context.Context, userID string, id string) error {
+	if userID == "" || id == "" {
+		return ErrInvalidInput
+	}
+	if s.webauthnCreds == nil {
+		return ErrNotConfigured
+	}
+	ok, err := s.webauthnCreds.DeleteByID(ctx, userID, id)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return ErrNotFound
+	}
+	return nil
+}
+
 func toUserDeviceDTO(device models.Device) dto.UserDeviceDTO {
 	var lastSeenAt *int64
 	if device.LastSeenAt != nil {
@@ -122,6 +160,21 @@ func toUserDeviceDTO(device models.Device) dto.UserDeviceDTO {
 		Status:     device.Status,
 		LastSeenAt: lastSeenAt,
 		CreatedAt:  device.CreatedAt.Unix(),
+	}
+}
+
+func toUserPasskeyDTO(item models.WebAuthnCredential) dto.UserPasskeyDTO {
+	var lastUsedAt *int64
+	if item.LastUsedAt != nil {
+		value := item.LastUsedAt.Unix()
+		lastUsedAt = &value
+	}
+	return dto.UserPasskeyDTO{
+		ID:           item.ID,
+		CredentialID: item.CredentialID,
+		SignCount:    item.SignCount,
+		CreatedAt:    item.CreatedAt.Unix(),
+		LastUsedAt:   lastUsedAt,
 	}
 }
 

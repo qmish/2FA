@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"strconv"
 	"strings"
 	"time"
@@ -690,6 +691,84 @@ func (r *RecoveryCodeRepository) CountAvailable(ctx context.Context, userID stri
 		return 0, err
 	}
 	return count, nil
+}
+
+type WebAuthnCredentialRepository struct {
+	db *sql.DB
+}
+
+func NewWebAuthnCredentialRepository(db *sql.DB) *WebAuthnCredentialRepository {
+	return &WebAuthnCredentialRepository{db: db}
+}
+
+func (r *WebAuthnCredentialRepository) Create(ctx context.Context, cred *models.WebAuthnCredential) error {
+	_, err := r.db.ExecContext(ctx, `
+        INSERT INTO webauthn_credentials
+          (id, user_id, credential_id, public_key, sign_count, created_at, last_used_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+		cred.ID, cred.UserID, cred.CredentialID, cred.PublicKey, cred.SignCount, cred.CreatedAt, cred.LastUsedAt)
+	return err
+}
+
+func (r *WebAuthnCredentialRepository) ListByUser(ctx context.Context, userID string) ([]models.WebAuthnCredential, error) {
+	rows, err := r.db.QueryContext(ctx, `
+        SELECT id, user_id, credential_id, public_key, sign_count, created_at, last_used_at
+        FROM webauthn_credentials
+        WHERE user_id = $1
+        ORDER BY created_at DESC`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var items []models.WebAuthnCredential
+	for rows.Next() {
+		var item models.WebAuthnCredential
+		if err := rows.Scan(&item.ID, &item.UserID, &item.CredentialID, &item.PublicKey, &item.SignCount, &item.CreatedAt, &item.LastUsedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+func (r *WebAuthnCredentialRepository) DeleteByID(ctx context.Context, userID string, id string) (bool, error) {
+	res, err := r.db.ExecContext(ctx, `
+        DELETE FROM webauthn_credentials WHERE user_id = $1 AND id = $2`, userID, id)
+	if err != nil {
+		return false, err
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	return affected > 0, nil
+}
+
+func (r *WebAuthnCredentialRepository) GetByCredentialID(ctx context.Context, credentialID string) (*models.WebAuthnCredential, error) {
+	row := r.db.QueryRowContext(ctx, `
+        SELECT id, user_id, credential_id, public_key, sign_count, created_at, last_used_at
+        FROM webauthn_credentials
+        WHERE credential_id = $1`, credentialID)
+	var item models.WebAuthnCredential
+	if err := row.Scan(&item.ID, &item.UserID, &item.CredentialID, &item.PublicKey, &item.SignCount, &item.CreatedAt, &item.LastUsedAt); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, repository.ErrNotFound
+		}
+		return nil, err
+	}
+	return &item, nil
+}
+
+func (r *WebAuthnCredentialRepository) UpdateSignCount(ctx context.Context, id string, signCount int64, lastUsedAt time.Time) error {
+	_, err := r.db.ExecContext(ctx, `
+        UPDATE webauthn_credentials
+        SET sign_count = $2, last_used_at = $3
+        WHERE id = $1`, id, signCount, lastUsedAt)
+	return err
 }
 
 type InviteRepository struct {

@@ -68,6 +68,16 @@ type RecoveryCode struct {
 	CreatedAt time.Time
 }
 
+type WebAuthnCredential struct {
+	ID           string
+	UserID       string
+	CredentialID string
+	PublicKey    string
+	SignCount    int64
+	CreatedAt    time.Time
+	LastUsedAt   *time.Time
+}
+
 type Invite struct {
 	ID        string
 	TokenHash string

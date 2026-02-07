@@ -61,6 +61,8 @@ func New(r Routes) http.Handler {
 		mux.Handle("/api/v1/profile/devices", r.AuthMiddleware(http.HandlerFunc(r.Profile.ListDevices)))
 		mux.Handle("/api/v1/profile/devices/disable", r.AuthMiddleware(http.HandlerFunc(r.Profile.DisableDevice)))
 		mux.Handle("/api/v1/profile/factors", r.AuthMiddleware(http.HandlerFunc(r.Profile.GetFactors)))
+		mux.Handle("/api/v1/profile/passkeys", r.AuthMiddleware(http.HandlerFunc(r.Profile.ListPasskeys)))
+		mux.Handle("/api/v1/profile/passkeys/delete", r.AuthMiddleware(http.HandlerFunc(r.Profile.DeletePasskey)))
 		mux.Handle("/api/v1/profile/logins", r.AuthMiddleware(http.HandlerFunc(r.Profile.ListLoginHistory)))
 	}
 	if r.Sessions != nil {

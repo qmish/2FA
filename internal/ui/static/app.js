@@ -281,6 +281,34 @@ async function handleFactors() {
   }
 }
 
+async function handlePasskeys() {
+  setStatus("passkeys-status", true);
+  try {
+    const resp = await api("/api/v1/profile/passkeys", { method: "GET" });
+    renderPasskeys(resp);
+    setResult("passkeys-result", resp);
+  } catch (err) {
+    setResult("passkeys-result", err);
+    setStatus("passkeys-status", false, err);
+  }
+}
+
+async function handlePasskeyDelete() {
+  setStatus("passkeys-status", true);
+  try {
+    const id = document.getElementById("passkey-id").value.trim();
+    await api("/api/v1/profile/passkeys/delete", {
+      method: "POST",
+      body: JSON.stringify({ id }),
+    });
+    setResult("passkeys-result", { ok: true });
+    await handlePasskeys();
+  } catch (err) {
+    setResult("passkeys-result", err);
+    setStatus("passkeys-status", false, err);
+  }
+}
+
 function renderDevices(resp) {
   const list = document.getElementById("devices-list");
   if (!list) return;
@@ -325,6 +353,52 @@ function renderDevices(resp) {
       if (!id) return;
       document.getElementById("device-id").value = id;
       await handleDeviceDisable();
+    });
+  });
+}
+
+function renderPasskeys(resp) {
+  const list = document.getElementById("passkeys-list");
+  if (!list) return;
+  if (!resp || !resp.items || !Array.isArray(resp.items)) {
+    list.innerHTML = "";
+    return;
+  }
+  const rows = resp.items
+    .map((item) => {
+      return `
+        <tr>
+          <td>${item.id}</td>
+          <td>${item.credential_id || "-"}</td>
+          <td>${item.sign_count ?? "-"}</td>
+          <td>${formatTime(item.last_used_at)}</td>
+          <td>${formatTime(item.created_at)}</td>
+          <td><button class="btn-link" data-passkey-id="${item.id}">delete</button></td>
+        </tr>
+      `;
+    })
+    .join("");
+  list.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Credential</th>
+          <th>Sign Count</th>
+          <th>Last Used</th>
+          <th>Created</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+  list.querySelectorAll("button[data-passkey-id]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.getAttribute("data-passkey-id");
+      if (!id) return;
+      document.getElementById("passkey-id").value = id;
+      await handlePasskeyDelete();
     });
   });
 }
@@ -941,6 +1015,8 @@ function initUI() {
   document.getElementById("devices-btn").addEventListener("click", handleDevices);
   document.getElementById("device-disable-btn").addEventListener("click", handleDeviceDisable);
   document.getElementById("factors-btn").addEventListener("click", handleFactors);
+  document.getElementById("passkeys-btn").addEventListener("click", handlePasskeys);
+  document.getElementById("passkey-delete-btn").addEventListener("click", handlePasskeyDelete);
   document.getElementById("logout-btn").addEventListener("click", handleLogout);
   document.getElementById("current-session-btn").addEventListener("click", handleCurrentSession);
   document.getElementById("revoke-btn").addEventListener("click", handleRevoke);

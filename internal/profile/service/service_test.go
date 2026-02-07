@@ -27,7 +27,7 @@ func TestListDevices(t *testing.T) {
 			},
 		},
 	}
-	svc := NewService(repo, fakeLoginRepo{}, fakeOTPRepo{}, fakeRecoveryRepo{})
+	svc := NewService(repo, fakeLoginRepo{}, fakeOTPRepo{}, fakeRecoveryRepo{}, &fakeWebAuthnRepo{})
 	resp, err := svc.ListDevices(context.Background(), "u1")
 	if err != nil {
 		t.Fatalf("ListDevices error: %v", err)
@@ -48,7 +48,7 @@ func TestListLoginHistory(t *testing.T) {
 		},
 		total: 1,
 	}
-	svc := NewService(&fakeDeviceRepo{}, repo, fakeOTPRepo{}, fakeRecoveryRepo{})
+	svc := NewService(&fakeDeviceRepo{}, repo, fakeOTPRepo{}, fakeRecoveryRepo{}, &fakeWebAuthnRepo{})
 	resp, err := svc.ListLoginHistory(context.Background(), "u1", dto.PageRequest{Limit: 10, Offset: 0})
 	if err != nil {
 		t.Fatalf("ListLoginHistory error: %v", err)
@@ -67,7 +67,7 @@ func TestDisableDeviceOK(t *testing.T) {
 			{ID: "d1", UserID: "u1", Status: models.DeviceActive},
 		},
 	}
-	svc := NewService(repo, fakeLoginRepo{}, fakeOTPRepo{}, fakeRecoveryRepo{})
+	svc := NewService(repo, fakeLoginRepo{}, fakeOTPRepo{}, fakeRecoveryRepo{}, &fakeWebAuthnRepo{})
 	if err := svc.DisableDevice(context.Background(), "u1", "d1"); err != nil {
 		t.Fatalf("DisableDevice error: %v", err)
 	}
@@ -82,7 +82,7 @@ func TestDisableDeviceNotFound(t *testing.T) {
 			{ID: "d1", UserID: "u2", Status: models.DeviceActive},
 		},
 	}
-	svc := NewService(repo, fakeLoginRepo{}, fakeOTPRepo{}, fakeRecoveryRepo{})
+	svc := NewService(repo, fakeLoginRepo{}, fakeOTPRepo{}, fakeRecoveryRepo{}, &fakeWebAuthnRepo{})
 	if err := svc.DisableDevice(context.Background(), "u1", "d1"); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("expected ErrNotFound, got %v", err)
 	}
@@ -91,7 +91,7 @@ func TestDisableDeviceNotFound(t *testing.T) {
 func TestGetFactorsOK(t *testing.T) {
 	otp := fakeOTPRepo{active: &models.OTPSecret{ID: "s1", UserID: "u1", Enabled: true}}
 	recovery := fakeRecoveryRepo{count: 2}
-	svc := NewService(&fakeDeviceRepo{}, fakeLoginRepo{}, otp, recovery)
+	svc := NewService(&fakeDeviceRepo{}, fakeLoginRepo{}, otp, recovery, &fakeWebAuthnRepo{})
 
 	resp, err := svc.GetFactors(context.Background(), "u1")
 	if err != nil {
@@ -103,8 +103,51 @@ func TestGetFactorsOK(t *testing.T) {
 }
 
 func TestGetFactorsNotConfigured(t *testing.T) {
-	svc := NewService(&fakeDeviceRepo{}, fakeLoginRepo{}, nil, nil)
+	svc := NewService(&fakeDeviceRepo{}, fakeLoginRepo{}, nil, nil, nil)
 	if _, err := svc.GetFactors(context.Background(), "u1"); !errors.Is(err, ErrNotConfigured) {
+		t.Fatalf("expected ErrNotConfigured, got %v", err)
+	}
+}
+
+func TestListPasskeysOK(t *testing.T) {
+	now := time.Now()
+	repo := &fakeWebAuthnRepo{
+		items: []models.WebAuthnCredential{
+			{ID: "c1", UserID: "u1", CredentialID: "cred", SignCount: 2, CreatedAt: now},
+		},
+	}
+	svc := NewService(&fakeDeviceRepo{}, fakeLoginRepo{}, fakeOTPRepo{}, fakeRecoveryRepo{}, repo)
+	resp, err := svc.ListPasskeys(context.Background(), "u1")
+	if err != nil {
+		t.Fatalf("ListPasskeys error: %v", err)
+	}
+	if len(resp.Items) != 1 || resp.Items[0].ID != "c1" {
+		t.Fatalf("unexpected response: %+v", resp)
+	}
+}
+
+func TestDeletePasskeyOK(t *testing.T) {
+	repo := &fakeWebAuthnRepo{deleteOK: true}
+	svc := NewService(&fakeDeviceRepo{}, fakeLoginRepo{}, fakeOTPRepo{}, fakeRecoveryRepo{}, repo)
+	if err := svc.DeletePasskey(context.Background(), "u1", "c1"); err != nil {
+		t.Fatalf("DeletePasskey error: %v", err)
+	}
+	if repo.deletedID != "c1" {
+		t.Fatalf("expected deleted id c1, got %s", repo.deletedID)
+	}
+}
+
+func TestDeletePasskeyNotFound(t *testing.T) {
+	repo := &fakeWebAuthnRepo{deleteOK: false}
+	svc := NewService(&fakeDeviceRepo{}, fakeLoginRepo{}, fakeOTPRepo{}, fakeRecoveryRepo{}, repo)
+	if err := svc.DeletePasskey(context.Background(), "u1", "c1"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("expected ErrNotFound, got %v", err)
+	}
+}
+
+func TestListPasskeysNotConfigured(t *testing.T) {
+	svc := NewService(&fakeDeviceRepo{}, fakeLoginRepo{}, fakeOTPRepo{}, fakeRecoveryRepo{}, nil)
+	if _, err := svc.ListPasskeys(context.Background(), "u1"); !errors.Is(err, ErrNotConfigured) {
 		t.Fatalf("expected ErrNotConfigured, got %v", err)
 	}
 }
@@ -179,4 +222,33 @@ func (f fakeRecoveryRepo) Consume(ctx context.Context, userID string, codeHash s
 }
 func (f fakeRecoveryRepo) CountAvailable(ctx context.Context, userID string) (int, error) {
 	return f.count, nil
+}
+
+type fakeWebAuthnRepo struct {
+	items     []models.WebAuthnCredential
+	deleteOK  bool
+	deletedID string
+}
+
+func (f *fakeWebAuthnRepo) Create(ctx context.Context, cred *models.WebAuthnCredential) error {
+	return nil
+}
+func (f *fakeWebAuthnRepo) ListByUser(ctx context.Context, userID string) ([]models.WebAuthnCredential, error) {
+	var out []models.WebAuthnCredential
+	for _, item := range f.items {
+		if item.UserID == userID {
+			out = append(out, item)
+		}
+	}
+	return out, nil
+}
+func (f *fakeWebAuthnRepo) DeleteByID(ctx context.Context, userID string, id string) (bool, error) {
+	f.deletedID = id
+	return f.deleteOK, nil
+}
+func (f *fakeWebAuthnRepo) GetByCredentialID(ctx context.Context, credentialID string) (*models.WebAuthnCredential, error) {
+	return nil, repository.ErrNotFound
+}
+func (f *fakeWebAuthnRepo) UpdateSignCount(ctx context.Context, id string, signCount int64, lastUsedAt time.Time) error {
+	return nil
 }
