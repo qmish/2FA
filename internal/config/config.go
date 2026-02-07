@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"net"
 	"net/url"
 	"os"
 	"strconv"
@@ -247,6 +248,9 @@ func (c Config) Validate() error {
 	if !isValidURL(c.DBURL) {
 		return errors.New("db_url must be a valid URL")
 	}
+	if !isValidPort(c.HTTPPort) {
+		return errors.New("http_port must be a valid port")
+	}
 	if c.JWTSecret == "" {
 		return errors.New("jwt_secret is required")
 	}
@@ -270,6 +274,9 @@ func (c Config) Validate() error {
 	}
 	if strings.EqualFold(c.RadiusSecret, "change_me") {
 		return errors.New("radius_secret must be set to a non-default value")
+	}
+	if _, _, err := net.SplitHostPort(c.RadiusAddr); err != nil {
+		return errors.New("radius_addr must be in host:port format")
 	}
 	if c.AuthLoginLimit < 0 || c.AuthVerifyLimit < 0 {
 		return errors.New("rate limit values must be non-negative")
@@ -338,4 +345,16 @@ func isValidURL(raw string) bool {
 		return false
 	}
 	return true
+}
+
+func isValidPort(raw string) bool {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return false
+	}
+	port, err := strconv.Atoi(raw)
+	if err != nil {
+		return false
+	}
+	return port > 0 && port <= 65535
 }

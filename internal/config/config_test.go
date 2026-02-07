@@ -263,3 +263,28 @@ func TestValidateDBURLFormat(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+
+func TestValidatePorts(t *testing.T) {
+	cfg := Defaults()
+	cfg.DBURL = "postgres://user:pass@localhost:5432/2fa?sslmode=disable"
+	cfg.JWTSecret = "secret"
+	cfg.AdminJWTSecret = "admin"
+	cfg.RadiusSecret = "radius"
+	cfg.RedisURL = "redis://localhost:6379/0"
+
+	cfg.HTTPPort = "0"
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for http_port")
+	}
+
+	cfg.HTTPPort = "8080"
+	cfg.RadiusAddr = "1812"
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for radius_addr")
+	}
+
+	cfg.RadiusAddr = ":1812"
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
