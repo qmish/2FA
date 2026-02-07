@@ -3,9 +3,16 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ .Release.Name }}-api
-  {{- if .Values.ingress.tls.enabled }}
+  {{- if or .Values.ingress.tls.enabled .Values.ingress.rateLimit.enabled }}
   annotations:
+    {{- if .Values.ingress.tls.enabled }}
     cert-manager.io/cluster-issuer: {{ .Values.ingress.tls.clusterIssuer | quote }}
+    {{- end }}
+    {{- if .Values.ingress.rateLimit.enabled }}
+    nginx.ingress.kubernetes.io/limit-rps: {{ .Values.ingress.rateLimit.rps | quote }}
+    nginx.ingress.kubernetes.io/limit-burst-multiplier: {{ .Values.ingress.rateLimit.burstMultiplier | quote }}
+    nginx.ingress.kubernetes.io/limit-req-status-code: {{ .Values.ingress.rateLimit.statusCode | quote }}
+    {{- end }}
   {{- end }}
 spec:
   {{- if .Values.ingress.className }}

@@ -44,6 +44,11 @@ ingress:
     enabled: false
     secretName: "api-tls"
     clusterIssuer: "letsencrypt-prod"
+  rateLimit:
+    enabled: false
+    rps: "5"
+    burstMultiplier: "3"
+    statusCode: "429"
 
 backup:
   enabled: false

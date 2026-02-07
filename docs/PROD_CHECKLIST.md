@@ -22,5 +22,5 @@
 - [x] DR‑план с процедурами восстановления.
 - [x] Alertmanager и интеграции.
 - [x] SSL для PostgreSQL (`sslmode=disable` заменить).
-- [ ] Ingress rate‑limit на уровне ingress.
+- [x] Ingress rate‑limit на уровне ingress.
 - [ ] Прод‑домены WebAuthn в гайдах (без `2fa.local`).

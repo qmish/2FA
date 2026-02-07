@@ -62,6 +62,10 @@
 - Используйте TLS и `sslmode=require` в `DB_URL`.
 - Примеры обновлены в `configs/config.example.yaml`, `docs/k8s/api-secrets.yaml`, `docs/helm/values.yaml`.
 
+## Ingress rate limit
+- Для NGINX Ingress доступны лимиты RPS/burst через аннотации.
+- Пример в `docs/k8s/api-ingress.yaml` и Helm `ingress.rateLimit`.
+
 ## Резервное копирование
 - PostgreSQL: регулярные `pg_dump` с проверкой восстановления.
 - Хранить бэкапы минимум N дней (настройте политику ретенции).
