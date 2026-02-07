@@ -200,3 +200,28 @@ func TestValidateRejectsNegativeRateLimits(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+
+func TestValidateRejectsEmptyJWTIssuer(t *testing.T) {
+	cfg := Defaults()
+	cfg.DBURL = "postgres://user:pass@localhost:5432/2fa?sslmode=disable"
+	cfg.JWTSecret = "secret"
+	cfg.AdminJWTSecret = "admin"
+	cfg.RadiusSecret = "radius"
+	cfg.RedisURL = "redis://localhost:6379/0"
+
+	cfg.JWTIssuer = ""
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for empty jwt_issuer")
+	}
+
+	cfg.JWTIssuer = "2fa"
+	cfg.AdminJWTIssuer = ""
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for empty admin_jwt_issuer")
+	}
+
+	cfg.AdminJWTIssuer = "2fa"
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
