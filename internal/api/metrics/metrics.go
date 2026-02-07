@@ -1,208 +1,223 @@
 package metrics
 
 import (
-    "fmt"
-    "sort"
-    "strings"
-    "sync"
-    "time"
+	"fmt"
+	"sort"
+	"strings"
+	"sync"
+	"time"
 )
 
 type Registry struct {
-    mu              sync.Mutex
-    httpRequests    map[string]int64
-    httpLatency     map[string]*latencyMetric
-    authFailures    map[string]int64
-    authChallenges  map[string]int64
-    systemErrors    map[string]int64
-    lockoutCreated  int64
-    lockoutActive   int64
-    lockoutCleared  int64
+	mu             sync.Mutex
+	httpRequests   map[string]int64
+	httpLatency    map[string]*latencyMetric
+	authFailures   map[string]int64
+	authChallenges map[string]int64
+	systemErrors   map[string]int64
+	radiusRequests map[string]int64
+	lockoutCreated int64
+	lockoutActive  int64
+	lockoutCleared int64
 }
 
 func NewRegistry() *Registry {
-    return &Registry{
-        httpRequests:   map[string]int64{},
-        httpLatency:    map[string]*latencyMetric{},
-        authFailures:   map[string]int64{},
-        authChallenges: map[string]int64{},
-        systemErrors:   map[string]int64{},
-    }
+	return &Registry{
+		httpRequests:   map[string]int64{},
+		httpLatency:    map[string]*latencyMetric{},
+		authFailures:   map[string]int64{},
+		authChallenges: map[string]int64{},
+		systemErrors:   map[string]int64{},
+		radiusRequests: map[string]int64{},
+	}
 }
 
 var Default = NewRegistry()
 
 func (r *Registry) IncHTTPRequest(method, path string, status int) {
-    key := fmt.Sprintf("method=%s,path=%s,status=%d", method, path, status)
-    r.mu.Lock()
-    r.httpRequests[key]++
-    r.mu.Unlock()
+	key := fmt.Sprintf("method=%s,path=%s,status=%d", method, path, status)
+	r.mu.Lock()
+	r.httpRequests[key]++
+	r.mu.Unlock()
 }
 
 func (r *Registry) ObserveHTTPDuration(method, path string, duration time.Duration) {
-    key := fmt.Sprintf("method=%s,path=%s", method, path)
-    r.mu.Lock()
-    metric := r.httpLatency[key]
-    if metric == nil {
-        metric = newLatencyMetric()
-        r.httpLatency[key] = metric
-    }
-    metric.observe(duration)
-    r.mu.Unlock()
+	key := fmt.Sprintf("method=%s,path=%s", method, path)
+	r.mu.Lock()
+	metric := r.httpLatency[key]
+	if metric == nil {
+		metric = newLatencyMetric()
+		r.httpLatency[key] = metric
+	}
+	metric.observe(duration)
+	r.mu.Unlock()
 }
 
 func (r *Registry) IncAuthFailure(operation, reason string) {
-    key := fmt.Sprintf("operation=%s,reason=%s", operation, reason)
-    r.mu.Lock()
-    r.authFailures[key]++
-    r.mu.Unlock()
+	key := fmt.Sprintf("operation=%s,reason=%s", operation, reason)
+	r.mu.Lock()
+	r.authFailures[key]++
+	r.mu.Unlock()
 }
 
 func (r *Registry) IncAuthChallenge(method string) {
-    key := fmt.Sprintf("method=%s", method)
-    r.mu.Lock()
-    r.authChallenges[key]++
-    r.mu.Unlock()
+	key := fmt.Sprintf("method=%s", method)
+	r.mu.Lock()
+	r.authChallenges[key]++
+	r.mu.Unlock()
 }
 
 func (r *Registry) IncSystemError(component string) {
-    key := fmt.Sprintf("component=%s", component)
-    r.mu.Lock()
-    r.systemErrors[key]++
-    r.mu.Unlock()
+	key := fmt.Sprintf("component=%s", component)
+	r.mu.Lock()
+	r.systemErrors[key]++
+	r.mu.Unlock()
+}
+
+func (r *Registry) IncRadiusRequest(result string) {
+	key := fmt.Sprintf("result=%s", result)
+	r.mu.Lock()
+	r.radiusRequests[key]++
+	r.mu.Unlock()
 }
 
 func (r *Registry) IncLockoutCreated() {
-    r.mu.Lock()
-    r.lockoutCreated++
-    r.mu.Unlock()
+	r.mu.Lock()
+	r.lockoutCreated++
+	r.mu.Unlock()
 }
 
 func (r *Registry) IncLockoutActive() {
-    r.mu.Lock()
-    r.lockoutActive++
-    r.mu.Unlock()
+	r.mu.Lock()
+	r.lockoutActive++
+	r.mu.Unlock()
 }
 
 func (r *Registry) AddLockoutCleared(count int64) {
-    if count <= 0 {
-        return
-    }
-    r.mu.Lock()
-    r.lockoutCleared += count
-    r.mu.Unlock()
+	if count <= 0 {
+		return
+	}
+	r.mu.Lock()
+	r.lockoutCleared += count
+	r.mu.Unlock()
 }
 
 func (r *Registry) Render() string {
-    r.mu.Lock()
-    defer r.mu.Unlock()
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
-    var b strings.Builder
-    b.WriteString("# HELP http_requests_total Total HTTP requests\n")
-    b.WriteString("# TYPE http_requests_total counter\n")
-    for _, k := range sortedKeys(r.httpRequests) {
-        labels := formatLabels(k)
-        b.WriteString(fmt.Sprintf("http_requests_total{%s} %d\n", labels, r.httpRequests[k]))
-    }
-    b.WriteString("# HELP http_request_duration_ms HTTP request duration buckets\n")
-    b.WriteString("# TYPE http_request_duration_ms histogram\n")
-    for _, k := range sortedKeysLatency(r.httpLatency) {
-        labels := formatLabels(k)
-        metric := r.httpLatency[k]
-        for _, bucket := range metric.buckets {
-            bucketLabels := labels + fmt.Sprintf(",le=\"%d\"", bucket.le)
-            b.WriteString(fmt.Sprintf("http_request_duration_ms_bucket{%s} %d\n", bucketLabels, bucket.count))
-        }
-        b.WriteString(fmt.Sprintf("http_request_duration_ms_sum{%s} %d\n", labels, metric.sumMs))
-        b.WriteString(fmt.Sprintf("http_request_duration_ms_count{%s} %d\n", labels, metric.count))
-    }
-    b.WriteString("# HELP auth_failures_total Auth failures\n")
-    b.WriteString("# TYPE auth_failures_total counter\n")
-    for _, k := range sortedKeys(r.authFailures) {
-        labels := formatLabels(k)
-        b.WriteString(fmt.Sprintf("auth_failures_total{%s} %d\n", labels, r.authFailures[k]))
-    }
-    b.WriteString("# HELP auth_challenges_total Auth challenges created\n")
-    b.WriteString("# TYPE auth_challenges_total counter\n")
-    for _, k := range sortedKeys(r.authChallenges) {
-        labels := formatLabels(k)
-        b.WriteString(fmt.Sprintf("auth_challenges_total{%s} %d\n", labels, r.authChallenges[k]))
-    }
-    b.WriteString("# HELP system_errors_total System errors\n")
-    b.WriteString("# TYPE system_errors_total counter\n")
-    for _, k := range sortedKeys(r.systemErrors) {
-        labels := formatLabels(k)
-        b.WriteString(fmt.Sprintf("system_errors_total{%s} %d\n", labels, r.systemErrors[k]))
-    }
-    b.WriteString("# HELP lockout_created_total Lockouts created\n")
-    b.WriteString("# TYPE lockout_created_total counter\n")
-    b.WriteString(fmt.Sprintf("lockout_created_total %d\n", r.lockoutCreated))
-    b.WriteString("# HELP lockout_active_total Active lockout hits\n")
-    b.WriteString("# TYPE lockout_active_total counter\n")
-    b.WriteString(fmt.Sprintf("lockout_active_total %d\n", r.lockoutActive))
-    b.WriteString("# HELP lockout_cleared_total Lockouts cleared\n")
-    b.WriteString("# TYPE lockout_cleared_total counter\n")
-    b.WriteString(fmt.Sprintf("lockout_cleared_total %d\n", r.lockoutCleared))
-    b.WriteString(fmt.Sprintf("# generated_at %s\n", time.Now().UTC().Format(time.RFC3339)))
-    return b.String()
+	var b strings.Builder
+	b.WriteString("# HELP http_requests_total Total HTTP requests\n")
+	b.WriteString("# TYPE http_requests_total counter\n")
+	for _, k := range sortedKeys(r.httpRequests) {
+		labels := formatLabels(k)
+		b.WriteString(fmt.Sprintf("http_requests_total{%s} %d\n", labels, r.httpRequests[k]))
+	}
+	b.WriteString("# HELP http_request_duration_ms HTTP request duration buckets\n")
+	b.WriteString("# TYPE http_request_duration_ms histogram\n")
+	for _, k := range sortedKeysLatency(r.httpLatency) {
+		labels := formatLabels(k)
+		metric := r.httpLatency[k]
+		for _, bucket := range metric.buckets {
+			bucketLabels := labels + fmt.Sprintf(",le=\"%d\"", bucket.le)
+			b.WriteString(fmt.Sprintf("http_request_duration_ms_bucket{%s} %d\n", bucketLabels, bucket.count))
+		}
+		b.WriteString(fmt.Sprintf("http_request_duration_ms_sum{%s} %d\n", labels, metric.sumMs))
+		b.WriteString(fmt.Sprintf("http_request_duration_ms_count{%s} %d\n", labels, metric.count))
+	}
+	b.WriteString("# HELP auth_failures_total Auth failures\n")
+	b.WriteString("# TYPE auth_failures_total counter\n")
+	for _, k := range sortedKeys(r.authFailures) {
+		labels := formatLabels(k)
+		b.WriteString(fmt.Sprintf("auth_failures_total{%s} %d\n", labels, r.authFailures[k]))
+	}
+	b.WriteString("# HELP auth_challenges_total Auth challenges created\n")
+	b.WriteString("# TYPE auth_challenges_total counter\n")
+	for _, k := range sortedKeys(r.authChallenges) {
+		labels := formatLabels(k)
+		b.WriteString(fmt.Sprintf("auth_challenges_total{%s} %d\n", labels, r.authChallenges[k]))
+	}
+	b.WriteString("# HELP system_errors_total System errors\n")
+	b.WriteString("# TYPE system_errors_total counter\n")
+	for _, k := range sortedKeys(r.systemErrors) {
+		labels := formatLabels(k)
+		b.WriteString(fmt.Sprintf("system_errors_total{%s} %d\n", labels, r.systemErrors[k]))
+	}
+	b.WriteString("# HELP radius_requests_total RADIUS access results\n")
+	b.WriteString("# TYPE radius_requests_total counter\n")
+	for _, k := range sortedKeys(r.radiusRequests) {
+		labels := formatLabels(k)
+		b.WriteString(fmt.Sprintf("radius_requests_total{%s} %d\n", labels, r.radiusRequests[k]))
+	}
+	b.WriteString("# HELP lockout_created_total Lockouts created\n")
+	b.WriteString("# TYPE lockout_created_total counter\n")
+	b.WriteString(fmt.Sprintf("lockout_created_total %d\n", r.lockoutCreated))
+	b.WriteString("# HELP lockout_active_total Active lockout hits\n")
+	b.WriteString("# TYPE lockout_active_total counter\n")
+	b.WriteString(fmt.Sprintf("lockout_active_total %d\n", r.lockoutActive))
+	b.WriteString("# HELP lockout_cleared_total Lockouts cleared\n")
+	b.WriteString("# TYPE lockout_cleared_total counter\n")
+	b.WriteString(fmt.Sprintf("lockout_cleared_total %d\n", r.lockoutCleared))
+	b.WriteString(fmt.Sprintf("# generated_at %s\n", time.Now().UTC().Format(time.RFC3339)))
+	return b.String()
 }
 
 func sortedKeys(m map[string]int64) []string {
-    keys := make([]string, 0, len(m))
-    for k := range m {
-        keys = append(keys, k)
-    }
-    sort.Strings(keys)
-    return keys
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 func sortedKeysLatency(m map[string]*latencyMetric) []string {
-    keys := make([]string, 0, len(m))
-    for k := range m {
-        keys = append(keys, k)
-    }
-    sort.Strings(keys)
-    return keys
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 func formatLabels(s string) string {
-    parts := strings.Split(s, ",")
-    for i, part := range parts {
-        kv := strings.SplitN(part, "=", 2)
-        if len(kv) != 2 {
-            continue
-        }
-        parts[i] = fmt.Sprintf(`%s="%s"`, kv[0], kv[1])
-    }
-    return strings.Join(parts, ",")
+	parts := strings.Split(s, ",")
+	for i, part := range parts {
+		kv := strings.SplitN(part, "=", 2)
+		if len(kv) != 2 {
+			continue
+		}
+		parts[i] = fmt.Sprintf(`%s="%s"`, kv[0], kv[1])
+	}
+	return strings.Join(parts, ",")
 }
 
 type latencyMetric struct {
-    buckets []latencyBucket
-    sumMs   int64
-    count   int64
+	buckets []latencyBucket
+	sumMs   int64
+	count   int64
 }
 
 type latencyBucket struct {
-    le    int64
-    count int64
+	le    int64
+	count int64
 }
 
 func newLatencyMetric() *latencyMetric {
-    return &latencyMetric{
-        buckets: []latencyBucket{
-            {le: 50}, {le: 100}, {le: 250}, {le: 500}, {le: 1000}, {le: 2500}, {le: 5000},
-        },
-    }
+	return &latencyMetric{
+		buckets: []latencyBucket{
+			{le: 50}, {le: 100}, {le: 250}, {le: 500}, {le: 1000}, {le: 2500}, {le: 5000},
+		},
+	}
 }
 
 func (l *latencyMetric) observe(duration time.Duration) {
-    ms := duration.Milliseconds()
-    l.sumMs += ms
-    l.count++
-    for i := range l.buckets {
-        if ms <= l.buckets[i].le {
-            l.buckets[i].count++
-        }
-    }
+	ms := duration.Milliseconds()
+	l.sumMs += ms
+	l.count++
+	for i := range l.buckets {
+		if ms <= l.buckets[i].le {
+			l.buckets[i].count++
+		}
+	}
 }

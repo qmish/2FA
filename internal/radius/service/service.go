@@ -11,6 +11,7 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/qmish/2FA/internal/api/metrics"
 	"github.com/qmish/2FA/internal/auth/providers"
 	"github.com/qmish/2FA/internal/models"
 	"github.com/qmish/2FA/internal/radius/protocol"
@@ -67,34 +68,42 @@ func (s *RadiusService) HandleAccessRequest(ctx context.Context, req protocol.Ac
 	user, err := s.lookupUser(ctx, req.Username)
 	if err != nil || user.Status != models.UserActive {
 		s.recordLogin(ctx, "", models.AuthDeny)
+		metrics.Default.IncRadiusRequest(string(models.RadiusReject))
 		return AccessResponse{Code: AccessReject, Message: "invalid_credentials"}
 	}
 	password, otp := splitPassword(req.Password)
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
 		s.recordLogin(ctx, user.ID, models.AuthDeny)
+		metrics.Default.IncRadiusRequest(string(models.RadiusReject))
 		return AccessResponse{Code: AccessReject, Message: "invalid_credentials"}
 	}
 	if otp == "" {
 		if err := s.sendChallenge(ctx, user, models.MethodOTP); err != nil {
 			s.recordLogin(ctx, user.ID, models.AuthError)
+			metrics.Default.IncRadiusRequest(string(models.RadiusError))
 			return AccessResponse{Code: AccessReject, Message: "otp_failed"}
 		}
 		s.recordLogin(ctx, user.ID, models.AuthTimeout)
+		metrics.Default.IncRadiusRequest(string(models.RadiusTimeout))
 		return AccessResponse{Code: AccessReject, Message: "otp_required"}
 	}
 	if method, ok := parseMethodKeyword(otp); ok {
 		if err := s.sendChallenge(ctx, user, method); err != nil {
 			s.recordLogin(ctx, user.ID, models.AuthError)
+			metrics.Default.IncRadiusRequest(string(models.RadiusError))
 			return AccessResponse{Code: AccessReject, Message: "otp_failed"}
 		}
 		s.recordLogin(ctx, user.ID, models.AuthTimeout)
+		metrics.Default.IncRadiusRequest(string(models.RadiusTimeout))
 		return AccessResponse{Code: AccessReject, Message: requiredMessage(method)}
 	}
 	if err := s.verifyCode(ctx, user, otp); err != nil {
 		s.recordLogin(ctx, user.ID, models.AuthDeny)
+		metrics.Default.IncRadiusRequest(string(models.RadiusReject))
 		return AccessResponse{Code: AccessReject, Message: err.Error()}
 	}
 	s.recordLogin(ctx, user.ID, models.AuthSuccess)
+	metrics.Default.IncRadiusRequest(string(models.RadiusAccept))
 	return AccessResponse{Code: AccessAccept, Message: "ok"}
 }
 
