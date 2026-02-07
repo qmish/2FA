@@ -145,3 +145,33 @@ func TestValidateRedisRequiredWhenRateLimitEnabled(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+
+func TestValidateRejectsDefaultSecrets(t *testing.T) {
+	cfg := Defaults()
+	cfg.DBURL = "postgres://user:pass@localhost:5432/2fa?sslmode=disable"
+	cfg.RedisURL = "redis://localhost:6379/0"
+
+	cfg.JWTSecret = "CHANGE_ME"
+	cfg.AdminJWTSecret = "admin"
+	cfg.RadiusSecret = "radius"
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for default jwt_secret")
+	}
+
+	cfg.JWTSecret = "secret"
+	cfg.AdminJWTSecret = "CHANGE_ME"
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for default admin_jwt_secret")
+	}
+
+	cfg.AdminJWTSecret = "admin"
+	cfg.RadiusSecret = "CHANGE_ME"
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for default radius_secret")
+	}
+
+	cfg.RadiusSecret = "radius"
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}

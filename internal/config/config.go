@@ -247,11 +247,20 @@ func (c Config) Validate() error {
 	if c.JWTSecret == "" {
 		return errors.New("jwt_secret is required")
 	}
+	if strings.EqualFold(c.JWTSecret, "change_me") {
+		return errors.New("jwt_secret must be set to a non-default value")
+	}
 	if c.AdminJWTSecret == "" {
 		return errors.New("admin_jwt_secret is required")
 	}
+	if strings.EqualFold(c.AdminJWTSecret, "change_me") {
+		return errors.New("admin_jwt_secret must be set to a non-default value")
+	}
 	if c.RadiusSecret == "" {
 		return errors.New("radius_secret is required")
+	}
+	if strings.EqualFold(c.RadiusSecret, "change_me") {
+		return errors.New("radius_secret must be set to a non-default value")
 	}
 	if (c.AuthLoginLimit > 0 || c.AuthVerifyLimit > 0) && c.RedisURL == "" {
 		return errors.New("redis_url is required when rate limiting is enabled")
