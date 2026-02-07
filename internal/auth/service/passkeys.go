@@ -46,23 +46,22 @@ func (r *realWebAuthnAdapter) ValidatePasskeyLogin(handler webauthn.Discoverable
 type webauthnSessionEntry struct {
 	data      *webauthn.SessionData
 	expiresAt time.Time
+	id        string
 }
 
-func (s *Service) WithWebAuthn(handler *webauthn.WebAuthn, repo repository.WebAuthnCredentialRepository) *Service {
+func (s *Service) WithWebAuthn(handler *webauthn.WebAuthn, repo repository.WebAuthnCredentialRepository, sessions repository.WebAuthnSessionRepository) *Service {
 	if handler != nil {
 		s.webauthnAdapter = &realWebAuthnAdapter{handler: handler}
 		s.webauthnParseCreation = protocol.ParseCredentialCreationResponseBytes
 		s.webauthnParseAssertion = protocol.ParseCredentialRequestResponseBytes
 	}
 	s.webauthnCreds = repo
-	if s.webauthnSessions == nil {
-		s.webauthnSessions = map[string]webauthnSessionEntry{}
-	}
+	s.webauthnSessions = sessions
 	return s
 }
 
 func (s *Service) BeginPasskeyRegistration(ctx context.Context, userID string) (dto.PasskeyRegisterBeginResponse, error) {
-	if s.webauthnAdapter == nil || s.webauthnCreds == nil {
+	if s.webauthnAdapter == nil || s.webauthnCreds == nil || s.webauthnSessions == nil {
 		return dto.PasskeyRegisterBeginResponse{}, ErrNotConfigured
 	}
 	if userID == "" {
@@ -91,7 +90,9 @@ func (s *Service) BeginPasskeyRegistration(ctx context.Context, userID string) (
 	if err != nil {
 		return dto.PasskeyRegisterBeginResponse{}, err
 	}
-	s.storeWebAuthnSession("register", userID, session)
+	if err := s.storeWebAuthnSession(ctx, "register", userID, "", session); err != nil {
+		return dto.PasskeyRegisterBeginResponse{}, err
+	}
 	payload, err := json.Marshal(creation)
 	if err != nil {
 		return dto.PasskeyRegisterBeginResponse{}, err
@@ -100,14 +101,14 @@ func (s *Service) BeginPasskeyRegistration(ctx context.Context, userID string) (
 }
 
 func (s *Service) FinishPasskeyRegistration(ctx context.Context, userID string, credential json.RawMessage) error {
-	if s.webauthnAdapter == nil || s.webauthnCreds == nil || s.webauthnParseCreation == nil {
+	if s.webauthnAdapter == nil || s.webauthnCreds == nil || s.webauthnParseCreation == nil || s.webauthnSessions == nil {
 		return ErrNotConfigured
 	}
 	if userID == "" {
 		return ErrNotFound
 	}
-	entry, ok := s.takeWebAuthnSession("register", userID)
-	if !ok {
+	entry, err := s.takeWebAuthnSession(ctx, "register", userID, "")
+	if err != nil {
 		return ErrChallengeNotFound
 	}
 	if s.now().After(entry.expiresAt) {
@@ -149,7 +150,7 @@ func (s *Service) FinishPasskeyRegistration(ctx context.Context, userID string, 
 }
 
 func (s *Service) BeginPasskeyLogin(ctx context.Context) (dto.PasskeyLoginBeginResponse, error) {
-	if s.webauthnAdapter == nil || s.webauthnCreds == nil {
+	if s.webauthnAdapter == nil || s.webauthnCreds == nil || s.webauthnSessions == nil {
 		return dto.PasskeyLoginBeginResponse{}, ErrNotConfigured
 	}
 	assertion, session, err := s.webauthnAdapter.BeginDiscoverableLogin()
@@ -161,19 +162,21 @@ func (s *Service) BeginPasskeyLogin(ctx context.Context) (dto.PasskeyLoginBeginR
 		return dto.PasskeyLoginBeginResponse{}, err
 	}
 	sessionID := uuid.NewString()
-	s.storeWebAuthnSession("login", sessionID, session)
+	if err := s.storeWebAuthnSession(ctx, "login", "", sessionID, session); err != nil {
+		return dto.PasskeyLoginBeginResponse{}, err
+	}
 	return dto.PasskeyLoginBeginResponse{Options: payload, SessionID: sessionID}, nil
 }
 
 func (s *Service) FinishPasskeyLogin(ctx context.Context, sessionID string, credential json.RawMessage, ip string, userAgent string) (dto.TokenPair, error) {
-	if s.webauthnAdapter == nil || s.webauthnCreds == nil || s.webauthnParseAssertion == nil {
+	if s.webauthnAdapter == nil || s.webauthnCreds == nil || s.webauthnParseAssertion == nil || s.webauthnSessions == nil {
 		return dto.TokenPair{}, ErrNotConfigured
 	}
 	if sessionID == "" {
 		return dto.TokenPair{}, ErrChallengeNotFound
 	}
-	entry, ok := s.takeWebAuthnSession("login", sessionID)
-	if !ok {
+	entry, err := s.takeWebAuthnSession(ctx, "login", "", sessionID)
+	if err != nil {
 		return dto.TokenPair{}, ErrChallengeNotFound
 	}
 	if s.now().After(entry.expiresAt) {
@@ -248,30 +251,60 @@ func (s *Service) FinishPasskeyLogin(ctx context.Context, sessionID string, cred
 	}, nil
 }
 
-func (s *Service) storeWebAuthnSession(kind string, userID string, data *webauthn.SessionData) {
+func (s *Service) storeWebAuthnSession(ctx context.Context, kind string, userID string, sessionID string, data *webauthn.SessionData) error {
 	if data == nil {
-		return
+		return nil
 	}
-	s.webauthnMu.Lock()
-	defer s.webauthnMu.Unlock()
 	if s.webauthnSessions == nil {
-		s.webauthnSessions = map[string]webauthnSessionEntry{}
+		return ErrNotConfigured
 	}
-	s.webauthnSessions[kind+":"+userID] = webauthnSessionEntry{
-		data:      data,
-		expiresAt: s.now().Add(s.ttl),
+	payload, err := json.Marshal(data)
+	if err != nil {
+		return err
 	}
+	now := s.now()
+	if kind == "register" && userID != "" {
+		_ = s.webauthnSessions.DeleteByTypeAndUser(ctx, kind, userID)
+	}
+	if sessionID == "" {
+		sessionID = uuid.NewString()
+	}
+	return s.webauthnSessions.Create(ctx, &models.WebAuthnSession{
+		ID:        sessionID,
+		Type:      kind,
+		UserID:    userID,
+		Data:      string(payload),
+		ExpiresAt: now.Add(s.ttl),
+		CreatedAt: now,
+	})
 }
 
-func (s *Service) takeWebAuthnSession(kind string, userID string) (webauthnSessionEntry, bool) {
-	s.webauthnMu.Lock()
-	defer s.webauthnMu.Unlock()
-	key := kind + ":" + userID
-	entry, ok := s.webauthnSessions[key]
-	if ok {
-		delete(s.webauthnSessions, key)
+func (s *Service) takeWebAuthnSession(ctx context.Context, kind string, userID string, sessionID string) (webauthnSessionEntry, error) {
+	if s.webauthnSessions == nil {
+		return webauthnSessionEntry{}, ErrNotConfigured
 	}
-	return entry, ok
+	var (
+		item *models.WebAuthnSession
+		err  error
+	)
+	if sessionID != "" {
+		item, err = s.webauthnSessions.GetByID(ctx, sessionID)
+	} else {
+		item, err = s.webauthnSessions.GetByTypeAndUser(ctx, kind, userID)
+	}
+	if err != nil {
+		return webauthnSessionEntry{}, err
+	}
+	_ = s.webauthnSessions.DeleteByID(ctx, item.ID)
+	var data webauthn.SessionData
+	if err := json.Unmarshal([]byte(item.Data), &data); err != nil {
+		return webauthnSessionEntry{}, err
+	}
+	return webauthnSessionEntry{
+		id:        item.ID,
+		data:      &data,
+		expiresAt: item.ExpiresAt,
+	}, nil
 }
 
 type webauthnUser struct {

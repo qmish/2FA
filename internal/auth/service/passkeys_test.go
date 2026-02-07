@@ -33,7 +33,7 @@ func TestPasskeyRegisterBeginStoresSession(t *testing.T) {
 	creds := &fakeWebAuthnCredentialRepo{}
 	svc.webauthnAdapter = adapter
 	svc.webauthnCreds = creds
-	svc.webauthnSessions = map[string]webauthnSessionEntry{}
+	svc.webauthnSessions = &fakeWebAuthnSessionRepo{}
 
 	resp, err := svc.BeginPasskeyRegistration(context.Background(), "u1")
 	if err != nil {
@@ -42,7 +42,8 @@ func TestPasskeyRegisterBeginStoresSession(t *testing.T) {
 	if len(resp.Options) == 0 {
 		t.Fatalf("expected options payload")
 	}
-	if _, ok := svc.webauthnSessions["register:u1"]; !ok {
+	repo, ok := svc.webauthnSessions.(*fakeWebAuthnSessionRepo)
+	if !ok || repo.itemsByTypeUser["register:u1"] == nil {
 		t.Fatalf("expected session stored")
 	}
 }
@@ -72,8 +73,16 @@ func TestPasskeyRegisterFinishStoresCredential(t *testing.T) {
 	svc.webauthnParseCreation = func(data []byte) (*protocol.ParsedCredentialCreationData, error) {
 		return &protocol.ParsedCredentialCreationData{}, nil
 	}
-	svc.webauthnSessions = map[string]webauthnSessionEntry{
-		"register:u1": {data: &webauthn.SessionData{Challenge: "challenge"}, expiresAt: time.Now().Add(time.Minute)},
+	svc.webauthnSessions = &fakeWebAuthnSessionRepo{
+		itemsByTypeUser: map[string]*models.WebAuthnSession{
+			"register:u1": {
+				ID:        "s1",
+				Type:      "register",
+				UserID:    "u1",
+				Data:      `{"challenge":"challenge"}`,
+				ExpiresAt: time.Now().Add(time.Minute),
+			},
+		},
 	}
 
 	if err := svc.FinishPasskeyRegistration(context.Background(), "u1", json.RawMessage(`{"id":"x"}`)); err != nil {
@@ -108,7 +117,7 @@ func TestPasskeyLoginBeginStoresSession(t *testing.T) {
 	}
 	svc.webauthnAdapter = adapter
 	svc.webauthnCreds = &fakeWebAuthnCredentialRepo{}
-	svc.webauthnSessions = map[string]webauthnSessionEntry{}
+	svc.webauthnSessions = &fakeWebAuthnSessionRepo{}
 
 	resp, err := svc.BeginPasskeyLogin(context.Background())
 	if err != nil {
@@ -117,7 +126,8 @@ func TestPasskeyLoginBeginStoresSession(t *testing.T) {
 	if resp.SessionID == "" || len(resp.Options) == 0 {
 		t.Fatalf("unexpected response: %+v", resp)
 	}
-	if _, ok := svc.webauthnSessions["login:"+resp.SessionID]; !ok {
+	repo, ok := svc.webauthnSessions.(*fakeWebAuthnSessionRepo)
+	if !ok || repo.itemsByID[resp.SessionID] == nil {
 		t.Fatalf("expected session stored")
 	}
 }
@@ -162,8 +172,15 @@ func TestPasskeyLoginFinishOK(t *testing.T) {
 			},
 		}, nil
 	}
-	svc.webauthnSessions = map[string]webauthnSessionEntry{
-		"login:s1": {data: &webauthn.SessionData{Challenge: "challenge"}, expiresAt: time.Now().Add(time.Minute)},
+	svc.webauthnSessions = &fakeWebAuthnSessionRepo{
+		itemsByID: map[string]*models.WebAuthnSession{
+			"s1": {
+				ID:        "s1",
+				Type:      "login",
+				Data:      `{"challenge":"challenge"}`,
+				ExpiresAt: time.Now().Add(time.Minute),
+			},
+		},
 	}
 
 	resp, err := svc.FinishPasskeyLogin(context.Background(), "s1", json.RawMessage(`{"id":"x"}`), "127.0.0.1", "ua")
@@ -236,5 +253,60 @@ func (f *fakeWebAuthnCredentialRepo) GetByCredentialID(ctx context.Context, cred
 func (f *fakeWebAuthnCredentialRepo) UpdateSignCount(ctx context.Context, id string, signCount int64, lastUsedAt time.Time) error {
 	f.updatedID = id
 	f.updatedCount = signCount
+	return nil
+}
+
+type fakeWebAuthnSessionRepo struct {
+	itemsByID       map[string]*models.WebAuthnSession
+	itemsByTypeUser map[string]*models.WebAuthnSession
+}
+
+func (f *fakeWebAuthnSessionRepo) Create(ctx context.Context, session *models.WebAuthnSession) error {
+	if f.itemsByID == nil {
+		f.itemsByID = map[string]*models.WebAuthnSession{}
+	}
+	f.itemsByID[session.ID] = session
+	if session.Type != "" && session.UserID != "" {
+		if f.itemsByTypeUser == nil {
+			f.itemsByTypeUser = map[string]*models.WebAuthnSession{}
+		}
+		f.itemsByTypeUser[session.Type+":"+session.UserID] = session
+	}
+	return nil
+}
+
+func (f *fakeWebAuthnSessionRepo) GetByTypeAndUser(ctx context.Context, sessionType string, userID string) (*models.WebAuthnSession, error) {
+	if f.itemsByTypeUser == nil {
+		return nil, repository.ErrNotFound
+	}
+	item, ok := f.itemsByTypeUser[sessionType+":"+userID]
+	if !ok {
+		return nil, repository.ErrNotFound
+	}
+	return item, nil
+}
+
+func (f *fakeWebAuthnSessionRepo) GetByID(ctx context.Context, id string) (*models.WebAuthnSession, error) {
+	if f.itemsByID == nil {
+		return nil, repository.ErrNotFound
+	}
+	item, ok := f.itemsByID[id]
+	if !ok {
+		return nil, repository.ErrNotFound
+	}
+	return item, nil
+}
+
+func (f *fakeWebAuthnSessionRepo) DeleteByID(ctx context.Context, id string) error {
+	if f.itemsByID != nil {
+		delete(f.itemsByID, id)
+	}
+	return nil
+}
+
+func (f *fakeWebAuthnSessionRepo) DeleteByTypeAndUser(ctx context.Context, sessionType string, userID string) error {
+	if f.itemsByTypeUser != nil {
+		delete(f.itemsByTypeUser, sessionType+":"+userID)
+	}
 	return nil
 }

@@ -69,6 +69,55 @@ function formatTime(value) {
   return value;
 }
 
+function toArrayBuffer(value) {
+  const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
+  const pad = "=".repeat((4 - (base64.length % 4)) % 4);
+  const raw = window.atob(base64 + pad);
+  const bytes = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i += 1) {
+    bytes[i] = raw.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
+function toBase64Url(buffer) {
+  const bytes = new Uint8Array(buffer);
+  let str = "";
+  for (let i = 0; i < bytes.byteLength; i += 1) {
+    str += String.fromCharCode(bytes[i]);
+  }
+  return window.btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function publicKeyCredentialToJSON(cred) {
+  if (!cred) return null;
+  const obj = {
+    id: cred.id,
+    type: cred.type,
+    rawId: toBase64Url(cred.rawId),
+    response: {},
+    clientExtensionResults: cred.getClientExtensionResults ? cred.getClientExtensionResults() : {},
+  };
+  if (cred.response) {
+    if (cred.response.clientDataJSON) {
+      obj.response.clientDataJSON = toBase64Url(cred.response.clientDataJSON);
+    }
+    if (cred.response.authenticatorData) {
+      obj.response.authenticatorData = toBase64Url(cred.response.authenticatorData);
+    }
+    if (cred.response.signature) {
+      obj.response.signature = toBase64Url(cred.response.signature);
+    }
+    if (cred.response.userHandle) {
+      obj.response.userHandle = toBase64Url(cred.response.userHandle);
+    }
+    if (cred.response.attestationObject) {
+      obj.response.attestationObject = toBase64Url(cred.response.attestationObject);
+    }
+  }
+  return obj;
+}
+
 function getAdminToken() {
   return window.localStorage.getItem("admin_token") || "";
 }
@@ -143,6 +192,45 @@ async function handleLogin() {
   } catch (err) {
     setResult("login-result", err);
     setStatus("login-status", false, err);
+  }
+}
+
+async function handlePasskeyLogin() {
+  setStatus("passkey-login-status", true);
+  try {
+    if (!window.PublicKeyCredential || !navigator.credentials) {
+      throw { status: 0, payload: "webauthn_not_supported" };
+    }
+    const begin = await api("/api/v1/auth/passkeys/login/begin", { method: "POST" });
+    const options = begin.public_key_options || begin.publicKey || begin;
+    const publicKey = options.publicKey || options;
+    if (publicKey.challenge) {
+      publicKey.challenge = toArrayBuffer(publicKey.challenge);
+    }
+    if (Array.isArray(publicKey.allowCredentials)) {
+      publicKey.allowCredentials = publicKey.allowCredentials.map((item) => ({
+        ...item,
+        id: toArrayBuffer(item.id),
+      }));
+    }
+    const credential = await navigator.credentials.get({
+      publicKey,
+      mediation: options.mediation || "optional",
+    });
+    const finish = await api("/api/v1/auth/passkeys/login/finish", {
+      method: "POST",
+      body: JSON.stringify({
+        session_id: begin.session_id,
+        credential: publicKeyCredentialToJSON(credential),
+      }),
+    });
+    setAccessToken(finish.access_token || "");
+    setRefreshToken(finish.refresh_token || "");
+    syncTokenFields();
+    setResult("login-result", finish);
+  } catch (err) {
+    setResult("login-result", err);
+    setStatus("passkey-login-status", false, err);
   }
 }
 
@@ -1009,6 +1097,7 @@ async function handleMetrics() {
 
 function initUI() {
   document.getElementById("login-btn").addEventListener("click", handleLogin);
+  document.getElementById("passkey-login-btn").addEventListener("click", handlePasskeyLogin);
   document.getElementById("register-btn").addEventListener("click", handleRegister);
   document.getElementById("verify-btn").addEventListener("click", handleVerify);
   document.getElementById("sessions-btn").addEventListener("click", handleSessions);

@@ -1060,3 +1060,139 @@ func TestWebAuthnCredentialRepositoryUpdateSignCount(t *testing.T) {
 		t.Fatalf("expectations: %v", err)
 	}
 }
+
+func TestWebAuthnSessionRepositoryCreate(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock: %v", err)
+	}
+	defer db.Close()
+
+	repo := NewWebAuthnSessionRepository(db)
+	now := time.Now()
+	item := &models.WebAuthnSession{
+		ID:        "s1",
+		Type:      "login",
+		UserID:    "u1",
+		Data:      `{"challenge":"c"}`,
+		ExpiresAt: now.Add(time.Minute),
+		CreatedAt: now,
+	}
+
+	mock.ExpectExec(regexp.QuoteMeta(`
+        INSERT INTO webauthn_sessions (id, type, user_id, data, expires_at, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6)`)).
+		WithArgs(item.ID, item.Type, item.UserID, item.Data, item.ExpiresAt, item.CreatedAt).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	if err := repo.Create(context.Background(), item); err != nil {
+		t.Fatalf("Create error: %v", err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("expectations: %v", err)
+	}
+}
+
+func TestWebAuthnSessionRepositoryGetByTypeAndUser(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock: %v", err)
+	}
+	defer db.Close()
+
+	repo := NewWebAuthnSessionRepository(db)
+	now := time.Now()
+	rows := sqlmock.NewRows([]string{"id", "type", "user_id", "data", "expires_at", "created_at"}).
+		AddRow("s1", "register", "u1", `{"challenge":"c"}`, now, now)
+
+	mock.ExpectQuery(regexp.QuoteMeta(`
+        SELECT id, type, COALESCE(user_id::text, ''), data, expires_at, created_at
+        FROM webauthn_sessions
+        WHERE type = $1 AND user_id = $2
+        ORDER BY created_at DESC
+        LIMIT 1`)).
+		WithArgs("register", "u1").
+		WillReturnRows(rows)
+
+	item, err := repo.GetByTypeAndUser(context.Background(), "register", "u1")
+	if err != nil {
+		t.Fatalf("GetByTypeAndUser error: %v", err)
+	}
+	if item.ID != "s1" || item.Type != "register" {
+		t.Fatalf("unexpected item: %+v", item)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("expectations: %v", err)
+	}
+}
+
+func TestWebAuthnSessionRepositoryGetByID(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock: %v", err)
+	}
+	defer db.Close()
+
+	repo := NewWebAuthnSessionRepository(db)
+	now := time.Now()
+	rows := sqlmock.NewRows([]string{"id", "type", "user_id", "data", "expires_at", "created_at"}).
+		AddRow("s1", "login", "", `{"challenge":"c"}`, now, now)
+
+	mock.ExpectQuery(regexp.QuoteMeta(`
+        SELECT id, type, COALESCE(user_id::text, ''), data, expires_at, created_at
+        FROM webauthn_sessions
+        WHERE id = $1`)).
+		WithArgs("s1").
+		WillReturnRows(rows)
+
+	item, err := repo.GetByID(context.Background(), "s1")
+	if err != nil {
+		t.Fatalf("GetByID error: %v", err)
+	}
+	if item.ID != "s1" || item.Type != "login" {
+		t.Fatalf("unexpected item: %+v", item)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("expectations: %v", err)
+	}
+}
+
+func TestWebAuthnSessionRepositoryDeleteByID(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock: %v", err)
+	}
+	defer db.Close()
+
+	repo := NewWebAuthnSessionRepository(db)
+	mock.ExpectExec(regexp.QuoteMeta(`DELETE FROM webauthn_sessions WHERE id = $1`)).
+		WithArgs("s1").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	if err := repo.DeleteByID(context.Background(), "s1"); err != nil {
+		t.Fatalf("DeleteByID error: %v", err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("expectations: %v", err)
+	}
+}
+
+func TestWebAuthnSessionRepositoryDeleteByTypeAndUser(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock: %v", err)
+	}
+	defer db.Close()
+
+	repo := NewWebAuthnSessionRepository(db)
+	mock.ExpectExec(regexp.QuoteMeta(`DELETE FROM webauthn_sessions WHERE type = $1 AND user_id = $2`)).
+		WithArgs("register", "u1").
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	if err := repo.DeleteByTypeAndUser(context.Background(), "register", "u1"); err != nil {
+		t.Fatalf("DeleteByTypeAndUser error: %v", err)
+	}
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("expectations: %v", err)
+	}
+}

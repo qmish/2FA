@@ -771,6 +771,71 @@ func (r *WebAuthnCredentialRepository) UpdateSignCount(ctx context.Context, id s
 	return err
 }
 
+type WebAuthnSessionRepository struct {
+	db *sql.DB
+}
+
+func NewWebAuthnSessionRepository(db *sql.DB) *WebAuthnSessionRepository {
+	return &WebAuthnSessionRepository{db: db}
+}
+
+func (r *WebAuthnSessionRepository) Create(ctx context.Context, session *models.WebAuthnSession) error {
+	_, err := r.db.ExecContext(ctx, `
+        INSERT INTO webauthn_sessions (id, type, user_id, data, expires_at, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6)`,
+		session.ID, session.Type, nullIfEmpty(session.UserID), session.Data, session.ExpiresAt, session.CreatedAt)
+	return err
+}
+
+func (r *WebAuthnSessionRepository) GetByTypeAndUser(ctx context.Context, sessionType string, userID string) (*models.WebAuthnSession, error) {
+	row := r.db.QueryRowContext(ctx, `
+        SELECT id, type, COALESCE(user_id::text, ''), data, expires_at, created_at
+        FROM webauthn_sessions
+        WHERE type = $1 AND user_id = $2
+        ORDER BY created_at DESC
+        LIMIT 1`, sessionType, userID)
+	var item models.WebAuthnSession
+	if err := row.Scan(&item.ID, &item.Type, &item.UserID, &item.Data, &item.ExpiresAt, &item.CreatedAt); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, repository.ErrNotFound
+		}
+		return nil, err
+	}
+	return &item, nil
+}
+
+func (r *WebAuthnSessionRepository) GetByID(ctx context.Context, id string) (*models.WebAuthnSession, error) {
+	row := r.db.QueryRowContext(ctx, `
+        SELECT id, type, COALESCE(user_id::text, ''), data, expires_at, created_at
+        FROM webauthn_sessions
+        WHERE id = $1`, id)
+	var item models.WebAuthnSession
+	if err := row.Scan(&item.ID, &item.Type, &item.UserID, &item.Data, &item.ExpiresAt, &item.CreatedAt); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, repository.ErrNotFound
+		}
+		return nil, err
+	}
+	return &item, nil
+}
+
+func (r *WebAuthnSessionRepository) DeleteByID(ctx context.Context, id string) error {
+	_, err := r.db.ExecContext(ctx, `DELETE FROM webauthn_sessions WHERE id = $1`, id)
+	return err
+}
+
+func (r *WebAuthnSessionRepository) DeleteByTypeAndUser(ctx context.Context, sessionType string, userID string) error {
+	_, err := r.db.ExecContext(ctx, `DELETE FROM webauthn_sessions WHERE type = $1 AND user_id = $2`, sessionType, userID)
+	return err
+}
+
+func nullIfEmpty(value string) any {
+	if value == "" {
+		return nil
+	}
+	return value
+}
+
 type InviteRepository struct {
 	db *sql.DB
 }

@@ -78,6 +78,15 @@ type WebAuthnCredential struct {
 	LastUsedAt   *time.Time
 }
 
+type WebAuthnSession struct {
+	ID        string
+	Type      string
+	UserID    string
+	Data      string
+	ExpiresAt time.Time
+	CreatedAt time.Time
+}
+
 type Invite struct {
 	ID        string
 	TokenHash string

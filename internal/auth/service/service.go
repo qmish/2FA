@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/go-webauthn/webauthn/protocol"
@@ -60,10 +59,9 @@ type Service struct {
 	recoveryCodes          repository.RecoveryCodeRepository
 	webauthnAdapter        webauthnAdapter
 	webauthnCreds          repository.WebAuthnCredentialRepository
-	webauthnSessions       map[string]webauthnSessionEntry
+	webauthnSessions       repository.WebAuthnSessionRepository
 	webauthnParseCreation  func([]byte) (*protocol.ParsedCredentialCreationData, error)
 	webauthnParseAssertion func([]byte) (*protocol.ParsedCredentialAssertionData, error)
-	webauthnMu             sync.Mutex
 	totpIssuer             string
 	totpDigits             int
 	totpPeriod             int

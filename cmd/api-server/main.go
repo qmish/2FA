@@ -57,6 +57,7 @@ func main() {
 	otpSecretRepo := postgres.NewOTPSecretRepository(db)
 	recoveryRepo := postgres.NewRecoveryCodeRepository(db)
 	webauthnRepo := postgres.NewWebAuthnCredentialRepository(db)
+	webauthnSessionRepo := postgres.NewWebAuthnSessionRepository(db)
 	sessionRepo := postgres.NewSessionRepository(db)
 	deviceRepo := postgres.NewDeviceRepository(db)
 	lockoutRepo := postgres.NewLockoutRepository(db)
@@ -122,7 +123,7 @@ func main() {
 		if err != nil {
 			log.Printf("webauthn disabled: %v", err)
 		} else {
-			authService.WithWebAuthn(wa, webauthnRepo)
+			authService.WithWebAuthn(wa, webauthnRepo, webauthnSessionRepo)
 		}
 	}
 	if cfg.LDAPURL != "" {

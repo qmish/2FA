@@ -120,6 +120,14 @@ type WebAuthnCredentialRepository interface {
 	UpdateSignCount(ctx context.Context, id string, signCount int64, lastUsedAt time.Time) error
 }
 
+type WebAuthnSessionRepository interface {
+	Create(ctx context.Context, session *models.WebAuthnSession) error
+	GetByTypeAndUser(ctx context.Context, sessionType string, userID string) (*models.WebAuthnSession, error)
+	GetByID(ctx context.Context, id string) (*models.WebAuthnSession, error)
+	DeleteByID(ctx context.Context, id string) error
+	DeleteByTypeAndUser(ctx context.Context, sessionType string, userID string) error
+}
+
 type InviteRepository interface {
 	Create(ctx context.Context, invite *models.Invite) error
 	GetByTokenHash(ctx context.Context, tokenHash string) (*models.Invite, error)

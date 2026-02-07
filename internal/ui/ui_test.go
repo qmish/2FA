@@ -19,6 +19,9 @@ func TestUIHandlerIndex(t *testing.T) {
 	if !strings.Contains(rec.Body.String(), "2FA Console") {
 		t.Fatalf("unexpected body: %s", rec.Body.String())
 	}
+	if !strings.Contains(rec.Body.String(), "Login with passkey") {
+		t.Fatalf("missing passkey login button: %s", rec.Body.String())
+	}
 	if !strings.Contains(rec.Body.String(), "Refresh token") {
 		t.Fatalf("missing refresh section: %s", rec.Body.String())
 	}
