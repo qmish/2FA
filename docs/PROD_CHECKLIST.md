@@ -16,7 +16,7 @@
 - [x] HA PostgreSQL (оператор/репликация).
 
 ## P2 (желательно)
-- [ ] NetworkPolicy для изоляции компонентов.
+- [x] NetworkPolicy для изоляции компонентов.
 - [ ] RBAC/ServiceAccount с минимальными правами.
 - [ ] SecurityContext (`runAsNonRoot`, `runAsUser`).
 - [ ] DR‑план с процедурами восстановления.
