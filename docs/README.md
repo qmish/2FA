@@ -41,3 +41,4 @@
 ## Прочее
 - Архив релизов: `releases/README.md`
 - Скрипты и утилиты: `scripts.md`
+- FAQ: `FAQ.md`
