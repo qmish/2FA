@@ -32,6 +32,14 @@ spec:
           ports:
             - containerPort: 1812
               protocol: UDP
+          startupProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - "pidof radius-server"
+            failureThreshold: 30
+            periodSeconds: 2
           resources:
             requests:
               cpu: "50m"

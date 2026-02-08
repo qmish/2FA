@@ -8,7 +8,7 @@
 - [x] Версионирование образов (теги `vX.Y.Z`).
 - [ ] Graceful shutdown для API и RADIUS.
 - [x] Startup probe для API.
-- [ ] Startup probe для RADIUS.
+- [x] Startup probe для RADIUS.
 - [ ] Healthcheck для RADIUS.
 - [ ] Автоматизация ротации секретов.
 - [ ] Регулярные тесты восстановления из бэкапов.
