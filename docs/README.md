@@ -41,6 +41,7 @@
 - ASA template: `ASA_TEMPLATE.md`
 - ASA ASDM guide: `ASA_ASDM_GUIDE.md`
 - RADIUS статус: `RADIUS_STATUS.md`
+- Прод‑гайд VPN: `VPN_PRODUCTION_DEPLOYMENT.md`
 
 ## Прочее
 - Архив релизов: `releases/README.md`

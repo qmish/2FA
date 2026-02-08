@@ -51,6 +51,12 @@
 - E2E проверки: `scripts/test-e2e.ps1` (нужен `E2E_BASE_URL`).
 - Нагрузочные тесты: `scripts/k6-load.js` (k6, переменная `BASE_URL`).
 
+## Cisco/ASA/RADIUS
+- AnyConnect quickstart: `docs/CISCO_ANYCONNECT_QUICKSTART.md`.
+- ASA ASDM guide: `docs/ASA_ASDM_GUIDE.md`.
+- RADIUS статус: `docs/RADIUS_STATUS.md`.
+- Прод‑гайд VPN: `docs/VPN_PRODUCTION_DEPLOYMENT.md`.
+
 ## Логирование
 - Для централизованного логирования можно использовать Loki/Promtail.
 - Примеры манифестов: `docs/k8s/logging-loki.yaml`, `docs/k8s/logging-promtail.yaml`.

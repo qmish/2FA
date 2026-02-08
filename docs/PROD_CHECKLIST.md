@@ -31,7 +31,7 @@
 - [x] Runbook и rollback инструкции.
 - [x] E2E тесты основных сценариев.
 - [x] SLO/SLA алерты.
-- [ ] Прод‑гайд для VPN (Cisco AnyConnect/ASA/FTD).
+- [x] Прод‑гайд для VPN (Cisco AnyConnect/ASA/FTD).
 - [ ] Runbook для VPN‑инцидентов (AnyConnect/RADIUS).
 - [ ] Документация по UDP‑балансировке RADIUS в проде.
 - [ ] Дашборд/витрина мониторинга RADIUS.
