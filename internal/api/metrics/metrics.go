@@ -21,6 +21,7 @@ type Registry struct {
 	radiusRequests          map[string]int64
 	redisPings              map[string]int64
 	dbPings                 map[string]int64
+	dbPoolStats             DBPoolStats
 	lockoutCreated          int64
 	lockoutActive           int64
 	lockoutCleared          int64
@@ -124,6 +125,21 @@ func (r *Registry) IncDBPing(result string) {
 	key := fmt.Sprintf("result=%s", result)
 	r.mu.Lock()
 	r.dbPings[key]++
+	r.mu.Unlock()
+}
+
+type DBPoolStats struct {
+	OpenConns      int
+	InUse          int
+	Idle           int
+	WaitCount      int64
+	WaitDurationMs int64
+	MaxOpenConns   int
+}
+
+func (r *Registry) SetDBPoolStats(stats DBPoolStats) {
+	r.mu.Lock()
+	r.dbPoolStats = stats
 	r.mu.Unlock()
 }
 
@@ -234,6 +250,24 @@ func (r *Registry) Render() string {
 		labels := formatLabels(k)
 		b.WriteString(fmt.Sprintf("db_ping_total{%s} %d\n", labels, r.dbPings[k]))
 	}
+	b.WriteString("# HELP db_pool_open_connections Open DB connections\n")
+	b.WriteString("# TYPE db_pool_open_connections gauge\n")
+	b.WriteString(fmt.Sprintf("db_pool_open_connections %d\n", r.dbPoolStats.OpenConns))
+	b.WriteString("# HELP db_pool_in_use Connections in use\n")
+	b.WriteString("# TYPE db_pool_in_use gauge\n")
+	b.WriteString(fmt.Sprintf("db_pool_in_use %d\n", r.dbPoolStats.InUse))
+	b.WriteString("# HELP db_pool_idle Idle connections\n")
+	b.WriteString("# TYPE db_pool_idle gauge\n")
+	b.WriteString(fmt.Sprintf("db_pool_idle %d\n", r.dbPoolStats.Idle))
+	b.WriteString("# HELP db_pool_wait_count Waiting for connection count\n")
+	b.WriteString("# TYPE db_pool_wait_count gauge\n")
+	b.WriteString(fmt.Sprintf("db_pool_wait_count %d\n", r.dbPoolStats.WaitCount))
+	b.WriteString("# HELP db_pool_wait_duration_ms Total wait duration ms\n")
+	b.WriteString("# TYPE db_pool_wait_duration_ms gauge\n")
+	b.WriteString(fmt.Sprintf("db_pool_wait_duration_ms %d\n", r.dbPoolStats.WaitDurationMs))
+	b.WriteString("# HELP db_pool_max_open_connections Max open connections\n")
+	b.WriteString("# TYPE db_pool_max_open_connections gauge\n")
+	b.WriteString(fmt.Sprintf("db_pool_max_open_connections %d\n", r.dbPoolStats.MaxOpenConns))
 	b.WriteString("# HELP lockout_created_total Lockouts created\n")
 	b.WriteString("# TYPE lockout_created_total counter\n")
 	b.WriteString(fmt.Sprintf("lockout_created_total %d\n", r.lockoutCreated))

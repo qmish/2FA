@@ -125,3 +125,34 @@ func TestDBPingMetrics(t *testing.T) {
 		t.Fatalf("missing error db ping counter")
 	}
 }
+
+func TestDBPoolStatsMetrics(t *testing.T) {
+	reg := NewRegistry()
+	reg.SetDBPoolStats(DBPoolStats{
+		OpenConns:      5,
+		InUse:          2,
+		Idle:           3,
+		WaitCount:      7,
+		WaitDurationMs: 120,
+		MaxOpenConns:   25,
+	})
+	out := reg.Render()
+	if !strings.Contains(out, "db_pool_open_connections 5") {
+		t.Fatalf("missing db_pool_open_connections")
+	}
+	if !strings.Contains(out, "db_pool_in_use 2") {
+		t.Fatalf("missing db_pool_in_use")
+	}
+	if !strings.Contains(out, "db_pool_idle 3") {
+		t.Fatalf("missing db_pool_idle")
+	}
+	if !strings.Contains(out, "db_pool_wait_count 7") {
+		t.Fatalf("missing db_pool_wait_count")
+	}
+	if !strings.Contains(out, "db_pool_wait_duration_ms 120") {
+		t.Fatalf("missing db_pool_wait_duration_ms")
+	}
+	if !strings.Contains(out, "db_pool_max_open_connections 25") {
+		t.Fatalf("missing db_pool_max_open_connections")
+	}
+}

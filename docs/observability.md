@@ -17,6 +17,7 @@
 - RADIUS: `radius_requests_total{result="accept|reject|timeout|error"}`
 - Redis: `redis_ping_total{result="success|error"}`
 - БД: `db_ping_total{result="success|error"}`
+- Пул БД: `db_pool_open_connections`, `db_pool_in_use`, `db_pool_idle`, `db_pool_wait_count`, `db_pool_wait_duration_ms`, `db_pool_max_open_connections`
 
 ## Tracing
 - Включается через `OTEL_EXPORTER_OTLP_ENDPOINT` (например, `http://otel-collector:4318`).

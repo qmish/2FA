@@ -240,6 +240,27 @@ func main() {
 		}
 	}()
 
+	go func() {
+		ticker := time.NewTicker(10 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				stats := db.Stats()
+				metrics.Default.SetDBPoolStats(metrics.DBPoolStats{
+					OpenConns:      stats.OpenConnections,
+					InUse:          stats.InUse,
+					Idle:           stats.Idle,
+					WaitCount:      stats.WaitCount,
+					WaitDurationMs: stats.WaitDuration.Milliseconds(),
+					MaxOpenConns:   stats.MaxOpenConnections,
+				})
+			}
+		}
+	}()
+
 	addr := ":" + cfg.HTTPPort
 	log.Printf("api-server listening on %s", addr)
 	server := &http.Server{
