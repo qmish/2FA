@@ -39,6 +39,7 @@
 
 ## Grafana
 - Импорт дашборда: `docs/observability/grafana-import.md`.
+- Витрина RADIUS: `docs/observability/radius-dashboard.md`.
 
 ## Доступ
 - Политика доступа: `docs/observability/access-policy.md`.

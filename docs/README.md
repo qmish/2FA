@@ -30,6 +30,7 @@
 - SLO/SLI: `observability/slo_sli.md`
 - Alerts: `observability/alerts.yaml`
 - Grafana: `observability/grafana-import.md`, `observability/grafana-dashboard.json`
+- Витрина RADIUS: `observability/radius-dashboard.md`
 - Retention: `observability/retention.md`
 
 ## Инфраструктура (K8s/Helm)
