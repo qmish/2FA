@@ -9,7 +9,7 @@
 - Продакшен‑рекомендации: `production.md`
 - Развёртывание: `deployment.md`
 - K3D: `k3d-deployment.md`
-- Скрипты доменного доступа: `DOMAIN_ACCESS.md`, `RADIUS_DOMAIN_ACCESS.md`
+- Скрипты доменного доступа: `RADIUS_DOMAIN_ACCESS.md`
 
 ## UI и админка
 - UI доступ: `UI_ACCESS.md`
@@ -37,7 +37,6 @@
 - AnyConnect quickstart: `CISCO_ANYCONNECT_QUICKSTART.md`
 - ASA template: `ASA_TEMPLATE.md`
 - ASA ASDM guide: `ASA_ASDM_GUIDE.md`
-- AnyConnect testing: `CISCO_ANYCONNECT_TESTING.md`
 - Создание VPN пользователя: `CREATE_VPN_USER.md`
 - RADIUS статус: `RADIUS_STATUS.md`
 

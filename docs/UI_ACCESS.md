@@ -51,6 +51,24 @@ Service `api-server` использует `NodePort` (по умолчанию `3
 Если порт занят, измените `nodePort` в `docs/k8s/api-service.yaml`
 и примените манифест.
 
+### Доступ по доменному имени (для локального теста)
+
+1. Добавьте в hosts:
+   - **Windows**:
+     ```powershell
+     Add-Content -Path "C:\Windows\System32\drivers\etc\hosts" -Value "`n127.0.0.1`t2fa.local"
+     ```
+   - **Linux/macOS**:
+     ```bash
+     echo "127.0.0.1    2fa.local" | sudo tee -a /etc/hosts
+     ```
+2. Откройте: http://2fa.local/ui/
+
+Для автоматической настройки используйте:
+```powershell
+.\scripts\setup-domain.ps1
+```
+
 ## Возможности UI
 
 UI включает следующие разделы:
