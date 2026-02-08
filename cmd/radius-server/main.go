@@ -23,7 +23,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	db, err := postgres.Open(cfg.DBURL)
+	db, err := postgres.OpenWithConfig(cfg.DBURL, postgres.PoolConfig{
+		MaxOpenConns:    cfg.DBMaxOpenConns,
+		MaxIdleConns:    cfg.DBMaxIdleConns,
+		ConnMaxLifetime: cfg.DBConnMaxLifetime,
+		ConnMaxIdleTime: cfg.DBConnMaxIdleTime,
+	})
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -18,3 +18,7 @@ data:
   PROVIDER_MAX_RETRIES: {{ .Values.config.PROVIDER_MAX_RETRIES | quote }}
   PROVIDER_BREAKER_FAILURES: {{ .Values.config.PROVIDER_BREAKER_FAILURES | quote }}
   PROVIDER_BREAKER_TIMEOUT: {{ .Values.config.PROVIDER_BREAKER_TIMEOUT | quote }}
+  DB_MAX_OPEN_CONNS: {{ .Values.config.DB_MAX_OPEN_CONNS | quote }}
+  DB_MAX_IDLE_CONNS: {{ .Values.config.DB_MAX_IDLE_CONNS | quote }}
+  DB_CONN_MAX_LIFETIME: {{ .Values.config.DB_CONN_MAX_LIFETIME | quote }}
+  DB_CONN_MAX_IDLE_TIME: {{ .Values.config.DB_CONN_MAX_IDLE_TIME | quote }}

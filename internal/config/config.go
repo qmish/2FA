@@ -43,6 +43,10 @@ type Config struct {
 	ProviderMaxRetries      int           `yaml:"provider_max_retries"`
 	ProviderBreakerFailures int           `yaml:"provider_breaker_failures"`
 	ProviderBreakerTimeout  time.Duration `yaml:"provider_breaker_timeout"`
+	DBMaxOpenConns          int           `yaml:"db_max_open_conns"`
+	DBMaxIdleConns          int           `yaml:"db_max_idle_conns"`
+	DBConnMaxLifetime       time.Duration `yaml:"db_conn_max_lifetime"`
+	DBConnMaxIdleTime       time.Duration `yaml:"db_conn_max_idle_time"`
 }
 
 func Defaults() Config {
@@ -64,6 +68,10 @@ func Defaults() Config {
 		ProviderMaxRetries:      2,
 		ProviderBreakerFailures: 3,
 		ProviderBreakerTimeout:  30 * time.Second,
+		DBMaxOpenConns:          25,
+		DBMaxIdleConns:          10,
+		DBConnMaxLifetime:       30 * time.Minute,
+		DBConnMaxIdleTime:       5 * time.Minute,
 	}
 }
 
@@ -179,6 +187,26 @@ func LoadFromEnv() Config {
 	if v := os.Getenv("PROVIDER_BREAKER_TIMEOUT"); v != "" {
 		if d, err := time.ParseDuration(v); err == nil {
 			cfg.ProviderBreakerTimeout = d
+		}
+	}
+	if v := os.Getenv("DB_MAX_OPEN_CONNS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			cfg.DBMaxOpenConns = n
+		}
+	}
+	if v := os.Getenv("DB_MAX_IDLE_CONNS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			cfg.DBMaxIdleConns = n
+		}
+	}
+	if v := os.Getenv("DB_CONN_MAX_LIFETIME"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			cfg.DBConnMaxLifetime = d
+		}
+	}
+	if v := os.Getenv("DB_CONN_MAX_IDLE_TIME"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			cfg.DBConnMaxIdleTime = d
 		}
 	}
 	return cfg
@@ -301,6 +329,18 @@ func merge(env Config, file Config) Config {
 	if env.ProviderBreakerTimeout != Defaults().ProviderBreakerTimeout {
 		file.ProviderBreakerTimeout = env.ProviderBreakerTimeout
 	}
+	if env.DBMaxOpenConns != Defaults().DBMaxOpenConns {
+		file.DBMaxOpenConns = env.DBMaxOpenConns
+	}
+	if env.DBMaxIdleConns != Defaults().DBMaxIdleConns {
+		file.DBMaxIdleConns = env.DBMaxIdleConns
+	}
+	if env.DBConnMaxLifetime != Defaults().DBConnMaxLifetime {
+		file.DBConnMaxLifetime = env.DBConnMaxLifetime
+	}
+	if env.DBConnMaxIdleTime != Defaults().DBConnMaxIdleTime {
+		file.DBConnMaxIdleTime = env.DBConnMaxIdleTime
+	}
 	return file
 }
 
@@ -392,6 +432,21 @@ func (c Config) Validate() error {
 	}
 	if c.ProviderBreakerFailures > 0 && c.ProviderBreakerTimeout <= 0 {
 		return errors.New("provider_breaker_timeout must be positive when breaker is enabled")
+	}
+	if c.DBMaxOpenConns < 0 {
+		return errors.New("db_max_open_conns must be non-negative")
+	}
+	if c.DBMaxIdleConns < 0 {
+		return errors.New("db_max_idle_conns must be non-negative")
+	}
+	if c.DBMaxOpenConns > 0 && c.DBMaxIdleConns > c.DBMaxOpenConns {
+		return errors.New("db_max_idle_conns must be <= db_max_open_conns")
+	}
+	if c.DBConnMaxLifetime < 0 {
+		return errors.New("db_conn_max_lifetime must be non-negative")
+	}
+	if c.DBConnMaxIdleTime < 0 {
+		return errors.New("db_conn_max_idle_time must be non-negative")
 	}
 	return nil
 }

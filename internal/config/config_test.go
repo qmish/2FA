@@ -16,6 +16,10 @@ func TestLoadFromEnv(t *testing.T) {
 	t.Setenv("PROVIDER_MAX_RETRIES", "3")
 	t.Setenv("PROVIDER_BREAKER_FAILURES", "4")
 	t.Setenv("PROVIDER_BREAKER_TIMEOUT", "45s")
+	t.Setenv("DB_MAX_OPEN_CONNS", "30")
+	t.Setenv("DB_MAX_IDLE_CONNS", "15")
+	t.Setenv("DB_CONN_MAX_LIFETIME", "40m")
+	t.Setenv("DB_CONN_MAX_IDLE_TIME", "7m")
 
 	cfg := LoadFromEnv()
 	if cfg.HTTPPort != "9090" {
@@ -44,6 +48,18 @@ func TestLoadFromEnv(t *testing.T) {
 	}
 	if cfg.ProviderBreakerTimeout != 45*time.Second {
 		t.Fatalf("expected PROVIDER_BREAKER_TIMEOUT 45s, got %v", cfg.ProviderBreakerTimeout)
+	}
+	if cfg.DBMaxOpenConns != 30 {
+		t.Fatalf("expected DB_MAX_OPEN_CONNS 30, got %v", cfg.DBMaxOpenConns)
+	}
+	if cfg.DBMaxIdleConns != 15 {
+		t.Fatalf("expected DB_MAX_IDLE_CONNS 15, got %v", cfg.DBMaxIdleConns)
+	}
+	if cfg.DBConnMaxLifetime != 40*time.Minute {
+		t.Fatalf("expected DB_CONN_MAX_LIFETIME 40m, got %v", cfg.DBConnMaxLifetime)
+	}
+	if cfg.DBConnMaxIdleTime != 7*time.Minute {
+		t.Fatalf("expected DB_CONN_MAX_IDLE_TIME 7m, got %v", cfg.DBConnMaxIdleTime)
 	}
 }
 
@@ -225,6 +241,43 @@ func TestValidateProviderRetryConfig(t *testing.T) {
 	}
 
 	cfg.ProviderBreakerTimeout = 15 * time.Second
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestValidateDBPoolConfig(t *testing.T) {
+	cfg := Defaults()
+	cfg.DBURL = "postgres://user:pass@localhost:5432/2fa?sslmode=disable"
+	cfg.JWTSecret = "secret"
+	cfg.AdminJWTSecret = "admin"
+	cfg.RadiusSecret = "radius"
+	cfg.RedisURL = "redis://localhost:6379/0"
+
+	cfg.DBMaxOpenConns = -1
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for db_max_open_conns")
+	}
+
+	cfg.DBMaxOpenConns = 10
+	cfg.DBMaxIdleConns = 20
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for db_max_idle_conns")
+	}
+
+	cfg.DBMaxIdleConns = 5
+	cfg.DBConnMaxLifetime = -1 * time.Second
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for db_conn_max_lifetime")
+	}
+
+	cfg.DBConnMaxLifetime = 10 * time.Minute
+	cfg.DBConnMaxIdleTime = -1 * time.Second
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for db_conn_max_idle_time")
+	}
+
+	cfg.DBConnMaxIdleTime = 2 * time.Minute
 	if err := cfg.Validate(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
