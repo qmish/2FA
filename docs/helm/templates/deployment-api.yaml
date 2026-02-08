@@ -27,6 +27,12 @@ spec:
           image: {{ .Values.image.api }}
           ports:
             - containerPort: 8080
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            failureThreshold: 30
+            periodSeconds: 2
           resources:
             requests:
               cpu: {{ .Values.resources.api.requests.cpu | quote }}

@@ -33,6 +33,7 @@
 - Для Redis используйте PersistentVolume вместо `emptyDir`.
 - Для HA PostgreSQL используйте оператор (пример: `docs/k8s/postgres-cnpg.yaml`).
 - Для API можно включить HPA: `docs/k8s/api-hpa.yaml` или Helm `hpa.enabled`.
+- Для API добавлен startupProbe (ускоряет безопасный старт).
 
 ## Мониторинг
 - Для Prometheus Operator используйте ServiceMonitor: `docs/k8s/api-servicemonitor.yaml`.
