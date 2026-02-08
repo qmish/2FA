@@ -61,6 +61,12 @@ backup:
   schedule: "0 2 * * *"
   storage: "10Gi"
 
+backupVerify:
+  enabled: false
+  schedule: "0 5 * * *"
+  maxAgeHours: 48
+  image: "alpine:3.20"
+
 config:
   HTTP_PORT: "8080"
   RADIUS_ADDR: ":1812"

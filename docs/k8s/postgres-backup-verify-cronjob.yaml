@@ -1,0 +1,42 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-backup-verify
+spec:
+  schedule: "0 5 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: pg-backup-verify
+              image: alpine:3.20
+              env:
+                - name: MAX_AGE_HOURS
+                  value: "48"
+              command:
+                - /bin/sh
+                - -c
+                - >
+                  set -euo pipefail;
+                  latest=$(ls -1t /backup/backup-*.sql | head -n 1);
+                  if [ -z "$latest" ]; then echo "no backups found"; exit 1; fi;
+                  now=$(date +%s);
+                  mtime=$(date -r "$latest" +%s);
+                  age_hours=$(( (now - mtime) / 3600 ));
+                  if [ "$age_hours" -gt "$MAX_AGE_HOURS" ]; then
+                    echo "backup too old: ${age_hours}h";
+                    exit 1;
+                  fi;
+                  echo "backup ok: ${age_hours}h";
+              volumeMounts:
+                - name: backup
+                  mountPath: /backup
+          volumes:
+            - name: backup
+              persistentVolumeClaim:
+                claimName: postgres-backup-pvc
