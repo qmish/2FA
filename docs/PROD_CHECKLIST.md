@@ -27,7 +27,7 @@
 - [x] Circuit breaker/Retry для внешних провайдеров.
 - [x] Runbook и rollback инструкции.
 - [x] E2E тесты основных сценариев.
-- [ ] SLO/SLA алерты.
+- [x] SLO/SLA алерты.
 
 ## P2 (желательно)
 - [x] NetworkPolicy для изоляции компонентов.

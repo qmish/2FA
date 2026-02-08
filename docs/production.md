@@ -70,6 +70,7 @@
 
 ## Alertmanager
 - Пример развёртывания Alertmanager: `docs/k8s/alertmanager.yaml`.
+- Примеры SLO/SLA алертов: `docs/observability/alerts.yaml`.
 
 ## SSL для PostgreSQL
 - Используйте TLS и `sslmode=require` в `DB_URL`.

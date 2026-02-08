@@ -30,6 +30,7 @@
 
 ## Alertmanager
 - Базовый пример развёртывания: `docs/k8s/alertmanager.yaml`.
+- Примеры SLO/SLA алертов: `docs/observability/alerts.yaml`.
 
 ## Ретенция
 - Политика ретенции и примеры настроек: `docs/observability/retention.md`.
