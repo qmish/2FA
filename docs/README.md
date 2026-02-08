@@ -1,7 +1,7 @@
 # Навигация по документации
 
 ## Общее
-- Архитектура: `architecture.md`
+- Архитектура: `architecture/README.md`
 - Анализ и план: `ANALYSIS.md`
 - OpenAPI: `openapi.yaml`
 
