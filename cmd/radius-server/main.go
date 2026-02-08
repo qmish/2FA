@@ -35,6 +35,7 @@ func main() {
 	auditRepo := postgres.NewAuditRepository(db)
 
 	registry := providers.NewRegistry()
+	registry.ConfigureRetry(cfg.ProviderMaxRetries, cfg.ProviderBreakerFailures, cfg.ProviderBreakerTimeout)
 	if cfg.ExpressMobileURL != "" && cfg.ExpressMobileKey != "" {
 		express := providers.NewExpressMobileClient(cfg.ExpressMobileURL, cfg.ExpressMobileKey)
 		registry.RegisterSMS(providers.DefaultSMSProvider, express)

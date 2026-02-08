@@ -25,3 +25,6 @@ webauthn_rp_name: "2FA"
 otel_exporter_otlp_endpoint: ""
 otel_service_name: "2fa"
 otel_sample_ratio: 1.0
+provider_max_retries: 2
+provider_breaker_failures: 3
+provider_breaker_timeout: 30s

@@ -13,6 +13,9 @@ func TestLoadFromEnv(t *testing.T) {
 	t.Setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://otel:4318")
 	t.Setenv("OTEL_SERVICE_NAME", "2fa-api")
 	t.Setenv("OTEL_SAMPLE_RATIO", "0.5")
+	t.Setenv("PROVIDER_MAX_RETRIES", "3")
+	t.Setenv("PROVIDER_BREAKER_FAILURES", "4")
+	t.Setenv("PROVIDER_BREAKER_TIMEOUT", "45s")
 
 	cfg := LoadFromEnv()
 	if cfg.HTTPPort != "9090" {
@@ -32,6 +35,15 @@ func TestLoadFromEnv(t *testing.T) {
 	}
 	if cfg.OTelSampleRatio != 0.5 {
 		t.Fatalf("expected OTEL_SAMPLE_RATIO 0.5, got %v", cfg.OTelSampleRatio)
+	}
+	if cfg.ProviderMaxRetries != 3 {
+		t.Fatalf("expected PROVIDER_MAX_RETRIES 3, got %v", cfg.ProviderMaxRetries)
+	}
+	if cfg.ProviderBreakerFailures != 4 {
+		t.Fatalf("expected PROVIDER_BREAKER_FAILURES 4, got %v", cfg.ProviderBreakerFailures)
+	}
+	if cfg.ProviderBreakerTimeout != 45*time.Second {
+		t.Fatalf("expected PROVIDER_BREAKER_TIMEOUT 45s, got %v", cfg.ProviderBreakerTimeout)
 	}
 }
 
@@ -182,6 +194,37 @@ func TestValidateOTelConfig(t *testing.T) {
 	}
 
 	cfg.OTelSampleRatio = 0.5
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestValidateProviderRetryConfig(t *testing.T) {
+	cfg := Defaults()
+	cfg.DBURL = "postgres://user:pass@localhost:5432/2fa?sslmode=disable"
+	cfg.JWTSecret = "secret"
+	cfg.AdminJWTSecret = "admin"
+	cfg.RadiusSecret = "radius"
+	cfg.RedisURL = "redis://localhost:6379/0"
+
+	cfg.ProviderMaxRetries = -1
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for provider_max_retries")
+	}
+
+	cfg.ProviderMaxRetries = 2
+	cfg.ProviderBreakerFailures = -2
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for provider_breaker_failures")
+	}
+
+	cfg.ProviderBreakerFailures = 2
+	cfg.ProviderBreakerTimeout = 0
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for provider_breaker_timeout")
+	}
+
+	cfg.ProviderBreakerTimeout = 15 * time.Second
 	if err := cfg.Validate(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

@@ -102,6 +102,7 @@ func main() {
 	adminHandler := handlers.NewAdminHandler(adminService, authorizer)
 
 	registry := providers.NewRegistry()
+	registry.ConfigureRetry(cfg.ProviderMaxRetries, cfg.ProviderBreakerFailures, cfg.ProviderBreakerTimeout)
 	if cfg.ExpressMobileURL != "" && cfg.ExpressMobileKey != "" {
 		express := providers.NewExpressMobileClient(cfg.ExpressMobileURL, cfg.ExpressMobileKey)
 		registry.RegisterSMS(providers.DefaultSMSProvider, express)

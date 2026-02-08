@@ -13,51 +13,57 @@ import (
 )
 
 type Config struct {
-	HTTPPort         string        `yaml:"http_port"`
-	RadiusAddr       string        `yaml:"radius_addr"`
-	RadiusHealthAddr string        `yaml:"radius_health_addr"`
-	RadiusSecret     string        `yaml:"radius_secret"`
-	DBURL            string        `yaml:"db_url"`
-	RedisURL         string        `yaml:"redis_url"`
-	LDAPURL          string        `yaml:"ldap_url"`
-	LDAPTimeout      time.Duration `yaml:"ldap_timeout"`
-	ExpressMobileURL string        `yaml:"express_mobile_url"`
-	ExpressMobileKey string        `yaml:"express_mobile_key"`
-	FCMServerKey     string        `yaml:"fcm_server_key"`
-	JWTSecret        string        `yaml:"jwt_secret"`
-	JWTIssuer        string        `yaml:"jwt_issuer"`
-	JWTTTL           time.Duration `yaml:"jwt_ttl"`
-	AdminJWTSecret   string        `yaml:"admin_jwt_secret"`
-	AdminJWTIssuer   string        `yaml:"admin_jwt_issuer"`
-	AdminJWTTTL      time.Duration `yaml:"admin_jwt_ttl"`
-	AuthChallengeTTL time.Duration `yaml:"auth_challenge_ttl"`
-	SessionTTL       time.Duration `yaml:"session_ttl"`
-	AuthLoginLimit   int           `yaml:"auth_login_limit"`
-	AuthVerifyLimit  int           `yaml:"auth_verify_limit"`
-	WebAuthnRPID     string        `yaml:"webauthn_rp_id"`
-	WebAuthnRPOrigin string        `yaml:"webauthn_rp_origin"`
-	WebAuthnRPName   string        `yaml:"webauthn_rp_name"`
-	OTelEndpoint     string        `yaml:"otel_exporter_otlp_endpoint"`
-	OTelServiceName  string        `yaml:"otel_service_name"`
-	OTelSampleRatio  float64       `yaml:"otel_sample_ratio"`
+	HTTPPort                string        `yaml:"http_port"`
+	RadiusAddr              string        `yaml:"radius_addr"`
+	RadiusHealthAddr        string        `yaml:"radius_health_addr"`
+	RadiusSecret            string        `yaml:"radius_secret"`
+	DBURL                   string        `yaml:"db_url"`
+	RedisURL                string        `yaml:"redis_url"`
+	LDAPURL                 string        `yaml:"ldap_url"`
+	LDAPTimeout             time.Duration `yaml:"ldap_timeout"`
+	ExpressMobileURL        string        `yaml:"express_mobile_url"`
+	ExpressMobileKey        string        `yaml:"express_mobile_key"`
+	FCMServerKey            string        `yaml:"fcm_server_key"`
+	JWTSecret               string        `yaml:"jwt_secret"`
+	JWTIssuer               string        `yaml:"jwt_issuer"`
+	JWTTTL                  time.Duration `yaml:"jwt_ttl"`
+	AdminJWTSecret          string        `yaml:"admin_jwt_secret"`
+	AdminJWTIssuer          string        `yaml:"admin_jwt_issuer"`
+	AdminJWTTTL             time.Duration `yaml:"admin_jwt_ttl"`
+	AuthChallengeTTL        time.Duration `yaml:"auth_challenge_ttl"`
+	SessionTTL              time.Duration `yaml:"session_ttl"`
+	AuthLoginLimit          int           `yaml:"auth_login_limit"`
+	AuthVerifyLimit         int           `yaml:"auth_verify_limit"`
+	WebAuthnRPID            string        `yaml:"webauthn_rp_id"`
+	WebAuthnRPOrigin        string        `yaml:"webauthn_rp_origin"`
+	WebAuthnRPName          string        `yaml:"webauthn_rp_name"`
+	OTelEndpoint            string        `yaml:"otel_exporter_otlp_endpoint"`
+	OTelServiceName         string        `yaml:"otel_service_name"`
+	OTelSampleRatio         float64       `yaml:"otel_sample_ratio"`
+	ProviderMaxRetries      int           `yaml:"provider_max_retries"`
+	ProviderBreakerFailures int           `yaml:"provider_breaker_failures"`
+	ProviderBreakerTimeout  time.Duration `yaml:"provider_breaker_timeout"`
 }
 
 func Defaults() Config {
 	return Config{
-		HTTPPort:         "8080",
-		RadiusAddr:       ":1812",
-		RadiusHealthAddr: ":8090",
-		JWTIssuer:        "2fa",
-		JWTTTL:           15 * time.Minute,
-		AdminJWTIssuer:   "2fa",
-		AdminJWTTTL:      15 * time.Minute,
-		AuthChallengeTTL: 5 * time.Minute,
-		SessionTTL:       24 * time.Hour,
-		AuthLoginLimit:   10,
-		AuthVerifyLimit:  10,
-		LDAPTimeout:      5 * time.Second,
-		OTelServiceName:  "2fa",
-		OTelSampleRatio:  1.0,
+		HTTPPort:                "8080",
+		RadiusAddr:              ":1812",
+		RadiusHealthAddr:        ":8090",
+		JWTIssuer:               "2fa",
+		JWTTTL:                  15 * time.Minute,
+		AdminJWTIssuer:          "2fa",
+		AdminJWTTTL:             15 * time.Minute,
+		AuthChallengeTTL:        5 * time.Minute,
+		SessionTTL:              24 * time.Hour,
+		AuthLoginLimit:          10,
+		AuthVerifyLimit:         10,
+		LDAPTimeout:             5 * time.Second,
+		OTelServiceName:         "2fa",
+		OTelSampleRatio:         1.0,
+		ProviderMaxRetries:      2,
+		ProviderBreakerFailures: 3,
+		ProviderBreakerTimeout:  30 * time.Second,
 	}
 }
 
@@ -158,6 +164,21 @@ func LoadFromEnv() Config {
 	if v := os.Getenv("OTEL_SAMPLE_RATIO"); v != "" {
 		if ratio, err := strconv.ParseFloat(v, 64); err == nil {
 			cfg.OTelSampleRatio = ratio
+		}
+	}
+	if v := os.Getenv("PROVIDER_MAX_RETRIES"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			cfg.ProviderMaxRetries = n
+		}
+	}
+	if v := os.Getenv("PROVIDER_BREAKER_FAILURES"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			cfg.ProviderBreakerFailures = n
+		}
+	}
+	if v := os.Getenv("PROVIDER_BREAKER_TIMEOUT"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			cfg.ProviderBreakerTimeout = d
 		}
 	}
 	return cfg
@@ -271,6 +292,15 @@ func merge(env Config, file Config) Config {
 	if env.OTelSampleRatio != Defaults().OTelSampleRatio {
 		file.OTelSampleRatio = env.OTelSampleRatio
 	}
+	if env.ProviderMaxRetries != Defaults().ProviderMaxRetries {
+		file.ProviderMaxRetries = env.ProviderMaxRetries
+	}
+	if env.ProviderBreakerFailures != Defaults().ProviderBreakerFailures {
+		file.ProviderBreakerFailures = env.ProviderBreakerFailures
+	}
+	if env.ProviderBreakerTimeout != Defaults().ProviderBreakerTimeout {
+		file.ProviderBreakerTimeout = env.ProviderBreakerTimeout
+	}
 	return file
 }
 
@@ -353,6 +383,15 @@ func (c Config) Validate() error {
 	}
 	if c.OTelSampleRatio < 0 || c.OTelSampleRatio > 1 {
 		return errors.New("otel_sample_ratio must be between 0 and 1")
+	}
+	if c.ProviderMaxRetries < 0 {
+		return errors.New("provider_max_retries must be non-negative")
+	}
+	if c.ProviderBreakerFailures < 0 {
+		return errors.New("provider_breaker_failures must be non-negative")
+	}
+	if c.ProviderBreakerFailures > 0 && c.ProviderBreakerTimeout <= 0 {
+		return errors.New("provider_breaker_timeout must be positive when breaker is enabled")
 	}
 	return nil
 }

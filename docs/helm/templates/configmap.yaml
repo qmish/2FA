@@ -15,3 +15,6 @@ data:
   OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.config.OTEL_EXPORTER_OTLP_ENDPOINT | quote }}
   OTEL_SERVICE_NAME: {{ .Values.config.OTEL_SERVICE_NAME | quote }}
   OTEL_SAMPLE_RATIO: {{ .Values.config.OTEL_SAMPLE_RATIO | quote }}
+  PROVIDER_MAX_RETRIES: {{ .Values.config.PROVIDER_MAX_RETRIES | quote }}
+  PROVIDER_BREAKER_FAILURES: {{ .Values.config.PROVIDER_BREAKER_FAILURES | quote }}
+  PROVIDER_BREAKER_TIMEOUT: {{ .Values.config.PROVIDER_BREAKER_TIMEOUT | quote }}

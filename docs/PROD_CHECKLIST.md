@@ -24,7 +24,7 @@
 - [x] Экспорт и хранение конфигов/манифестов (GitOps-структура).
 - [x] Distributed tracing (OpenTelemetry).
 - [x] Метрики RADIUS и Redis.
-- [ ] Circuit breaker/Retry для внешних провайдеров.
+- [x] Circuit breaker/Retry для внешних провайдеров.
 - [ ] Runbook и rollback инструкции.
 - [ ] E2E тесты основных сценариев.
 - [ ] SLO/SLA алерты.
