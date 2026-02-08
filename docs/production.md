@@ -57,6 +57,7 @@
 - RADIUS статус: `docs/RADIUS_STATUS.md`.
 - UDP‑балансировка RADIUS: `docs/RADIUS_UDP_BALANCING.md`.
 - Тест восстановления RADIUS/VPN: `docs/RADIUS_VPN_RECOVERY_TEST.md`.
+- Ротация RADIUS_SECRET: `docs/RADIUS_SECRET_ROTATION.md`.
 - Прод‑гайд VPN: `docs/VPN_PRODUCTION_DEPLOYMENT.md`.
 
 ## Логирование
