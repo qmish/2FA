@@ -30,5 +30,8 @@
 ## Grafana
 - Импорт дашборда: `docs/observability/grafana-import.md`.
 
+## Доступ
+- Политика доступа: `docs/observability/access-policy.md`.
+
 ## Healthcheck
 - `GET /healthz` — проверка доступности сервиса, БД и Redis
