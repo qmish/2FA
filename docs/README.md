@@ -44,3 +44,4 @@
 - FAQ: `FAQ.md`
 - Политика версий API: `api-versioning.md`
 - Политика секретов: `secrets-policy.md`
+- Политика доступа: `admin-radius-access-policy.md`
