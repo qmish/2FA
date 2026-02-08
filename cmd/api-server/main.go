@@ -57,6 +57,7 @@ func main() {
 		MaxIdleConns:    cfg.DBMaxIdleConns,
 		ConnMaxLifetime: cfg.DBConnMaxLifetime,
 		ConnMaxIdleTime: cfg.DBConnMaxIdleTime,
+		PingTimeout:     cfg.DBConnectTimeout,
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -161,7 +162,7 @@ func main() {
 		}
 	}
 	authHandler := handlers.NewAuthHandler(authService)
-	healthHandler := handlers.NewHealthHandler(db, rateClient)
+	healthHandler := handlers.NewHealthHandler(db, rateClient, cfg.DBQueryTimeout)
 	sessionService := sessionsvc.NewServiceWithAudit(sessionRepo, auditRepo)
 	sessionHandler := handlers.NewSessionHandler(sessionService)
 	lockoutService := lockoutsvc.NewService(lockoutRepo)

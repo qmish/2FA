@@ -47,6 +47,8 @@ type Config struct {
 	DBMaxIdleConns          int           `yaml:"db_max_idle_conns"`
 	DBConnMaxLifetime       time.Duration `yaml:"db_conn_max_lifetime"`
 	DBConnMaxIdleTime       time.Duration `yaml:"db_conn_max_idle_time"`
+	DBConnectTimeout        time.Duration `yaml:"db_connect_timeout"`
+	DBQueryTimeout          time.Duration `yaml:"db_query_timeout"`
 }
 
 func Defaults() Config {
@@ -72,6 +74,8 @@ func Defaults() Config {
 		DBMaxIdleConns:          10,
 		DBConnMaxLifetime:       30 * time.Minute,
 		DBConnMaxIdleTime:       5 * time.Minute,
+		DBConnectTimeout:        5 * time.Second,
+		DBQueryTimeout:          3 * time.Second,
 	}
 }
 
@@ -209,6 +213,16 @@ func LoadFromEnv() Config {
 			cfg.DBConnMaxIdleTime = d
 		}
 	}
+	if v := os.Getenv("DB_CONNECT_TIMEOUT"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			cfg.DBConnectTimeout = d
+		}
+	}
+	if v := os.Getenv("DB_QUERY_TIMEOUT"); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			cfg.DBQueryTimeout = d
+		}
+	}
 	return cfg
 }
 
@@ -341,6 +355,12 @@ func merge(env Config, file Config) Config {
 	if env.DBConnMaxIdleTime != Defaults().DBConnMaxIdleTime {
 		file.DBConnMaxIdleTime = env.DBConnMaxIdleTime
 	}
+	if env.DBConnectTimeout != Defaults().DBConnectTimeout {
+		file.DBConnectTimeout = env.DBConnectTimeout
+	}
+	if env.DBQueryTimeout != Defaults().DBQueryTimeout {
+		file.DBQueryTimeout = env.DBQueryTimeout
+	}
 	return file
 }
 
@@ -447,6 +467,12 @@ func (c Config) Validate() error {
 	}
 	if c.DBConnMaxIdleTime < 0 {
 		return errors.New("db_conn_max_idle_time must be non-negative")
+	}
+	if c.DBConnectTimeout < 0 {
+		return errors.New("db_connect_timeout must be non-negative")
+	}
+	if c.DBQueryTimeout < 0 {
+		return errors.New("db_query_timeout must be non-negative")
 	}
 	return nil
 }

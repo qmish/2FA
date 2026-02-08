@@ -21,7 +21,7 @@ func TestHealth(t *testing.T) {
 }
 
 func TestHealthRedisUnavailable(t *testing.T) {
-	handler := NewHealthHandler(nil, fakeRedisPinger{err: errRedisDown})
+	handler := NewHealthHandler(nil, fakeRedisPinger{err: errRedisDown}, 0)
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
 	rec := httptest.NewRecorder()
 
@@ -32,7 +32,7 @@ func TestHealthRedisUnavailable(t *testing.T) {
 }
 
 func TestHealthJSONOK(t *testing.T) {
-	handler := NewHealthHandler(nil, nil)
+	handler := NewHealthHandler(nil, nil, 0)
 	req := httptest.NewRequest(http.MethodGet, "/healthz?format=json", nil)
 	rec := httptest.NewRecorder()
 
@@ -46,7 +46,7 @@ func TestHealthJSONOK(t *testing.T) {
 }
 
 func TestHealthJSONRedisUnavailable(t *testing.T) {
-	handler := NewHealthHandler(nil, fakeRedisPinger{err: errRedisDown})
+	handler := NewHealthHandler(nil, fakeRedisPinger{err: errRedisDown}, 0)
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
 	req.Header.Set("Accept", "application/json")
 	rec := httptest.NewRecorder()

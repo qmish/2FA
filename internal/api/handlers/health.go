@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/qmish/2FA/internal/api/metrics"
 )
@@ -15,12 +16,13 @@ type RedisPinger interface {
 }
 
 type HealthHandler struct {
-	db    *sql.DB
-	redis RedisPinger
+	db        *sql.DB
+	redis     RedisPinger
+	dbTimeout time.Duration
 }
 
-func NewHealthHandler(db *sql.DB, redis RedisPinger) *HealthHandler {
-	return &HealthHandler{db: db, redis: redis}
+func NewHealthHandler(db *sql.DB, redis RedisPinger, dbTimeout time.Duration) *HealthHandler {
+	return &HealthHandler{db: db, redis: redis, dbTimeout: dbTimeout}
 }
 
 func (h *HealthHandler) Health(w http.ResponseWriter, r *http.Request) {
@@ -29,7 +31,13 @@ func (h *HealthHandler) Health(w http.ResponseWriter, r *http.Request) {
 	redisStatus := "disabled"
 
 	if h.db != nil {
-		if err := h.db.PingContext(r.Context()); err != nil {
+		ctx := r.Context()
+		if h.dbTimeout > 0 {
+			var cancel context.CancelFunc
+			ctx, cancel = context.WithTimeout(ctx, h.dbTimeout)
+			defer cancel()
+		}
+		if err := h.db.PingContext(ctx); err != nil {
 			metrics.Default.IncSystemError("db")
 			metrics.Default.IncDBPing("error")
 			dbStatus = "down"
@@ -77,7 +85,7 @@ func (h *HealthHandler) Health(w http.ResponseWriter, r *http.Request) {
 }
 
 func Health(w http.ResponseWriter, r *http.Request) {
-	NewHealthHandler(nil, nil).Health(w, r)
+	NewHealthHandler(nil, nil, 0).Health(w, r)
 }
 
 func wantsJSON(r *http.Request) bool {

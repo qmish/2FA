@@ -42,6 +42,7 @@
 - Для внешних провайдеров включены retry и circuit breaker (конфиги `PROVIDER_*`).
 - Рекомендации по масштабированию: `docs/scaling.md`.
 - Настройте пул подключений БД (`DB_MAX_OPEN_CONNS`, `DB_MAX_IDLE_CONNS`, `DB_CONN_MAX_LIFETIME`, `DB_CONN_MAX_IDLE_TIME`).
+- Настройте таймауты БД (`DB_CONNECT_TIMEOUT`, `DB_QUERY_TIMEOUT`).
 
 ## Мониторинг
 - Для Prometheus Operator используйте ServiceMonitor: `docs/k8s/api-servicemonitor.yaml`.

@@ -22,3 +22,5 @@ data:
   DB_MAX_IDLE_CONNS: {{ .Values.config.DB_MAX_IDLE_CONNS | quote }}
   DB_CONN_MAX_LIFETIME: {{ .Values.config.DB_CONN_MAX_LIFETIME | quote }}
   DB_CONN_MAX_IDLE_TIME: {{ .Values.config.DB_CONN_MAX_IDLE_TIME | quote }}
+  DB_CONNECT_TIMEOUT: {{ .Values.config.DB_CONNECT_TIMEOUT | quote }}
+  DB_QUERY_TIMEOUT: {{ .Values.config.DB_QUERY_TIMEOUT | quote }}

@@ -20,6 +20,8 @@ func TestLoadFromEnv(t *testing.T) {
 	t.Setenv("DB_MAX_IDLE_CONNS", "15")
 	t.Setenv("DB_CONN_MAX_LIFETIME", "40m")
 	t.Setenv("DB_CONN_MAX_IDLE_TIME", "7m")
+	t.Setenv("DB_CONNECT_TIMEOUT", "6s")
+	t.Setenv("DB_QUERY_TIMEOUT", "4s")
 
 	cfg := LoadFromEnv()
 	if cfg.HTTPPort != "9090" {
@@ -60,6 +62,12 @@ func TestLoadFromEnv(t *testing.T) {
 	}
 	if cfg.DBConnMaxIdleTime != 7*time.Minute {
 		t.Fatalf("expected DB_CONN_MAX_IDLE_TIME 7m, got %v", cfg.DBConnMaxIdleTime)
+	}
+	if cfg.DBConnectTimeout != 6*time.Second {
+		t.Fatalf("expected DB_CONNECT_TIMEOUT 6s, got %v", cfg.DBConnectTimeout)
+	}
+	if cfg.DBQueryTimeout != 4*time.Second {
+		t.Fatalf("expected DB_QUERY_TIMEOUT 4s, got %v", cfg.DBQueryTimeout)
 	}
 }
 
@@ -280,6 +288,17 @@ func TestValidateDBPoolConfig(t *testing.T) {
 	cfg.DBConnMaxIdleTime = 2 * time.Minute
 	if err := cfg.Validate(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+
+	cfg.DBConnectTimeout = -1 * time.Second
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for db_connect_timeout")
+	}
+
+	cfg.DBConnectTimeout = 2 * time.Second
+	cfg.DBQueryTimeout = -1 * time.Second
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for db_query_timeout")
 	}
 }
 

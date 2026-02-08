@@ -28,6 +28,7 @@ func main() {
 		MaxIdleConns:    cfg.DBMaxIdleConns,
 		ConnMaxLifetime: cfg.DBConnMaxLifetime,
 		ConnMaxIdleTime: cfg.DBConnMaxIdleTime,
+		PingTimeout:     cfg.DBConnectTimeout,
 	})
 	if err != nil {
 		log.Fatal(err)
