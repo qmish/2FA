@@ -20,6 +20,7 @@
 - DR‑план: `disaster-recovery.md`
 - Runbook: `runbook.md`
 - Rollback: `rollback.md`
+- Масштабирование: `scaling.md`
 - Чек‑лист прод‑готовности: `PROD_CHECKLIST.md`
 - GitOps структура: `gitops.md`
 
