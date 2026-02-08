@@ -45,6 +45,7 @@
 - В Helm включайте `monitoring.enabled` и задавайте namespace мониторинга.
 - Для distributed tracing используйте OTEL переменные окружения (`OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_SERVICE_NAME`).
 - E2E проверки: `scripts/test-e2e.ps1` (нужен `E2E_BASE_URL`).
+- Нагрузочные тесты: `scripts/k6-load.js` (k6, переменная `BASE_URL`).
 
 ## Логирование
 - Для централизованного логирования можно использовать Loki/Promtail.

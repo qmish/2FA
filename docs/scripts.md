@@ -34,5 +34,6 @@
 ## Прочее
 - `test-api.ps1` — базовые проверки API.
 - `test-e2e.ps1` — E2E проверки (healthz/metrics/login).
+- `k6-load.js` — нагрузочный тест (k6, BASE_URL).
 - `generate-bcrypt-hash.go` — генерация bcrypt хеша.
 - `go.mod` — зависимости скриптов.
