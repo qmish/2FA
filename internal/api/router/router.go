@@ -146,5 +146,5 @@ func New(r Routes) http.Handler {
 	mux.Handle("/api/v1/admin/sessions/revoke_user", adminAuth(http.HandlerFunc(r.Admin.RevokeUserSessions)))
 	mux.Handle("/api/v1/admin/lockouts", adminAuth(http.HandlerFunc(r.Admin.ListLockouts)))
 	mux.Handle("/api/v1/admin/lockouts/clear", adminAuth(http.HandlerFunc(r.Admin.ClearLockouts)))
-	return middlewares.RequestID(middlewares.Metrics(middlewares.RequestLogger(mux)))
+	return middlewares.RequestID(middlewares.Metrics(middlewares.Trace(middlewares.RequestLogger(mux))))
 }

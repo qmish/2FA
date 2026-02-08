@@ -15,6 +15,11 @@
 - Passkey: `passkey_events_total{operation="register_begin|register_finish|login_begin|login_finish",result="success|failed"}`
 - Очистка WebAuthn-сессий: `webauthn_sessions_cleared_total`
 
+## Tracing
+- Включается через `OTEL_EXPORTER_OTLP_ENDPOINT` (например, `http://otel-collector:4318`).
+- Имя сервиса: `OTEL_SERVICE_NAME` (по умолчанию `2fa`).
+- Семплинг: `OTEL_SAMPLE_RATIO` (0..1).
+
 ## ServiceMonitor
 - Пример для Prometheus Operator: `docs/k8s/api-servicemonitor.yaml`.
 

@@ -10,6 +10,9 @@ func TestLoadFromEnv(t *testing.T) {
 	t.Setenv("HTTP_PORT", "9090")
 	t.Setenv("ADMIN_JWT_TTL", "10m")
 	t.Setenv("RADIUS_HEALTH_ADDR", "127.0.0.1:18090")
+	t.Setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://otel:4318")
+	t.Setenv("OTEL_SERVICE_NAME", "2fa-api")
+	t.Setenv("OTEL_SAMPLE_RATIO", "0.5")
 
 	cfg := LoadFromEnv()
 	if cfg.HTTPPort != "9090" {
@@ -20,6 +23,15 @@ func TestLoadFromEnv(t *testing.T) {
 	}
 	if cfg.RadiusHealthAddr != "127.0.0.1:18090" {
 		t.Fatalf("expected RADIUS_HEALTH_ADDR 127.0.0.1:18090, got %s", cfg.RadiusHealthAddr)
+	}
+	if cfg.OTelEndpoint != "http://otel:4318" {
+		t.Fatalf("expected OTEL_EXPORTER_OTLP_ENDPOINT http://otel:4318, got %s", cfg.OTelEndpoint)
+	}
+	if cfg.OTelServiceName != "2fa-api" {
+		t.Fatalf("expected OTEL_SERVICE_NAME 2fa-api, got %s", cfg.OTelServiceName)
+	}
+	if cfg.OTelSampleRatio != 0.5 {
+		t.Fatalf("expected OTEL_SAMPLE_RATIO 0.5, got %v", cfg.OTelSampleRatio)
 	}
 }
 
@@ -139,6 +151,37 @@ func TestValidateRadiusHealthAddr(t *testing.T) {
 	}
 
 	cfg.RadiusHealthAddr = "127.0.0.1:8090"
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestValidateOTelConfig(t *testing.T) {
+	cfg := Defaults()
+	cfg.DBURL = "postgres://user:pass@localhost:5432/2fa?sslmode=disable"
+	cfg.JWTSecret = "secret"
+	cfg.AdminJWTSecret = "admin"
+	cfg.RadiusSecret = "radius"
+	cfg.RedisURL = "redis://localhost:6379/0"
+
+	cfg.OTelEndpoint = "otel:4318"
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for invalid otel endpoint")
+	}
+
+	cfg.OTelEndpoint = "http://otel:4318"
+	cfg.OTelServiceName = ""
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for empty otel service name")
+	}
+
+	cfg.OTelServiceName = "2fa"
+	cfg.OTelSampleRatio = 1.5
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for invalid otel sample ratio")
+	}
+
+	cfg.OTelSampleRatio = 0.5
 	if err := cfg.Validate(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

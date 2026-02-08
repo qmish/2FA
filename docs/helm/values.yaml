@@ -71,6 +71,9 @@ config:
   SESSION_TTL: "24h"
   AUTH_LOGIN_LIMIT: "10"
   AUTH_VERIFY_LIMIT: "10"
+  OTEL_EXPORTER_OTLP_ENDPOINT: ""
+  OTEL_SERVICE_NAME: "2fa"
+  OTEL_SAMPLE_RATIO: "1"
 
 secrets:
   existingSecret: ""

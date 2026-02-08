@@ -24,6 +24,7 @@ import (
 	"github.com/qmish/2FA/internal/authz"
 	"github.com/qmish/2FA/internal/config"
 	lockoutsvc "github.com/qmish/2FA/internal/lockout/service"
+	"github.com/qmish/2FA/internal/observability"
 	profilesvc "github.com/qmish/2FA/internal/profile/service"
 	"github.com/qmish/2FA/internal/ratelimit"
 	sessionsvc "github.com/qmish/2FA/internal/session/service"
@@ -39,6 +40,16 @@ func main() {
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatal(err)
+	}
+	traceShutdown, err := observability.InitTracing(ctx, cfg)
+	if err != nil {
+		log.Printf("tracing disabled: %v", err)
+	} else {
+		defer func() {
+			if err := traceShutdown(context.Background()); err != nil {
+				log.Printf("tracing shutdown error: %v", err)
+			}
+		}()
 	}
 	slog.SetDefault(logger.New())
 	db, err := postgres.Open(cfg.DBURL)

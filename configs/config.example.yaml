@@ -22,3 +22,6 @@ auth_verify_limit: 10
 webauthn_rp_id: "example.com"
 webauthn_rp_origin: "https://example.com"
 webauthn_rp_name: "2FA"
+otel_exporter_otlp_endpoint: ""
+otel_service_name: "2fa"
+otel_sample_ratio: 1.0

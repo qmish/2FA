@@ -12,3 +12,6 @@ data:
   SESSION_TTL: {{ .Values.config.SESSION_TTL | quote }}
   AUTH_LOGIN_LIMIT: {{ .Values.config.AUTH_LOGIN_LIMIT | quote }}
   AUTH_VERIFY_LIMIT: {{ .Values.config.AUTH_VERIFY_LIMIT | quote }}
+  OTEL_EXPORTER_OTLP_ENDPOINT: {{ .Values.config.OTEL_EXPORTER_OTLP_ENDPOINT | quote }}
+  OTEL_SERVICE_NAME: {{ .Values.config.OTEL_SERVICE_NAME | quote }}
+  OTEL_SAMPLE_RATIO: {{ .Values.config.OTEL_SAMPLE_RATIO | quote }}

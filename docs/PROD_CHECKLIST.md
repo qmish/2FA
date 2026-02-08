@@ -22,7 +22,7 @@
 - [x] HA PostgreSQL (оператор/репликация).
 - [x] HPA для API (autoscaling по CPU).
 - [x] Экспорт и хранение конфигов/манифестов (GitOps-структура).
-- [ ] Distributed tracing (OpenTelemetry).
+- [x] Distributed tracing (OpenTelemetry).
 - [ ] Метрики RADIUS и Redis.
 - [ ] Circuit breaker/Retry для внешних провайдеров.
 - [ ] Runbook и rollback инструкции.

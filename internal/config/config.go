@@ -37,6 +37,9 @@ type Config struct {
 	WebAuthnRPID     string        `yaml:"webauthn_rp_id"`
 	WebAuthnRPOrigin string        `yaml:"webauthn_rp_origin"`
 	WebAuthnRPName   string        `yaml:"webauthn_rp_name"`
+	OTelEndpoint     string        `yaml:"otel_exporter_otlp_endpoint"`
+	OTelServiceName  string        `yaml:"otel_service_name"`
+	OTelSampleRatio  float64       `yaml:"otel_sample_ratio"`
 }
 
 func Defaults() Config {
@@ -53,6 +56,8 @@ func Defaults() Config {
 		AuthLoginLimit:   10,
 		AuthVerifyLimit:  10,
 		LDAPTimeout:      5 * time.Second,
+		OTelServiceName:  "2fa",
+		OTelSampleRatio:  1.0,
 	}
 }
 
@@ -143,6 +148,17 @@ func LoadFromEnv() Config {
 	}
 	if v := os.Getenv("WEBAUTHN_RP_NAME"); v != "" {
 		cfg.WebAuthnRPName = v
+	}
+	if v := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"); v != "" {
+		cfg.OTelEndpoint = v
+	}
+	if v := os.Getenv("OTEL_SERVICE_NAME"); v != "" {
+		cfg.OTelServiceName = v
+	}
+	if v := os.Getenv("OTEL_SAMPLE_RATIO"); v != "" {
+		if ratio, err := strconv.ParseFloat(v, 64); err == nil {
+			cfg.OTelSampleRatio = ratio
+		}
 	}
 	return cfg
 }
@@ -246,6 +262,15 @@ func merge(env Config, file Config) Config {
 	if env.WebAuthnRPName != "" {
 		file.WebAuthnRPName = env.WebAuthnRPName
 	}
+	if env.OTelEndpoint != "" {
+		file.OTelEndpoint = env.OTelEndpoint
+	}
+	if env.OTelServiceName != Defaults().OTelServiceName {
+		file.OTelServiceName = env.OTelServiceName
+	}
+	if env.OTelSampleRatio != Defaults().OTelSampleRatio {
+		file.OTelSampleRatio = env.OTelSampleRatio
+	}
 	return file
 }
 
@@ -319,6 +344,15 @@ func (c Config) Validate() error {
 		if !originMatchesRPID(c.WebAuthnRPOrigin, c.WebAuthnRPID) {
 			return errors.New("webauthn_rp_origin host must match webauthn_rp_id")
 		}
+	}
+	if c.OTelEndpoint != "" && !hasAllowedScheme(c.OTelEndpoint, "http", "https") {
+		return errors.New("otel_exporter_otlp_endpoint must use http or https scheme")
+	}
+	if c.OTelEndpoint != "" && strings.TrimSpace(c.OTelServiceName) == "" {
+		return errors.New("otel_service_name is required when otel_exporter_otlp_endpoint is set")
+	}
+	if c.OTelSampleRatio < 0 || c.OTelSampleRatio > 1 {
+		return errors.New("otel_sample_ratio must be between 0 and 1")
 	}
 	return nil
 }

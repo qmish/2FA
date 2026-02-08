@@ -42,6 +42,7 @@
 ## Мониторинг
 - Для Prometheus Operator используйте ServiceMonitor: `docs/k8s/api-servicemonitor.yaml`.
 - В Helm включайте `monitoring.enabled` и задавайте namespace мониторинга.
+- Для distributed tracing используйте OTEL переменные окружения (`OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_SERVICE_NAME`).
 
 ## Логирование
 - Для централизованного логирования можно использовать Loki/Promtail.
