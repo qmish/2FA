@@ -9,6 +9,7 @@ import (
 func TestLoadFromEnv(t *testing.T) {
 	t.Setenv("HTTP_PORT", "9090")
 	t.Setenv("ADMIN_JWT_TTL", "10m")
+	t.Setenv("RADIUS_HEALTH_ADDR", "127.0.0.1:18090")
 
 	cfg := LoadFromEnv()
 	if cfg.HTTPPort != "9090" {
@@ -16,6 +17,9 @@ func TestLoadFromEnv(t *testing.T) {
 	}
 	if cfg.AdminJWTTTL != 10*time.Minute {
 		t.Fatalf("expected TTL 10m, got %s", cfg.AdminJWTTTL)
+	}
+	if cfg.RadiusHealthAddr != "127.0.0.1:18090" {
+		t.Fatalf("expected RADIUS_HEALTH_ADDR 127.0.0.1:18090, got %s", cfg.RadiusHealthAddr)
 	}
 }
 
@@ -118,6 +122,25 @@ func TestValidateWebAuthnOriginHostMatchesRPID(t *testing.T) {
 	cfg.WebAuthnRPOrigin = "https://example.com.evil.com"
 	if err := cfg.Validate(); err == nil {
 		t.Fatalf("expected validation error for invalid suffix")
+	}
+}
+
+func TestValidateRadiusHealthAddr(t *testing.T) {
+	cfg := Defaults()
+	cfg.DBURL = "postgres://user:pass@localhost:5432/2fa?sslmode=disable"
+	cfg.JWTSecret = "secret"
+	cfg.AdminJWTSecret = "admin"
+	cfg.RadiusSecret = "radius"
+	cfg.RedisURL = "redis://localhost:6379/0"
+
+	cfg.RadiusHealthAddr = "invalid"
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for invalid radius_health_addr")
+	}
+
+	cfg.RadiusHealthAddr = "127.0.0.1:8090"
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 

@@ -5,6 +5,7 @@ metadata:
 data:
   HTTP_PORT: {{ .Values.config.HTTP_PORT | quote }}
   RADIUS_ADDR: {{ .Values.config.RADIUS_ADDR | quote }}
+  RADIUS_HEALTH_ADDR: {{ .Values.config.RADIUS_HEALTH_ADDR | quote }}
   JWT_ISSUER: {{ .Values.config.JWT_ISSUER | quote }}
   JWT_TTL: {{ .Values.config.JWT_TTL | quote }}
   AUTH_CHALLENGE_TTL: {{ .Values.config.AUTH_CHALLENGE_TTL | quote }}

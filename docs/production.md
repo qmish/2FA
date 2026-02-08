@@ -35,6 +35,7 @@
 - Для API можно включить HPA: `docs/k8s/api-hpa.yaml` или Helm `hpa.enabled`.
 - Для API добавлен startupProbe (ускоряет безопасный старт).
 - Для RADIUS добавлен startupProbe.
+- Для RADIUS добавлен HTTP healthcheck (`/healthz`).
 
 ## Мониторинг
 - Для Prometheus Operator используйте ServiceMonitor: `docs/k8s/api-servicemonitor.yaml`.

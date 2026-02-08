@@ -15,6 +15,7 @@ import (
 type Config struct {
 	HTTPPort         string        `yaml:"http_port"`
 	RadiusAddr       string        `yaml:"radius_addr"`
+	RadiusHealthAddr string        `yaml:"radius_health_addr"`
 	RadiusSecret     string        `yaml:"radius_secret"`
 	DBURL            string        `yaml:"db_url"`
 	RedisURL         string        `yaml:"redis_url"`
@@ -42,6 +43,7 @@ func Defaults() Config {
 	return Config{
 		HTTPPort:         "8080",
 		RadiusAddr:       ":1812",
+		RadiusHealthAddr: ":8090",
 		JWTIssuer:        "2fa",
 		JWTTTL:           15 * time.Minute,
 		AdminJWTIssuer:   "2fa",
@@ -61,6 +63,9 @@ func LoadFromEnv() Config {
 	}
 	if v := os.Getenv("RADIUS_ADDR"); v != "" {
 		cfg.RadiusAddr = v
+	}
+	if v := os.Getenv("RADIUS_HEALTH_ADDR"); v != "" {
+		cfg.RadiusHealthAddr = v
 	}
 	if v := os.Getenv("RADIUS_SECRET"); v != "" {
 		cfg.RadiusSecret = v
@@ -175,6 +180,9 @@ func merge(env Config, file Config) Config {
 	if env.RadiusAddr != Defaults().RadiusAddr {
 		file.RadiusAddr = env.RadiusAddr
 	}
+	if env.RadiusHealthAddr != Defaults().RadiusHealthAddr {
+		file.RadiusHealthAddr = env.RadiusHealthAddr
+	}
 	if env.RadiusSecret != "" {
 		file.RadiusSecret = env.RadiusSecret
 	}
@@ -277,6 +285,11 @@ func (c Config) Validate() error {
 	}
 	if _, _, err := net.SplitHostPort(c.RadiusAddr); err != nil {
 		return errors.New("radius_addr must be in host:port format")
+	}
+	if c.RadiusHealthAddr != "" {
+		if _, _, err := net.SplitHostPort(c.RadiusHealthAddr); err != nil {
+			return errors.New("radius_health_addr must be in host:port format")
+		}
 	}
 	if c.AuthLoginLimit < 0 || c.AuthVerifyLimit < 0 {
 		return errors.New("rate limit values must be non-negative")

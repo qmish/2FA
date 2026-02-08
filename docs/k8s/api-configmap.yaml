@@ -5,6 +5,7 @@ metadata:
 data:
   HTTP_PORT: "8080"
   RADIUS_ADDR: ":1812"
+  RADIUS_HEALTH_ADDR: ":8090"
   JWT_ISSUER: "2fa"
   JWT_TTL: "15m"
   AUTH_CHALLENGE_TTL: "5m"

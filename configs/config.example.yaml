@@ -1,5 +1,6 @@
 http_port: "8080"
 radius_addr: ":1812"
+radius_health_addr: ":8090"
 radius_secret: "CHANGE_ME"
 db_url: "postgres://user:pass@localhost:5432/2fa?sslmode=require"
 redis_url: "redis://localhost:6379/0"

@@ -9,7 +9,7 @@
 - [ ] Graceful shutdown для API и RADIUS.
 - [x] Startup probe для API.
 - [x] Startup probe для RADIUS.
-- [ ] Healthcheck для RADIUS.
+- [x] Healthcheck для RADIUS.
 - [ ] Автоматизация ротации секретов.
 - [ ] Регулярные тесты восстановления из бэкапов.
 

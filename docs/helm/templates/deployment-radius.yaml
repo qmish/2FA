@@ -28,6 +28,8 @@ spec:
           ports:
             - containerPort: 1812
               protocol: UDP
+            - containerPort: 8090
+              protocol: TCP
           startupProbe:
             exec:
               command:
@@ -36,6 +38,20 @@ spec:
                 - "pidof radius-server"
             failureThreshold: 30
             periodSeconds: 2
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8090
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8090
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
           resources:
             requests:
               cpu: {{ .Values.resources.radius.requests.cpu | quote }}
