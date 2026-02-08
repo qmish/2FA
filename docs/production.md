@@ -70,6 +70,7 @@
 - План восстановления и тесты: `docs/disaster-recovery.md`.
 - Операции и инциденты: `docs/runbook.md`.
 - Rollback: `docs/rollback.md`.
+- Обновление версий: `docs/upgrade.md`.
 
 ## Alertmanager
 - Пример развёртывания Alertmanager: `docs/k8s/alertmanager.yaml`.
