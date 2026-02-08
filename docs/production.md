@@ -25,6 +25,7 @@
 - Не храните реальные секреты в репозитории.
 - Для Helm можно указать `secrets.existingSecret` и создать секрет отдельно.
 - Для Kubernetes используйте внешние секрет‑менеджеры (External Secrets/Sealed Secrets/Vault).
+- Пример ExternalSecret: `docs/k8s/external-secrets.yaml`.
 
 ## Надежность
 - Рекомендуется использовать RollingUpdate и PodDisruptionBudget.

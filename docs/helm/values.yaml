@@ -82,3 +82,22 @@ secrets:
   EXPRESS_MOBILE_URL: "https://api.express-mobile.local"
   EXPRESS_MOBILE_KEY: "CHANGE_ME"
   FCM_SERVER_KEY: "CHANGE_ME"
+
+externalSecrets:
+  enabled: false
+  refreshInterval: "1h"
+  secretStore:
+    name: "vault-backend"
+    kind: "ClusterSecretStore"
+  target:
+    name: ""
+    creationPolicy: "Owner"
+  data:
+    DB_URL: "secret/data/2fa#DB_URL"
+    REDIS_URL: "secret/data/2fa#REDIS_URL"
+    JWT_SECRET: "secret/data/2fa#JWT_SECRET"
+    ADMIN_JWT_SECRET: "secret/data/2fa#ADMIN_JWT_SECRET"
+    RADIUS_SECRET: "secret/data/2fa#RADIUS_SECRET"
+    EXPRESS_MOBILE_URL: "secret/data/2fa#EXPRESS_MOBILE_URL"
+    EXPRESS_MOBILE_KEY: "secret/data/2fa#EXPRESS_MOBILE_KEY"
+    FCM_SERVER_KEY: "secret/data/2fa#FCM_SERVER_KEY"

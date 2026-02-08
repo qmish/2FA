@@ -9,10 +9,12 @@
 - JWT и Admin JWT: каждые 90 дней.
 - RADIUS_SECRET: каждые 180 дней.
 - FCM/Express Mobile ключи: по регламенту провайдера.
+- Автоматизация ротации через External Secrets Operator с `refreshInterval`.
 
 ## Хранение
 - Рекомендуется использовать External Secrets / Vault / Sealed Secrets.
 - Для Helm используйте `secrets.existingSecret`.
+- Для автоматической синхронизации включайте ExternalSecret в Helm (`externalSecrets.enabled`).
 
 ## Аудит
 - Ведите журнал выдачи и смены секретов.
