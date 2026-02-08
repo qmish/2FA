@@ -63,5 +63,5 @@
 - [x] Security scanning образов в CI/CD.
 - [x] Документация по обновлению версий.
 - [x] Ротация RADIUS_SECRET (процедуры/регламент).
-- [ ] DNS‑инструкции для production‑доменов VPN/RADIUS.
+- [x] DNS‑инструкции для production‑доменов VPN/RADIUS.
 - [ ] Дашборд аудита VPN‑сессий/подключений.
