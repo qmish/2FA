@@ -111,6 +111,14 @@ kubectl logs -l app=radius-server
 - **Health check**: http://localhost:8080/healthz
 - **RADIUS**: localhost:1812 (UDP)
 
+## Быстрый запуск (без K3D)
+
+Если нужен быстрый локальный запуск без K3D:
+1. Запустите БД и Redis (например, через Docker).
+2. Примените миграции: `go run ./cmd/migrate`
+3. Запустите API: `go run ./cmd/api-server`
+4. Запустите RADIUS (опционально): `go run ./cmd/radius-server`
+
 ## Использование Helm
 
 Альтернативно можно использовать Helm для развертывания:

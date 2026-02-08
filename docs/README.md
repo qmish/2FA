@@ -7,7 +7,6 @@
 
 ## Деплой и запуск
 - Продакшен‑рекомендации: `production.md`
-- Развёртывание: `deployment.md`
 - K3D: `k3d-deployment.md`
 - Скрипты доменного доступа: `RADIUS_DOMAIN_ACCESS.md`
 
