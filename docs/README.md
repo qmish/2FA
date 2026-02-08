@@ -42,3 +42,4 @@
 - Архив релизов: `releases/README.md`
 - Скрипты и утилиты: `scripts.md`
 - FAQ: `FAQ.md`
+- Политика версий API: `api-versioning.md`
