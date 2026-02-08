@@ -43,6 +43,7 @@
 - ASA ASDM guide: `ASA_ASDM_GUIDE.md`
 - RADIUS статус: `RADIUS_STATUS.md`
 - UDP‑балансировка RADIUS: `RADIUS_UDP_BALANCING.md`
+- Тест восстановления RADIUS/VPN: `RADIUS_VPN_RECOVERY_TEST.md`
 - Прод‑гайд VPN: `VPN_PRODUCTION_DEPLOYMENT.md`
 
 ## Прочее
