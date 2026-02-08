@@ -36,6 +36,7 @@
 - Для API добавлен startupProbe (ускоряет безопасный старт).
 - Для RADIUS добавлен startupProbe.
 - Для RADIUS добавлен HTTP healthcheck (`/healthz`).
+- Для API и RADIUS добавлен graceful shutdown по SIGTERM.
 
 ## Мониторинг
 - Для Prometheus Operator используйте ServiceMonitor: `docs/k8s/api-servicemonitor.yaml`.

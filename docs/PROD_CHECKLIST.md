@@ -6,7 +6,7 @@
 - [x] Бэкапы PostgreSQL (CronJob `pg_dump`/оператор).
 - [x] CI/CD: миграции как отдельный шаг, сборка образов по тегам.
 - [x] Версионирование образов (теги `vX.Y.Z`).
-- [ ] Graceful shutdown для API и RADIUS.
+- [x] Graceful shutdown для API и RADIUS.
 - [x] Startup probe для API.
 - [x] Startup probe для RADIUS.
 - [x] Healthcheck для RADIUS.

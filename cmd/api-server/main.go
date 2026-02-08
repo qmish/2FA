@@ -5,6 +5,9 @@ import (
 	"log"
 	"log/slog"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	webauthnlib "github.com/go-webauthn/webauthn/webauthn"
@@ -30,6 +33,9 @@ import (
 )
 
 func main() {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatal(err)
@@ -168,42 +174,61 @@ func main() {
 	go func() {
 		ticker := time.NewTicker(time.Minute)
 		defer ticker.Stop()
-		for range ticker.C {
-			if _, err := challengeRepo.MarkExpired(context.Background(), time.Now()); err != nil {
-				log.Printf("challenge cleanup failed: %v", err)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if _, err := challengeRepo.MarkExpired(ctx, time.Now()); err != nil {
+					log.Printf("challenge cleanup failed: %v", err)
+				}
 			}
 		}
 	}()
 	go func() {
 		ticker := time.NewTicker(time.Minute)
 		defer ticker.Stop()
-		for range ticker.C {
-			cleared, err := lockoutRepo.ClearExpired(context.Background(), time.Now())
-			if err != nil {
-				metrics.Default.IncSystemError("db")
-				log.Printf("lockout cleanup failed: %v", err)
-				continue
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				cleared, err := lockoutRepo.ClearExpired(ctx, time.Now())
+				if err != nil {
+					metrics.Default.IncSystemError("db")
+					log.Printf("lockout cleanup failed: %v", err)
+					continue
+				}
+				metrics.Default.AddLockoutCleared(cleared)
 			}
-			metrics.Default.AddLockoutCleared(cleared)
 		}
 	}()
 	go func() {
 		ticker := time.NewTicker(time.Minute)
 		defer ticker.Stop()
-		for range ticker.C {
-			cleared, err := webauthnSessionRepo.DeleteExpired(context.Background(), time.Now())
-			if err != nil {
-				metrics.Default.IncSystemError("db")
-				log.Printf("webauthn sessions cleanup failed: %v", err)
-				continue
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				cleared, err := webauthnSessionRepo.DeleteExpired(ctx, time.Now())
+				if err != nil {
+					metrics.Default.IncSystemError("db")
+					log.Printf("webauthn sessions cleanup failed: %v", err)
+					continue
+				}
+				metrics.Default.AddWebauthnSessionsCleared(cleared)
 			}
-			metrics.Default.AddWebauthnSessionsCleared(cleared)
 		}
 	}()
 
 	addr := ":" + cfg.HTTPPort
 	log.Printf("api-server listening on %s", addr)
-	if err := http.ListenAndServe(addr, router.New(routes)); err != nil {
+	server := &http.Server{
+		Addr:    addr,
+		Handler: router.New(routes),
+	}
+	if err := serveHTTPWithShutdown(ctx, server, 10*time.Second); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -218,4 +243,30 @@ func (a adminTokenAdapter) ParseClaims(token string) (*middlewares.AdminClaims, 
 		return nil, err
 	}
 	return &middlewares.AdminClaims{UserID: claims.Subject, Role: claims.Role}, nil
+}
+
+func serveHTTPWithShutdown(ctx context.Context, server *http.Server, timeout time.Duration) error {
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- server.ListenAndServe()
+	}()
+
+	select {
+	case err := <-errCh:
+		if err == http.ErrServerClosed {
+			return nil
+		}
+		return err
+	case <-ctx.Done():
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+		if err := server.Shutdown(shutdownCtx); err != nil {
+			return err
+		}
+		err := <-errCh
+		if err == nil || err == http.ErrServerClosed {
+			return nil
+		}
+		return err
+	}
 }
