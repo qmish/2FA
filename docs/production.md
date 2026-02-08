@@ -64,6 +64,8 @@
 
 ## DR (Disaster Recovery)
 - План восстановления и тесты: `docs/disaster-recovery.md`.
+- Операции и инциденты: `docs/runbook.md`.
+- Rollback: `docs/rollback.md`.
 
 ## Alertmanager
 - Пример развёртывания Alertmanager: `docs/k8s/alertmanager.yaml`.

@@ -25,7 +25,7 @@
 - [x] Distributed tracing (OpenTelemetry).
 - [x] Метрики RADIUS и Redis.
 - [x] Circuit breaker/Retry для внешних провайдеров.
-- [ ] Runbook и rollback инструкции.
+- [x] Runbook и rollback инструкции.
 - [ ] E2E тесты основных сценариев.
 - [ ] SLO/SLA алерты.
 

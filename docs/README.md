@@ -18,6 +18,8 @@
 ## Безопасность и надёжность
 - Security: `security.md`
 - DR‑план: `disaster-recovery.md`
+- Runbook: `runbook.md`
+- Rollback: `rollback.md`
 - Чек‑лист прод‑готовности: `PROD_CHECKLIST.md`
 - GitOps структура: `gitops.md`
 
