@@ -41,6 +41,7 @@
 ## Логирование
 - Для централизованного логирования можно использовать Loki/Promtail.
 - Примеры манифестов: `docs/k8s/logging-loki.yaml`, `docs/k8s/logging-promtail.yaml`.
+- Политика ретенции: `docs/observability/retention.md`.
 
 ## Сеть
 - Для изоляции компонентов используйте NetworkPolicy.

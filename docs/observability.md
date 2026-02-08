@@ -24,5 +24,11 @@
 ## Alertmanager
 - Базовый пример развёртывания: `docs/k8s/alertmanager.yaml`.
 
+## Ретенция
+- Политика ретенции и примеры настроек: `docs/observability/retention.md`.
+
+## Grafana
+- Импорт дашборда: `docs/observability/grafana-import.md`.
+
 ## Healthcheck
 - `GET /healthz` — проверка доступности сервиса, БД и Redis
