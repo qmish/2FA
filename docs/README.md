@@ -43,3 +43,4 @@
 - Скрипты и утилиты: `scripts.md`
 - FAQ: `FAQ.md`
 - Политика версий API: `api-versioning.md`
+- Политика секретов: `secrets-policy.md`
