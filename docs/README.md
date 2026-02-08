@@ -41,4 +41,3 @@
 - RADIUS статус: `RADIUS_STATUS.md`
 
 ## Прочее
-- API доступ: `API_ACCESS.md`

@@ -69,6 +69,19 @@ Service `api-server` использует `NodePort` (по умолчанию `3
 .\scripts\setup-domain.ps1
 ```
 
+## Доступ к API без port-forward
+
+### Через NodePort
+- **Health Check**: http://localhost:30080/healthz
+- **Metrics**: http://localhost:30080/metrics
+- **API**: http://localhost:30080/api/v1/
+
+### Через port-forward к Service
+```powershell
+kubectl port-forward svc/api-server 8084:80
+```
+Затем: http://localhost:8084/healthz
+
 ## Возможности UI
 
 UI включает следующие разделы:
