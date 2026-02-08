@@ -50,9 +50,8 @@ kubectl exec <postgres-pod> -- psql -U user -d 2fa -c \
 
 ## Следующие шаги
 
-1. Создайте тестового пользователя через админку UI
-2. Запустите port-forward для доступа к RADIUS серверу
-3. Протестируйте подключение с помощью radclient или Cisco AnyConnect
-4. Проверьте логи и историю входов
+1. Создайте тестового пользователя (см. `docs/CREATE_VPN_USER.md`)
+2. Протестируйте подключение с помощью radclient или Cisco AnyConnect
+3. Проверьте логи и историю входов
 
-Подробные инструкции: `docs/CISCO_ANYCONNECT_QUICKSTART.md`
+Подробно: `docs/CISCO_ANYCONNECT_QUICKSTART.md`

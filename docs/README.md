@@ -36,7 +36,6 @@
 - AnyConnect quickstart: `CISCO_ANYCONNECT_QUICKSTART.md`
 - ASA template: `ASA_TEMPLATE.md`
 - ASA ASDM guide: `ASA_ASDM_GUIDE.md`
-- Создание VPN пользователя: `CREATE_VPN_USER.md`
 - RADIUS статус: `RADIUS_STATUS.md`
 
 ## Прочее

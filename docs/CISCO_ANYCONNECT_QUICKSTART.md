@@ -107,6 +107,14 @@ docker run --rm -i --network host \
    - Password (первый раз): `test123`
    - После получения OTP: `test123:123456` (где 123456 - код из SMS)
 
+## Создание тестового пользователя
+
+Кратко:
+- Через API скрипт: `scripts/create-vpn-user-api.ps1`
+- Через SQL скрипт: `scripts/create-vpn-user-sql.ps1`
+
+Подробно: `docs/CREATE_VPN_USER.md`
+
 ## Проверка работы
 
 ### Логи RADIUS сервера
@@ -195,4 +203,4 @@ kubectl exec <postgres-pod> -- psql -U user -d 2fa -c \
    ```
 
 ## Дополнительная информация
-Если требуется расширенное тестирование, используйте команды из разделов выше.
+- Статус RADIUS: `docs/RADIUS_STATUS.md`
