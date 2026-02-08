@@ -55,6 +55,7 @@
 - AnyConnect quickstart: `docs/CISCO_ANYCONNECT_QUICKSTART.md`.
 - ASA ASDM guide: `docs/ASA_ASDM_GUIDE.md`.
 - RADIUS статус: `docs/RADIUS_STATUS.md`.
+- UDP‑балансировка RADIUS: `docs/RADIUS_UDP_BALANCING.md`.
 - Прод‑гайд VPN: `docs/VPN_PRODUCTION_DEPLOYMENT.md`.
 
 ## Логирование

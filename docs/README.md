@@ -41,6 +41,7 @@
 - ASA template: `ASA_TEMPLATE.md`
 - ASA ASDM guide: `ASA_ASDM_GUIDE.md`
 - RADIUS статус: `RADIUS_STATUS.md`
+- UDP‑балансировка RADIUS: `RADIUS_UDP_BALANCING.md`
 - Прод‑гайд VPN: `VPN_PRODUCTION_DEPLOYMENT.md`
 
 ## Прочее
