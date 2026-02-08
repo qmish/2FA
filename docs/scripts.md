@@ -33,5 +33,6 @@
 
 ## Прочее
 - `test-api.ps1` — базовые проверки API.
+- `test-e2e.ps1` — E2E проверки (healthz/metrics/login).
 - `generate-bcrypt-hash.go` — генерация bcrypt хеша.
 - `go.mod` — зависимости скриптов.
