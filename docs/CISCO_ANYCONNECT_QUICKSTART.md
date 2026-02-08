@@ -45,13 +45,9 @@ VALUES (
 ### 2. Доступ к RADIUS без port-forward
 
 RADIUS опубликован как **NodePort UDP 31812**.  
-Используйте домен:
+Используйте домен `radius.2fa.local:31812`.
 
-```
-radius.2fa.local:31812
-```
-
-> Домен должен резолвиться в `<K3D_NODE_IP>` (см. `docs/RADIUS_DOMAIN_ACCESS.md`).
+Подробная настройка домена: `docs/RADIUS_DOMAIN_ACCESS.md`.
 
 ### 3. Тестирование подключения
 

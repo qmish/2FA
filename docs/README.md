@@ -19,6 +19,7 @@
 - Security: `security.md`
 - DR‑план: `disaster-recovery.md`
 - Чек‑лист прод‑готовности: `PROD_CHECKLIST.md`
+- GitOps структура: `gitops.md`
 
 ## Наблюдаемость
 - Обзор: `observability.md`
@@ -38,3 +39,4 @@
 - RADIUS статус: `RADIUS_STATUS.md`
 
 ## Прочее
+- Архив релизов: `releases/README.md`
