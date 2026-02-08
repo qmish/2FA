@@ -39,6 +39,18 @@ kubectl port-forward pod/$podName 8083:8080
 - **Metrics**: http://localhost:8083/metrics
 - **API**: http://localhost:8083/api/v1/
 
+## Постоянный доступ без port-forward
+
+### Через NodePort
+
+Service `api-server` использует `NodePort` (по умолчанию `30080`):
+
+- **UI**: http://localhost:30080/ui/
+- **Health Check**: http://localhost:30080/healthz
+
+Если порт занят, измените `nodePort` в `docs/k8s/api-service.yaml`
+и примените манифест.
+
 ## Возможности UI
 
 UI включает следующие разделы:

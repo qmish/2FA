@@ -2,6 +2,21 @@
 
 Система двухфакторной аутентификации на Go с API и RADIUS.
 
+## Оглавление
+- [Старт](#старт)
+- [Документация](#документация)
+- [Структура](#структура)
+- [Сервисные эндпоинты](#сервисные-эндпоинты)
+- [Auth API](#auth-api)
+- [UI](#ui)
+- [OpenAPI](#openapi)
+- [Observability](#observability)
+- [Security](#security)
+- [Production](#production)
+- [Конфигурация](#конфигурация)
+- [Админ‑API CRUD](#админ-api-crud)
+- [Валидация](#валидация)
+
 ## Старт
 ```bash
 go test ./...
@@ -9,6 +24,15 @@ go test ./...
 ```bash
 go run ./cmd/migrate
 ```
+
+## Документация
+- Навигация по docs: `docs/README.md`
+- Продакшен: `docs/production.md`
+- Развёртывание: `docs/deployment.md`
+- K3D: `docs/k3d-deployment.md`
+- UI доступ: `docs/UI_ACCESS.md`
+- Админ доступ: `docs/ADMIN_ACCESS.md`
+- Cisco/ASA/AnyConnect: `docs/CISCO_ANYCONNECT_QUICKSTART.md`
 
 ## Структура
 - `cmd/api-server` — API сервер

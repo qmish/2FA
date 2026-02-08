@@ -42,6 +42,4 @@
 - RADIUS статус: `RADIUS_STATUS.md`
 
 ## Прочее
-- Troubleshooting: `TROUBLESHOOTING.md`
 - API доступ: `API_ACCESS.md`
-- UI постоянный доступ: `UI_PERMANENT_ACCESS.md`
