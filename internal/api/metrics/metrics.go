@@ -20,6 +20,7 @@ type Registry struct {
 	systemErrors            map[string]int64
 	radiusRequests          map[string]int64
 	redisPings              map[string]int64
+	dbPings                 map[string]int64
 	lockoutCreated          int64
 	lockoutActive           int64
 	lockoutCleared          int64
@@ -38,6 +39,7 @@ func NewRegistry() *Registry {
 		systemErrors:      map[string]int64{},
 		radiusRequests:    map[string]int64{},
 		redisPings:        map[string]int64{},
+		dbPings:           map[string]int64{},
 	}
 }
 
@@ -115,6 +117,13 @@ func (r *Registry) IncRedisPing(result string) {
 	key := fmt.Sprintf("result=%s", result)
 	r.mu.Lock()
 	r.redisPings[key]++
+	r.mu.Unlock()
+}
+
+func (r *Registry) IncDBPing(result string) {
+	key := fmt.Sprintf("result=%s", result)
+	r.mu.Lock()
+	r.dbPings[key]++
 	r.mu.Unlock()
 }
 
@@ -218,6 +227,12 @@ func (r *Registry) Render() string {
 	for _, k := range sortedKeys(r.redisPings) {
 		labels := formatLabels(k)
 		b.WriteString(fmt.Sprintf("redis_ping_total{%s} %d\n", labels, r.redisPings[k]))
+	}
+	b.WriteString("# HELP db_ping_total DB ping results\n")
+	b.WriteString("# TYPE db_ping_total counter\n")
+	for _, k := range sortedKeys(r.dbPings) {
+		labels := formatLabels(k)
+		b.WriteString(fmt.Sprintf("db_ping_total{%s} %d\n", labels, r.dbPings[k]))
 	}
 	b.WriteString("# HELP lockout_created_total Lockouts created\n")
 	b.WriteString("# TYPE lockout_created_total counter\n")

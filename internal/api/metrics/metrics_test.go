@@ -112,3 +112,16 @@ func TestRedisPingMetrics(t *testing.T) {
 		t.Fatalf("missing error redis ping counter")
 	}
 }
+
+func TestDBPingMetrics(t *testing.T) {
+	reg := NewRegistry()
+	reg.IncDBPing("success")
+	reg.IncDBPing("error")
+	out := reg.Render()
+	if !strings.Contains(out, `db_ping_total{result="success"} 1`) {
+		t.Fatalf("missing success db ping counter")
+	}
+	if !strings.Contains(out, `db_ping_total{result="error"} 1`) {
+		t.Fatalf("missing error db ping counter")
+	}
+}

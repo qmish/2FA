@@ -31,9 +31,11 @@ func (h *HealthHandler) Health(w http.ResponseWriter, r *http.Request) {
 	if h.db != nil {
 		if err := h.db.PingContext(r.Context()); err != nil {
 			metrics.Default.IncSystemError("db")
+			metrics.Default.IncDBPing("error")
 			dbStatus = "down"
 			status = http.StatusServiceUnavailable
 		} else {
+			metrics.Default.IncDBPing("success")
 			dbStatus = "ok"
 		}
 	}

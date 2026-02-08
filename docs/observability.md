@@ -16,6 +16,7 @@
 - Очистка WebAuthn-сессий: `webauthn_sessions_cleared_total`
 - RADIUS: `radius_requests_total{result="accept|reject|timeout|error"}`
 - Redis: `redis_ping_total{result="success|error"}`
+- БД: `db_ping_total{result="success|error"}`
 
 ## Tracing
 - Включается через `OTEL_EXPORTER_OTLP_ENDPOINT` (например, `http://otel-collector:4318`).
