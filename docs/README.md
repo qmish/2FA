@@ -46,6 +46,7 @@
 - Тест восстановления RADIUS/VPN: `RADIUS_VPN_RECOVERY_TEST.md`
 - Ротация RADIUS_SECRET: `RADIUS_SECRET_ROTATION.md`
 - DNS для production VPN/RADIUS: `DNS_PROD_VPN_RADIUS.md`
+- Дашборд аудита VPN: `VPN_AUDIT_DASHBOARD.md`
 - Прод‑гайд VPN: `VPN_PRODUCTION_DEPLOYMENT.md`
 
 ## Прочее
