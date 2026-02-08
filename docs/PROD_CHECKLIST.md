@@ -23,7 +23,7 @@
 - [x] HPA для API (autoscaling по CPU).
 - [x] Экспорт и хранение конфигов/манифестов (GitOps-структура).
 - [x] Distributed tracing (OpenTelemetry).
-- [ ] Метрики RADIUS и Redis.
+- [x] Метрики RADIUS и Redis.
 - [ ] Circuit breaker/Retry для внешних провайдеров.
 - [ ] Runbook и rollback инструкции.
 - [ ] E2E тесты основных сценариев.

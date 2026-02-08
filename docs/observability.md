@@ -14,6 +14,8 @@
 - Логины: `auth_logins_total{result="success|failed"}`
 - Passkey: `passkey_events_total{operation="register_begin|register_finish|login_begin|login_finish",result="success|failed"}`
 - Очистка WebAuthn-сессий: `webauthn_sessions_cleared_total`
+- RADIUS: `radius_requests_total{result="accept|reject|timeout|error"}`
+- Redis: `redis_ping_total{result="success|error"}`
 
 ## Tracing
 - Включается через `OTEL_EXPORTER_OTLP_ENDPOINT` (например, `http://otel-collector:4318`).

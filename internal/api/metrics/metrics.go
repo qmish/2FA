@@ -19,6 +19,7 @@ type Registry struct {
 	authLogins              map[string]int64
 	systemErrors            map[string]int64
 	radiusRequests          map[string]int64
+	redisPings              map[string]int64
 	lockoutCreated          int64
 	lockoutActive           int64
 	lockoutCleared          int64
@@ -36,6 +37,7 @@ func NewRegistry() *Registry {
 		authLogins:        map[string]int64{},
 		systemErrors:      map[string]int64{},
 		radiusRequests:    map[string]int64{},
+		redisPings:        map[string]int64{},
 	}
 }
 
@@ -106,6 +108,13 @@ func (r *Registry) IncRadiusRequest(result string) {
 	key := fmt.Sprintf("result=%s", result)
 	r.mu.Lock()
 	r.radiusRequests[key]++
+	r.mu.Unlock()
+}
+
+func (r *Registry) IncRedisPing(result string) {
+	key := fmt.Sprintf("result=%s", result)
+	r.mu.Lock()
+	r.redisPings[key]++
 	r.mu.Unlock()
 }
 
@@ -203,6 +212,12 @@ func (r *Registry) Render() string {
 	for _, k := range sortedKeys(r.radiusRequests) {
 		labels := formatLabels(k)
 		b.WriteString(fmt.Sprintf("radius_requests_total{%s} %d\n", labels, r.radiusRequests[k]))
+	}
+	b.WriteString("# HELP redis_ping_total Redis ping results\n")
+	b.WriteString("# TYPE redis_ping_total counter\n")
+	for _, k := range sortedKeys(r.redisPings) {
+		labels := formatLabels(k)
+		b.WriteString(fmt.Sprintf("redis_ping_total{%s} %d\n", labels, r.redisPings[k]))
 	}
 	b.WriteString("# HELP lockout_created_total Lockouts created\n")
 	b.WriteString("# TYPE lockout_created_total counter\n")

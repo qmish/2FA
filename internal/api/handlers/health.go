@@ -40,9 +40,11 @@ func (h *HealthHandler) Health(w http.ResponseWriter, r *http.Request) {
 	if h.redis != nil {
 		if err := h.redis.Ping(r.Context()); err != nil {
 			metrics.Default.IncSystemError("redis")
+			metrics.Default.IncRedisPing("error")
 			redisStatus = "down"
 			status = http.StatusServiceUnavailable
 		} else {
+			metrics.Default.IncRedisPing("success")
 			redisStatus = "ok"
 		}
 	}

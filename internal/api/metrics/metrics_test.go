@@ -99,3 +99,16 @@ func TestRadiusMetrics(t *testing.T) {
 		t.Fatalf("missing reject radius counter")
 	}
 }
+
+func TestRedisPingMetrics(t *testing.T) {
+	reg := NewRegistry()
+	reg.IncRedisPing("success")
+	reg.IncRedisPing("error")
+	out := reg.Render()
+	if !strings.Contains(out, `redis_ping_total{result="success"} 1`) {
+		t.Fatalf("missing success redis ping counter")
+	}
+	if !strings.Contains(out, `redis_ping_total{result="error"} 1`) {
+		t.Fatalf("missing error redis ping counter")
+	}
+}
