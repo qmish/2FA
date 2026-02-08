@@ -75,6 +75,7 @@ config:
 secrets:
   existingSecret: ""
   DB_URL: "postgres://user:pass@db:5432/2fa?sslmode=require"
+  RESTORE_DB_URL: "postgres://user:pass@db-restore:5432/2fa_restore?sslmode=require"
   REDIS_URL: "redis://redis:6379/0"
   JWT_SECRET: "CHANGE_ME"
   ADMIN_JWT_SECRET: "CHANGE_ME"
@@ -94,6 +95,7 @@ externalSecrets:
     creationPolicy: "Owner"
   data:
     DB_URL: "secret/data/2fa#DB_URL"
+    RESTORE_DB_URL: "secret/data/2fa#RESTORE_DB_URL"
     REDIS_URL: "secret/data/2fa#REDIS_URL"
     JWT_SECRET: "secret/data/2fa#JWT_SECRET"
     ADMIN_JWT_SECRET: "secret/data/2fa#ADMIN_JWT_SECRET"
@@ -101,3 +103,8 @@ externalSecrets:
     EXPRESS_MOBILE_URL: "secret/data/2fa#EXPRESS_MOBILE_URL"
     EXPRESS_MOBILE_KEY: "secret/data/2fa#EXPRESS_MOBILE_KEY"
     FCM_SERVER_KEY: "secret/data/2fa#FCM_SERVER_KEY"
+
+restoreTest:
+  enabled: false
+  schedule: "0 4 * * 0"
+  image: "postgres:15"

@@ -80,3 +80,4 @@
 - Проверять восстановление на стенде (restore + `cmd/migrate`).
 - Секреты и конфиги (JWT, RADIUS, FCM и др.) хранить вне репозитория и бэкапить отдельно.
 - Пример CronJob и PVC: `docs/k8s/postgres-backup-cronjob.yaml`, `docs/k8s/postgres-backup-pvc.yaml`.
+- Пример CronJob проверки восстановления: `docs/k8s/postgres-restore-test-cronjob.yaml`.

@@ -10,6 +10,7 @@
 - RADIUS_SECRET: каждые 180 дней.
 - FCM/Express Mobile ключи: по регламенту провайдера.
 - Автоматизация ротации через External Secrets Operator с `refreshInterval`.
+- Для тестов восстановления используйте отдельный `RESTORE_DB_URL`.
 
 ## Хранение
 - Рекомендуется использовать External Secrets / Vault / Sealed Secrets.
