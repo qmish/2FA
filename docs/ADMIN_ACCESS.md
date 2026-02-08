@@ -108,6 +108,18 @@ $response = Invoke-RestMethod -Uri "http://localhost:8083/api/v1/admin/auth/logi
 $adminToken = $response.access_token
 ```
 
+## Учетные данные (пример)
+
+Если администратора создали через SQL‑скрипт по умолчанию:
+
+- **Username**: `admin`
+- **Password**: `admin123`
+- **Email**: `admin@example.com`
+- **Role**: `admin`
+- **Status**: `active`
+
+⚠️ После первого входа смените пароль.
+
 ## Дефолтные учетные данные (после создания через SQL)
 
 После выполнения SQL скрипта `scripts/create-admin.sql`:
@@ -172,3 +184,14 @@ SELECT username, status, role FROM users WHERE username = 'admin';
 3. Настройте ограничение доступа к админке
 4. Используйте HTTPS/TLS
 5. Регулярно проверяйте список администраторов
+
+## Защита админских эндпоинтов
+
+Все эндпоинты `/api/v1/admin/*` защищены middleware `AdminAuth`:
+
+1. Проверка `Authorization: Bearer <token>`
+2. Валидация admin JWT
+3. Проверка роли `admin`
+
+Открыт только эндпоинт входа:
+- `POST /api/v1/admin/auth/login`

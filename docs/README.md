@@ -14,7 +14,6 @@
 ## UI и админка
 - UI доступ: `UI_ACCESS.md`
 - Доступ администратора: `ADMIN_ACCESS.md`
-- Учётные данные администратора: `ADMIN_CREDENTIALS.md`
 - Решение проблемы admin_login_failed: `ADMIN_LOGIN_FINAL.md`
 
 ## Безопасность и надёжность
