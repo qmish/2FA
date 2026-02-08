@@ -15,6 +15,7 @@
 - Для Kubernetes используйте `RollingUpdate` и healthchecks (`/healthz`).
 - Теги образов должны быть версионными (например, `v1.44.32`) для откатов.
 - Перед релизом прогонять тесты: `go test ./...`.
+- В CI/CD включено security scanning образов (Trivy).
 
 ## TLS/Ingress
 - Для продакшна используйте HTTPS и TLS‑секреты (Ingress + cert‑manager).

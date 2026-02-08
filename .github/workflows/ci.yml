@@ -56,3 +56,35 @@ jobs:
           push: true
           tags: |
             ghcr.io/qmish/2fa-migrate:${{ github.ref_name }}
+
+  scan-images:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    needs: build-images
+    steps:
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Scan api-server image
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: ghcr.io/qmish/2fa-api-server:${{ github.ref_name }}
+          format: table
+          exit-code: "1"
+          severity: CRITICAL,HIGH
+      - name: Scan radius-server image
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: ghcr.io/qmish/2fa-radius-server:${{ github.ref_name }}
+          format: table
+          exit-code: "1"
+          severity: CRITICAL,HIGH
+      - name: Scan migrate image
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: ghcr.io/qmish/2fa-migrate:${{ github.ref_name }}
+          format: table
+          exit-code: "1"
+          severity: CRITICAL,HIGH
